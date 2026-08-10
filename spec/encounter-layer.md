@@ -37,47 +37,29 @@ witnessed succession, specified separately in *RLTP Succession*
 
 ## Status of This Document
 
-Nineteenth casting — the wording-alignment casting: one editorial contradiction from round 11 resolved (Contract 4.1 pre-lock preamble now names the aging latch as its one write, matching 5.3). Eighteenth casting — the monotone-latch casting
-(`../design/pair-review10-2026-08.md`). Round 10 showed the round-9
-rule still leaked: the provisional resolution was defined read-only,
-so its age observation died on the way to the lock, and the skipped
-pre-lock checks would never have been completed had the state moved.
-Two rules close this for good (5.3, Contract 4.1): **the aging latch
-is the one write every resolution performs** — provisional or
-authoritative, atomic per value, monotone (set-only), and therefore
-safe without a lock; and **a state change discovered at the
-serialization point sends the evaluation back to stage 4** (the
-existing waiter rule), so no skipped check ever survives into an
-effect. Dispositions still belong to the serialization point. From
-the seventeenth casting: no age-based `unknown` is final pre-lock.
-From the sixteenth casting: the one-way
-aging latch, the stated entry point (issuance → `open`), the
-complete transition set. From the fifteenth casting: the
-normative resolution algorithm (precedence recorded → open →
-unknown), atomic supersession, mandatory retention,
-`sentTo`/`boundTo` co-presence in the schema, and the `boundTo`
-privacy statement. The
-one ceremony
-`encounter-scan@0.19` keeps its connected path and its offline path,
-but the two legs are now stated honestly: the connected path delivers
-the **bundle** through the Delivery service; the offline path is a
-**ceremony-level optical input** that carries the sent card only —
-enactment material, never credentials — and triggers record creation,
-idempotent per own challenge (5.5). Each leg is idempotent at its own
-level; nothing pretends the optical leg is another delivery of the
-same document. Switching is free in both directions **at any moment**
-— `ack-wait` is only the recommended automatic trigger, never a
-conformance condition — and a bundle arriving after the optical leg
-is accepted **via the existing record**, under a serialization rule
-that closes the optical/network race (Contract 4.1, 6.2). Mutuality
-is held, never inferred: a device that has issued but not yet received
-shows an outgoing edge, whatever a `sentTo` card suggests. A fresh
-second enactment arises only for an aged-out challenge
-(`gate-expired`), kept at one edge by the merge rule — the old
-lost-acknowledgement fallback to a second enactment is gone from the
-conformance plan too. The transmission leg is specified by normative
-reference to the **RLTP Delivery Contract 0.17**. Open issues:
-Section 16.
+This is an **Editor's Draft**, developed through an adversarial
+convergence process: every casting is reviewed in full by an
+independent adversarial reviewer, findings are triaged, and the
+document is recast — never patched — until a casting is judged
+blocker-free and compatibly implementable. The nineteenth casting is
+the current one; its final review round returned **no findings**.
+
+What this version specifies, in one paragraph: **one registered
+ceremony**, `encounter-scan@0.19`, with a connected path (the bundle
+travels through the delivery service) and an offline path (the sent
+card is presented optically; the credential follows later and is
+accepted via the enactment record). Switching between the paths is
+free in both directions at any moment — the application switches the
+carrier of the enactment material, never the ceremony. Every
+acceptance branch is selected by the **own-challenge state model**
+(5.3): a value resolves to `open`, `recorded`, or `unknown` under a
+normative precedence algorithm with a monotone aging latch, which
+makes the outcome deterministic under challenge rotation, races,
+restarts, and backward-moving clocks. Sent cards carry `boundTo`, so
+the optical receiver always knows which of its own challenges an
+enactment answers. Mutuality is held, never inferred. The
+transmission leg is specified by normative reference to the **RLTP
+Delivery Contract 0.17**. Open issues: Section 16.
 
 ## 1. Introduction (informative)
 

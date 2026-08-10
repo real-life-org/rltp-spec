@@ -32,38 +32,26 @@ travel in.
 
 ## Status of This Document
 
-Seventeenth casting — the wording-alignment casting: the 4.1 pre-lock preamble now reads "read-only except for Encounter 5.3's aging latch, which every resolution writes", removing the round-11 contradiction with check 5. Sixteenth casting — the monotone-latch companion to Encounter 0.19
-(`../design/pair-review10-2026-08.md`): resolution's aging latch is
-written **wherever the observation happens** — provisional included
-— because it is atomic per value and monotone, needing no lock for
-safety; and an evaluation that entered stage 9 on a provisional
-`unknown` and finds any other authoritative state releases the lock
-and **re-enters at stage 4**, so the skipped pre-lock checks always
-complete before any effect (4.1 check 5, 6.2 stage 8 exception).
-From the fifteenth casting: no age-based `unknown` is final
-pre-lock. From the fourteenth casting: the one-way aging latch
-and the qualified distinct-digest vector. From the thirteenth
-casting:
-the normative resolution algorithm (precedence recorded → open →
-unknown, atomic supersession, mandatory retention) and the
-qualified competing-digest rule. From the
-twelfth casting: every bundle branch is
-**selected by challenge resolution** (Encounter 5.3: `open` /
-`recorded` / `unknown` — total, deterministic, read-only but for
-the aging latch): pre-lock
-checks resolve provisionally; the authoritative resolution inside
-the lock-set critical section picks the effect — `open` →
-record-creating (future check `gate-future`; the expiry side is
-structural, so `gate-expired` no longer exists as a bundle
-disposition), `recorded` → the record decides (`consumed-challenge`
-for a foreign counterparty, record-aware acceptance otherwise),
-`unknown` → `failed(validation-failed)`. The wrong-counterparty
-disposition is thereby operationally unique even across waiter
-re-entry. Sent cards carry `boundTo` (Encounter 5.3/6), consistency
-`card.boundTo` = the credential's bound challenge. Retired
-key-agreement identifiers remain known **indefinitely as
-tombstones**, so a retired-key envelope reaches decryption and fails
-honestly (`decryption-failed`), never `malformed`. Open issues:
+This is an **Editor's Draft**, developed through the same adversarial
+convergence process as the Encounter Layer (casting, independent
+adversarial review, full recast — never a patch). The seventeenth
+casting is the current one; its final review round returned **no
+findings**.
+
+What this version specifies, in one paragraph: how the documents of
+the `encounter-scan` ceremony travel and land. Every bundle branch is
+selected by **challenge resolution** (Encounter 5.3) inside a
+critical section keyed on the document digest and the record key:
+`open` selects the record-creating effect (explicit future check,
+`gate-future`), `recorded` lets the record decide
+(`consumed-challenge` for a foreign counterparty, record-aware
+acceptance otherwise — the enclosed card must be JCS-identical to the
+card the record stores), and `unknown` is `failed(validation-failed)`
+— the expiry side of the gate is structural, so no `gate-expired`
+disposition exists for bundles. The acknowledgement is arrival-only,
+proof-carrying, and **terminal** (no acknowledgement of an
+acknowledgement); retired key identifiers remain known as tombstones
+so a retired-key envelope fails honestly at decryption. Open issues:
 Section 12.
 
 ## 1. Introduction (informative)
