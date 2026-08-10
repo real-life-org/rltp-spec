@@ -48,7 +48,7 @@
         </div>
       </div>
 
-      <div style="width:340px;border-radius:30px;padding:8px;background:oklch(12% 0.01 265);box-shadow:0 18px 40px -16px rgba(0,0,0,.7);">
+      <div id="sim-phone-A" style="width:340px;border-radius:30px;padding:8px;background:oklch(12% 0.01 265);box-shadow:0 18px 40px -16px rgba(0,0,0,.7);position:relative;{{ A.phoneAnim }}">
         <div style="border-radius:26px;overflow:hidden;background:oklch(98% 0.003 265);color:oklch(22% 0.004 265);height:520px;display:flex;flex-direction:column;">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 4px;font-size:11px;font-family:ui-monospace,monospace;color:oklch(44% 0.008 265);">
             <span>{{ A.clock }}</span><span>Web of Trust</span><span>{{ A.statusRight }}</span>
@@ -180,7 +180,7 @@
         </div>
       </div>
 
-      <div style="width:340px;border-radius:30px;padding:8px;background:oklch(12% 0.01 265);box-shadow:0 18px 40px -16px rgba(0,0,0,.7);">
+      <div id="sim-phone-B" style="width:340px;border-radius:30px;padding:8px;background:oklch(12% 0.01 265);box-shadow:0 18px 40px -16px rgba(0,0,0,.7);position:relative;{{ B.phoneAnim }}">
         <div style="border-radius:26px;overflow:hidden;background:oklch(98% 0.003 265);color:oklch(22% 0.004 265);height:520px;display:flex;flex-direction:column;">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 4px;font-size:11px;font-family:ui-monospace,monospace;color:oklch(44% 0.008 265);">
             <span>{{ B.clock }}</span><span>Web of Trust</span><span>{{ B.statusRight }}</span>
@@ -376,6 +376,9 @@ class Component extends DCLogic {
 
   // ---------- boot ----------
   async boot() {
+    this.anim = null; this.animEls = null; clearTimeout(this.animT3);
+    (this.waAnims || []).forEach(a => { try { a.cancel(); } catch (e) {} });
+    this.waAnims = [];
     this.faultDefs.forEach(([k]) => (this.f[k] = false));
     try { await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify']); this.edOK = true; }
     catch (e) { this.edOK = false; }
@@ -475,11 +478,100 @@ class Component extends DCLogic {
   // ---------- device actions ----------
   other(dev) { return dev.id === 'A' ? this.dev.B : this.dev.A; }
 
-  onScan(dev) { dev.screen = 'scanner'; dev.peer = this.other(dev); this.bump(); }
-  onCancel(dev) { dev.screen = 'ready'; dev.work = null; this.bump(); }
+  onScan(dev) {
+    dev.screen = 'scanner'; dev.peer = this.other(dev);
+    // the camera recognizes the code by itself — one tap less
+    clearTimeout(dev.autoCapture);
+    dev.autoCapture = setTimeout(() => {
+      if (this.dev && this.dev[dev.id] === dev && dev.screen === 'scanner') this.onCapture(dev);
+    }, 2500);
+    this.bump();
+    setTimeout(() => this.animScanStart(dev), 60); // measure after the scanner screen rendered
+  }
+  onCancel(dev) { clearTimeout(dev.autoCapture); this.clearAnim(); dev.screen = 'ready'; dev.work = null; this.bump(); }
+
+  // ---------- scan choreography ----------
+  // Both phones travel on one smooth arc (quadratic bezier via the Web
+  // Animations API — no corner) to the screen center, tilting into the turn;
+  // the scanning phone lies one layer above the QR phone and gets a real
+  // see-through hole (CSS mask) where its camera image is, and its arc ends
+  // with the hole exactly over the code. On recognition everything returns.
+  animScanStart(dev) {
+    if (!this.dev || this.dev[dev.id] !== dev || dev.screen !== 'scanner') return;
+    const peer = this.other(dev);
+    const shellS = document.getElementById('sim-phone-' + dev.id);
+    const shellP = document.getElementById('sim-phone-' + peer.id);
+    if (!shellS || !shellP) return;
+    const holeImg = shellS.querySelector('img');           // the viewfinder image
+    const hole = holeImg && holeImg.parentElement;         // its dashed frame
+    const qr = shellP.querySelector('img');                // the code on the other phone
+    if (!hole) return;
+    const rs = shellS.getBoundingClientRect(), rp = shellP.getBoundingClientRect();
+    const rh = hole.getBoundingClientRect();
+    const rq = qr ? qr.getBoundingClientRect() : rp;
+    const cx = window.innerWidth / 2, cy = window.innerHeight / 2;
+    const rad = a => a * Math.PI / 180;
+    const rot = (v, a) => ({ x: v.x * Math.cos(rad(a)) - v.y * Math.sin(rad(a)), y: v.x * Math.sin(rad(a)) + v.y * Math.cos(rad(a)) });
+    const ctr = r => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+    const pc = ctr(rp), sc = ctr(rs), qc = ctr(rq), hc = ctr(rh);
+    // Both phones lean 45° toward the middle and KEEP that tilt through the
+    // scan: viewfinder hole and code are squares, so at 90° relative rotation
+    // the code still fits the camera perfectly.
+    const ptilt = peer.id === 'A' ? 45 : -45;
+    const stilt = dev.id === 'A' ? 45 : -45;
+    // QR phone: home -> screen center
+    const pd = { x: cx - pc.x, y: cy - pc.y };
+    // where the code's center ends up (the arrived phone is tilted)
+    const qOff = rot({ x: qc.x - pc.x, y: qc.y - pc.y }, ptilt);
+    // scanner: keeps its own 45° tilt, hole centered exactly over the code
+    const hOff = rot({ x: hc.x - sc.x, y: hc.y - sc.y }, stilt);
+    const sd = { x: cx + qOff.x - sc.x - hOff.x, y: cy + qOff.y - sc.y - hOff.y };
+    // one arc per phone: quadratic bezier lifted above the direct line
+    const arc = (d, lift, tiltAt, n) => {
+      const c = { x: d.x / 2, y: d.y / 2 - lift };
+      const fr = [];
+      for (let i = 0; i <= n; i++) {
+        const t = i / n, u = 1 - t;
+        fr.push({ offset: t, transform: 'translate(' + (2 * u * t * c.x + t * t * d.x) + 'px,'
+          + (2 * u * t * c.y + t * t * d.y) + 'px) rotate(' + tiltAt(t) + 'deg)' });
+      }
+      return fr;
+    };
+    // see-through hole: punch the viewfinder rect out of the whole phone stack
+    const mx = rh.left - rs.left + 6, my = rh.top - rs.top + 6, mw = rh.width - 12, mh = rh.height - 12;
+    const mask = 'mask-image:linear-gradient(#000 0 0),linear-gradient(#000 0 0);'
+      + 'mask-position:0 0,' + mx + 'px ' + my + 'px;mask-size:100% 100%,' + mw + 'px ' + mh + 'px;'
+      + 'mask-repeat:no-repeat;mask-composite:exclude;';
+    this.anim = { scanner: dev.id, styles: { [peer.id]: 'z-index:100;', [dev.id]: 'z-index:110;' + mask } };
+    this.animEls = { [peer.id]: shellP, [dev.id]: shellS };
+    this.bump();
+    const ease = 'cubic-bezier(.35,0,.25,1)';
+    this.waAnims = [
+      shellP.animate(arc(pd, 70, t => t * ptilt, 8), { duration: 950, easing: ease, fill: 'forwards' }),
+      shellS.animate(arc(sd, 140, t => t * stilt, 8), { duration: 2150, easing: ease, fill: 'forwards' }),
+    ];
+  }
+  clearAnim() {
+    if (!this.anim) return;
+    // phones glide straight home from wherever they are, staying above the page
+    Object.values(this.animEls || {}).forEach(el => {
+      const cur = getComputedStyle(el).transform;
+      (this.waAnims || []).forEach(a => { try { if (a.effect && a.effect.target === el) a.cancel(); } catch (e) {} });
+      if (cur && cur !== 'none') el.animate([{ transform: cur }, { transform: 'none' }],
+        { duration: 750, easing: 'cubic-bezier(.4,0,.2,1)' });
+    });
+    this.waAnims = [];
+    const keep = {};
+    Object.keys(this.anim.styles).forEach(k => (keep[k] = k === this.anim.scanner ? 'z-index:130;' : 'z-index:120;'));
+    this.anim = { scanner: null, styles: keep };
+    clearTimeout(this.animT3);
+    this.animT3 = setTimeout(() => { this.anim = null; this.animEls = null; this.bump(); }, 850);
+  }
   onDone(dev) { dev.screen = 'ready'; dev.err = null; this.bump(); }
 
   async onCapture(dev) {
+    clearTimeout(dev.autoCapture);
+    this.clearAnim(); // recognition: both phones return to their places
     const peer = this.other(dev);
     if (peer.screen === 'fallback' && peer.sentCard) {
       // Offline continuation of the SAME enactment: the peer's screen shows
@@ -950,7 +1042,8 @@ class Component extends DCLogic {
       isVerifiedBack: scr === 'verifiedBack',
       qr: dev.qr,
       peerQr: (peer.screen === 'fallback' && peer.fallbackQr) ? peer.fallbackQr : peer.qr,
-      peerName: peer.name, peerInitial: peer.name.slice(0, 1),
+      peerName: peer.name, peerInitial: peer.name.slice(0, 1), selfInitial: dev.name.slice(0, 1),
+      phoneAnim: (this.anim && this.anim.styles[dev.id]) || '',
       peerAnchor: w ? w.peerCard.anchor : peer.anchor,
       challengeValue: dev.ch ? dev.ch.value : '', challengeAge: dev.ch ? 'issued ' + ageS + ' s ago · max age PT5M' : '',
       fallbackBanner: dev.fallbackBanner,
