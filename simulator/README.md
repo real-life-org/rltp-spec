@@ -45,3 +45,22 @@ credential, foreign ceremony label, held envelopes.
   executable scenario covering both paths, the fresh-enactment
   last resort, the backward-clock latch, and the poisoning defense:
   `node scenario.mjs`
+- `adversarial.mjs` — engine regression that replays forged inputs
+  (foreign-anchor proof, third-party ack, second conflicting
+  credential, cross-enactment mutual, malformed payloads) and asserts
+  every attack fails: `node adversarial.mjs`
+
+## Tests
+
+- **Engine (Node):** `node scenario.mjs` and `node adversarial.mjs`.
+- **Browser (Playwright + Chrome ≥137 for Ed25519 WebCrypto):** serve
+  the directory (`python3 -m http.server 8199`), then, with
+  `CHROME_BIN` pointing at a suitable Chrome, run:
+  - `node tests-ui-suite.mjs` — 13 end-to-end scenarios (happy path,
+    one-sided, skew, hold/offline, duplicate, tamper, legacy label,
+    consumed, backdate, lost-ack optical leg, cancel, reset);
+  - `node tests-ui-borrow-scan.mjs` — the borrowed-QR case (a device
+    mid-dialog briefly returns to its code so the other can scan it);
+  - `node tests-ui-adversarial.mjs` — in-page crypto checks: proofs
+    reject a foreign or spoofed anchor, the proof message is the
+    two-hash `eddsa-jcs-2022` construction, `u`/`z` multihashes match.

@@ -60,11 +60,17 @@ export function createPerson(name) {
     records: new Map(),        // ownChallenge -> enactment record
     edges: new Map(),          // counterpartyAnchor -> { issued:[], received:[] }  (merge rule: one edge per pair)
     effectCache: new Map(),    // docDigest -> { disposition, storedAck }
-    senderStatus: new Map(),   // docDigest -> 'accepted' | 'delivered' | 'failed'
+    senderStatus: new Map(),   // docDigest -> { status, recipient, threadId } — what an ack must match
+    buffered: [],              // credential-delivery effect: durable buffer, acceptance runs separately
     log: [],
   }
 }
 const say = (p, msg) => { p.log.push(msg) }
+// sender-side bookkeeping: remember whom a document went to, so a later
+// ack can be required to come exactly from that recipient (Contract 4.2)
+export function noteSent(p, doc) {
+  p.senderStatus.set(docDigest(doc), { status: 'accepted', recipient: doc.recipient, threadId: doc.threadId })
+}
 
 // ── contact cards (Encounter 6, 5.3) ────────────────────────────────────
 export function freshChallenge(now) {
@@ -111,15 +117,32 @@ function diSign(p, doc, created) {
   return { ...cfg, proofValue: 'z' + base58(sig) }
 }
 const sha = (s) => createHash('sha256').update(s, 'utf8').digest()
-export function diVerify(doc) {
+// The proof binds to the ANCHOR THE DOCUMENT CLAIMS (card.anchor,
+// credential.issuer, ack.issuer) — never to whatever verificationMethod
+// happens to name. Callers MUST pass that expected anchor.
+export function diVerify(doc, expectedAnchor) {
+  if (!expectedAnchor) return false
   const { proof, ...body } = doc
-  const anchor = proof.verificationMethod.split('#')[0]
-  const mk = fromBase58(anchor.slice('did:key:z'.length))
+  if (!proof || !proof.proofValue || !proof.verificationMethod) return false
+  if (proof.verificationMethod !== `${expectedAnchor}#${expectedAnchor.slice(8)}`) return false
+  const mk = fromBase58(expectedAnchor.slice('did:key:z'.length))
   if (mk[0] !== 0xed || mk[1] !== 0x01 || mk.length !== 34) return false
   const pub = createPublicKey({ key: Buffer.concat([ED_SPKI, mk.subarray(2)]), format: 'der', type: 'spki' })
   const { proofValue, ...cfg } = proof
   const data = Buffer.concat([sha(jcs(cfg)), sha(jcs(body))])
   return edVerify(null, data, pub, fromBase58(proofValue.slice(1)))
+}
+// multihash comparison: emit u, accept u AND z (Encounter 2.3) — normalize
+// both to bytes; unknown base or wrong multihash header compares unequal
+export function sameDigest(a, b) {
+  const norm = (s) => {
+    if (typeof s !== 'string' || s.length < 2) return null
+    const bytes = s[0] === 'u' ? fromB64u(s.slice(1)) : s[0] === 'z' ? fromBase58(s.slice(1)) : null
+    if (!bytes || bytes.length !== 34 || bytes[0] !== 0x12 || bytes[1] !== 0x20) return null
+    return bytes.toString('hex')
+  }
+  const na = norm(a), nb = norm(b)
+  return na !== null && na === nb
 }
 export function fromBase58(s) {
   let n = 0n
@@ -161,14 +184,21 @@ export function seal(document, recipientKeyAgreement, recipientXPub) {
 }
 export function unseal(env, p) {
   if (env.rkid !== p.keyAgreement) return { error: 'malformed (unknown rkid)' }
-  const epk = createPublicKey({ key: Buffer.concat([X_SPKI, fromB64u(env.epk)]), format: 'der', type: 'spki' })
+  const nonce = fromB64u(env.nonce), epkRaw = fromB64u(env.epk), raw = fromB64u(env.ciphertext)
+  if (nonce.length !== 12 || epkRaw.length !== 32 || raw.length < 16) return { error: 'malformed' }
+  if (raw.length - 16 > 65536) return { error: 'oversize' }          // size bound BEFORE decryption
+  const epk = createPublicKey({ key: Buffer.concat([X_SPKI, epkRaw]), format: 'der', type: 'spki' })
   const shared = diffieHellman({ privateKey: p.keys.x.privateKey, publicKey: epk })
+  if (shared.every((b) => b === 0)) return { error: 'decryption-failed' } // receive-side all-zero check
   const key = Buffer.from(hkdfSync('sha256', shared, Buffer.alloc(0), 'rltp/v1/seal', 32))
-  const raw = fromB64u(env.ciphertext)
-  const d = createDecipheriv('aes-256-gcm', key, fromB64u(env.nonce))
-  d.setAuthTag(raw.subarray(raw.length - 16))
-  try { return { document: JSON.parse(Buffer.concat([d.update(raw.subarray(0, raw.length - 16)), d.final()]).toString('utf8')) } }
-  catch { return { error: 'decryption-failed' } }
+  let plaintext
+  try {
+    const d = createDecipheriv('aes-256-gcm', key, nonce)
+    d.setAuthTag(raw.subarray(raw.length - 16))
+    plaintext = Buffer.concat([d.update(raw.subarray(0, raw.length - 16)), d.final()]).toString('utf8')
+  } catch { return { error: 'decryption-failed' } }                  // tag/key failure
+  try { return { document: JSON.parse(plaintext) } }
+  catch { return { error: 'malformed' } }                            // parse failure is NOT a crypto failure
 }
 
 // ── delivery documents (Contract 3/4) ───────────────────────────────────
@@ -212,10 +242,24 @@ export function receiveEnvelope(p, env, now) {
     const prior = p.effectCache.get(dd)
     return { disposition: 'duplicate-known', ack: prior.storedAck ?? null, doc }
   }
+  // document profile (Contract 3): required members, no expiresAt, sane payload
+  if (!doc || typeof doc !== 'object' || !doc.id || !doc.type || !doc.issuer || !doc.recipient
+    || !doc.threadId || !doc.issuedAt || Number.isNaN(Date.parse(doc.issuedAt))
+    || 'expiresAt' in doc || !doc.payload || typeof doc.payload !== 'object')
+    return dispose(p, doc, 'failed(malformed)')
   if (doc.recipient !== p.anchor) return dispose(p, doc, 'failed(wrong-recipient)')
-  if (doc.type === 'https://real-life.org/trust-tasks/encounter-bundle/0.1') return receiveBundle(p, doc, dd, now)
-  if (doc.type === 'https://real-life.org/trust-tasks/encounter-credential-delivery/0.1') return receiveCredentialDelivery(p, doc, dd, now)
-  if (doc.type === 'https://real-life.org/trust-tasks/delivery-ack/0.1') return receiveAck(p, doc, now)
+  if (doc.type === 'https://real-life.org/trust-tasks/encounter-bundle/0.1') {
+    if (!doc.payload.card || !doc.payload.credential) return dispose(p, doc, 'failed(malformed)')
+    return receiveBundle(p, doc, dd, now)
+  }
+  if (doc.type === 'https://real-life.org/trust-tasks/encounter-credential-delivery/0.1') {
+    if (!doc.payload.credential) return dispose(p, doc, 'failed(malformed)')
+    return receiveCredentialDelivery(p, doc, dd, now)
+  }
+  if (doc.type === 'https://real-life.org/trust-tasks/delivery-ack/0.1') {
+    if (doc.payload.meaning !== 'received' || !doc.payload.ref) return dispose(p, doc, 'failed(malformed)')
+    return receiveAck(p, doc, now)
+  }
   return dispose(p, doc, 'failed(unknown-type)')
 }
 const dispose = (p, doc, disposition) => { say(p, `↳ ${disposition}`); return { disposition, doc } }
@@ -223,8 +267,8 @@ const dispose = (p, doc, disposition) => { say(p, `↳ ${disposition}`); return 
 function receiveBundle(p, doc, dd, now) {
   const { card, credential } = doc.payload
   // Contract 4.1 outer/inner consistency + pre-lock checks — validate, then consume:
-  if (!diVerify(card)) return dispose(p, doc, 'failed(validation-failed: card proof)')
-  if (!diVerify(credential)) return dispose(p, doc, 'failed(validation-failed: credential proof)')
+  if (!diVerify(card, card.anchor)) return dispose(p, doc, 'failed(validation-failed: card proof)')
+  if (!diVerify(credential, credential.issuer)) return dispose(p, doc, 'failed(validation-failed: credential proof)')
   if (doc.issuer !== card.anchor || doc.issuer !== credential.issuer) return dispose(p, doc, 'failed(validation-failed: issuer mismatch)')
   if (credential.credentialSubject.id !== p.anchor) return dispose(p, doc, 'failed(validation-failed: not about me)')
   if (card.sentTo !== p.anchor) return dispose(p, doc, 'failed(validation-failed: sentTo)')
@@ -275,7 +319,7 @@ function receiveBundle(p, doc, dd, now) {
 // delivery of the bundle. Carries the sent card only; boundTo selects the
 // receiver's own challenge under the resolution rule. ──────────────────
 export function opticalInput(p, card, now) {
-  if (!diVerify(card)) return { outcome: 'refused', reason: 'card proof' }
+  if (!diVerify(card, card.anchor)) return { outcome: 'refused', reason: 'card proof' }
   if (card.version !== CARD_VERSION) return { outcome: 'refused', reason: 'version' }
   if (card.sentTo !== p.anchor) return { outcome: 'refused', reason: 'sentTo' }
   if (!card.boundTo) return { outcome: 'refused', reason: 'boundTo missing' }
@@ -299,30 +343,44 @@ export function opticalInput(p, card, now) {
 }
 
 function receiveCredentialDelivery(p, doc, dd, now) {
-  if (doc.issuer !== doc.payload.credential.issuer) return dispose(p, doc, 'failed(validation-failed: issuer mismatch)')
-  if (doc.payload.credential.credentialSubject.id !== p.anchor) return dispose(p, doc, 'failed(validation-failed: not about me)')
+  const cred = doc.payload.credential
+  // stage 8 here is schema + outer/inner consistency ONLY — the delivery
+  // effect (durable buffer + ack) must not depend on credential acceptance
+  if (doc.issuer !== cred.issuer) return dispose(p, doc, 'failed(validation-failed: issuer mismatch)')
+  if (cred.credentialSubject?.id !== p.anchor) return dispose(p, doc, 'failed(validation-failed: not about me)')
+  if (doc.ceremony && doc.ceremony.enactment && doc.ceremony.enactment !== cred.credentialSubject.enactmentBinding)
+    return dispose(p, doc, 'failed(validation-failed: ceremony member lies)')
+  p.buffered.push(cred)                       // the delivery effect: durable buffer
   const ack = ackDocument(p, doc, now)
   p.effectCache.set(dd, { disposition: 'unique', storedAck: ack })
-  const result = tryAccept(p, doc.payload.credential, now)
-  say(p, `credential-delivery gepuffert (${result}), Ack eingereiht`)
+  const result = tryAccept(p, cred, now)      // Encounter 5.6 runs separately, never signalled back
+  say(p, `credential-delivery gepuffert (Acceptance separat: ${result}), Ack eingereiht`)
   return { disposition: 'unique', ack, doc, acceptance: result }
 }
 
 function receiveAck(p, doc, now) {
-  if (!diVerify(doc)) return dispose(p, doc, 'failed(validation-failed: ack proof)')
-  const st = p.senderStatus.get(doc.payload.ref)
-  if (st === undefined) return dispose(p, doc, 'failed(validation-failed: unknown ref)')
-  p.senderStatus.set(doc.payload.ref, 'delivered')
+  if (!diVerify(doc, doc.issuer)) return dispose(p, doc, 'failed(validation-failed: ack proof)')
+  // accept u AND z refs: compare multihashes semantically, not as strings
+  let key, entry
+  for (const [k, v] of p.senderStatus) { if (sameDigest(k, doc.payload.ref)) { key = k; entry = v; break } }
+  if (!entry) return dispose(p, doc, 'failed(validation-failed: unknown ref)')
+  // an ack is an attestation OF THE RECIPIENT: issuer must be exactly the
+  // anchor the referenced document was sent to, on the same thread
+  if (doc.issuer !== entry.recipient) return dispose(p, doc, 'failed(validation-failed: ack issuer is not the recipient)')
+  if (doc.recipient !== p.anchor || doc.threadId !== entry.threadId) return dispose(p, doc, 'failed(validation-failed: ack outer mismatch)')
+  entry.status = 'delivered'
+  p.senderStatus.set(key, entry)
   // terminal document (Contract 4.2): cache entry, but NO ack-of-ack —
   // a stage-4 duplicate is duplicate-known with nothing to re-send
   p.effectCache.set(docDigest(doc), { disposition: 'unique', storedAck: null })
-  say(p, `delivered ✓ (${st === 'failed' ? 'late ack, failed→delivered' : 'ack'})`)
+  say(p, 'delivered ✓ (authenticated ack from the recipient)')
   return { disposition: 'unique', doc }
 }
 
 // ── Encounter acceptance (5.6) ──────────────────────────────────────────
 export function tryAccept(p, credential, now) {
-  if (!diVerify(credential)) return 'ERR_SIG'
+  if (credential.credentialSubject?.format !== CRED_FORMAT) return 'ERR_VERSION'
+  if (!diVerify(credential, credential.issuer)) return 'ERR_SIG'
   if (credential.credentialSubject.id !== p.anchor) return 'ERR_ADDRESSEE'
   const record = p.records.get(credential.credentialSubject.challenge)
   if (!record) return 'ERR_NO_RECORD'
@@ -337,7 +395,12 @@ export function tryAccept(p, credential, now) {
 }
 function acceptCredential(p, credential, record) {
   const edge = p.edges.get(record.counterparty) ?? { issued: [], received: [] }
-  if (edge.received.some((c) => docDigest(c) === docDigest(credential))) return 'idempotent'
+  const dd = docDigest(credential)
+  const sameEnactment = edge.received.filter((c) => c.credentialSubject.enactmentBinding === record.binding)
+  if (sameEnactment.some((c) => docDigest(c) === dd)) return 'idempotent'
+  // Encounter 5.6 step 8: one credential per record and direction — any
+  // DIFFERENT credential for the same enactment is a conflict, not a second accept
+  if (sameEnactment.length) return 'ERR_CONFLICT'
   edge.received.push(credential) // merge rule: one edge per anchor pair, however many enactments
   p.edges.set(record.counterparty, edge)
   return 'accepted'
@@ -347,9 +410,15 @@ export function noteIssued(p, counterpartyAnchor, credential) {
   edge.issued.push(credential)
   p.edges.set(counterpartyAnchor, edge)
 }
+// mutual is a property of ONE enactment (Encounter 4.2): both directions
+// must exist under the SAME enactment binding — two independent one-sided
+// enactments still merge into one edge, but never into "mutual"
 export const edgeState = (p, other) => {
   const e = p.edges.get(other)
   if (!e) return 'none'
-  if (e.issued.length && e.received.length) return 'mutual'
-  return e.issued.length ? 'outgoing' : 'incoming'
+  const mutual = e.issued.some((i) => e.received.some((r) =>
+    r.credentialSubject.enactmentBinding === i.credentialSubject.enactmentBinding))
+  if (mutual) return 'mutual'
+  if (e.issued.length) return 'outgoing'
+  return e.received.length ? 'incoming' : 'none'
 }

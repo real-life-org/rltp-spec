@@ -8,8 +8,8 @@
 import {
   createPerson, displayCard, sentCard, issueCredential, binding,
   bundleDocument, credentialDeliveryDocument, seal, receiveEnvelope,
-  opticalInput, resolve, tryAccept, noteIssued, edgeState, docDigest,
-  PARAMS, CEREMONY,
+  opticalInput, resolve, tryAccept, noteIssued, noteSent, edgeState,
+  docDigest, PARAMS, CEREMONY,
 } from './engine.mjs'
 import { createPublicKey } from 'node:crypto'
 
@@ -19,16 +19,18 @@ let now = Date.parse('2026-08-10T15:00:00Z')
 const t = (label) => console.log(`\n─── ${label} ───`)
 const assert = (cond, msg) => { if (!cond) { console.error(`✗ ASSERT: ${msg}`); process.exit(1) } console.log(`✓ ${msg}`) }
 
-// A scans B's displayed card and prepares the enactment (common trunk 1–3)
+// A scans B's displayed card and prepares the enactment (common trunk 1–3).
+// C5 order: gate → RECORD → only then the credential (Encounter 5.5/7) —
+// a crash between the two steps must never leave a credential without its record.
 function scan(scanner, displayed, when) {
   const s = sentCard(scanner, displayed.anchor, displayed.challenge.value, when)
   const bind = binding(CEREMONY, displayed.challenge.value, s.challenge.value)
-  const cred = issueCredential(scanner, displayed.anchor, CEREMONY, displayed.challenge.value, bind, when)
-  const bundle = bundleDocument(scanner, s.card, cred, bind, when)
   scanner.records.set(s.challenge.value, { ceremony: CEREMONY, counterparty: displayed.anchor, card: displayed, own: s.challenge, other: displayed.challenge, binding: bind, time: when })
   scanner.open.delete(s.challenge.value)
+  const cred = issueCredential(scanner, displayed.anchor, CEREMONY, displayed.challenge.value, bind, when)
+  const bundle = bundleDocument(scanner, s.card, cred, bind, when)
   noteIssued(scanner, displayed.anchor, cred)
-  scanner.senderStatus.set(docDigest(bundle), 'accepted')
+  noteSent(scanner, bundle)
   return { s, bind, cred, bundle }
 }
 
@@ -42,7 +44,7 @@ const e1 = scan(alice, cardB, now)
 const r1 = receiveEnvelope(bob, seal(e1.bundle, bob.keyAgreement, xPub(bob)), now += 5_000)
 assert(r1.disposition === 'unique' && r1.via === 'record-creating', 'Bs Record + Accept + Ack in einer Transaktion (record-creating)')
 receiveEnvelope(alice, seal(r1.ack, alice.keyAgreement, xPub(alice)), now += 2_000)
-assert(alice.senderStatus.get(docDigest(e1.bundle)) === 'delivered', 'A sieht delivered — Ladeanimation verschwindet')
+assert(alice.senderStatus.get(docDigest(e1.bundle))?.status === 'delivered', 'A sieht delivered — Ladeanimation verschwindet')
 const counter1 = issueCredential(bob, alice.anchor, CEREMONY, e1.s.challenge.value, e1.bind, now += 60_000)
 noteIssued(bob, alice.anchor, counter1)
 const r1c = receiveEnvelope(alice, seal(credentialDeliveryDocument(bob, counter1, e1.bundle.threadId, 'counter', now), alice.keyAgreement, xPub(alice)), now += 3_000)
@@ -56,7 +58,7 @@ const cardC = displayCard(carol, now)
 const e2 = scan(alice, cardC, now)
 // … das Bundle erreicht Carol nicht. A wartet ack-wait ab, zeigt die SENT CARD optisch:
 now += PARAMS.ackWait + 1_000
-assert(alice.senderStatus.get(docDigest(e2.bundle)) === 'accepted', 'A: kein Ack → optische Präsentation der Sent Card (kein neues Enactment)')
+assert(alice.senderStatus.get(docDigest(e2.bundle))?.status === 'accepted', 'A: kein Ack → optische Präsentation der Sent Card (kein neues Enactment)')
 const o2 = opticalInput(carol, e2.s.card, now)
 assert(o2.outcome === 'recorded', 'Carol: Record via optischem Scan — Enactment komplett')
 assert(edgeState(carol, alice.anchor) === 'none', 'Carols Kante ist höchstens outgoing — mutual wird nie inferiert')
@@ -67,7 +69,7 @@ now += 2 * 3600_000
 const r2 = receiveEnvelope(carol, seal(e2.bundle, carol.keyAgreement, xPub(carol)), now)
 assert(r2.disposition === 'unique' && r2.via === 'record-aware', 'spätes Bundle via Record akzeptiert — nie consumed-challenge')
 receiveEnvelope(alice, seal(r2.ack, alice.keyAgreement, xPub(alice)), now += 2_000)
-assert(alice.senderStatus.get(docDigest(e2.bundle)) === 'delivered', 'A: spätes Ack → delivered')
+assert(alice.senderStatus.get(docDigest(e2.bundle))?.status === 'delivered', 'A: spätes Ack → delivered')
 const counter2 = issueCredential(carol, alice.anchor, CEREMONY, e2.s.challenge.value, e2.bind, now += 30_000)
 noteIssued(carol, alice.anchor, counter2)
 const r2c = receiveEnvelope(alice, seal(credentialDeliveryDocument(carol, counter2, e2.bundle.threadId, 'counter', now), alice.keyAgreement, xPub(alice)), now)

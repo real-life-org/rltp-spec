@@ -264,6 +264,18 @@ class Component extends DCLogic {
   // ---------- encoding ----------
   b64u(b) { let s = ''; b.forEach(x => (s += String.fromCharCode(x))); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
   ub64u(s) { const t = s.replace(/-/g, '+').replace(/_/g, '/'); const r = atob(t + '==='.slice((t.length + 3) % 4)); return Uint8Array.from(r, c => c.charCodeAt(0)); }
+  // canonical base64url: no padding, only the url alphabet, and it round-trips
+  b64uCanonical(s) { if (typeof s !== 'string' || /[^A-Za-z0-9_-]/.test(s)) return false; try { return this.b64u(this.ub64u(s)) === s; } catch (e) { return false; } }
+  // multihash equality: emit u, accept u AND z (same 34-byte 0x12 0x20 header)
+  sameDigest(a, b) {
+    const norm = (s) => {
+      if (typeof s !== 'string' || s.length < 2) return null;
+      let by; try { by = s[0] === 'u' ? this.ub64u(s.slice(1)) : s[0] === 'z' ? this.ub58(s.slice(1)) : null; } catch (e) { return null; }
+      if (!by || by.length !== 34 || by[0] !== 0x12 || by[1] !== 0x20) return null;
+      return this.b64u(by);
+    };
+    const na = norm(a); return na !== null && na === norm(b);
+  }
   b58(bytes) {
     const A = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
     const d = []; let z = 0;
@@ -317,23 +329,32 @@ class Component extends DCLogic {
     const kp = await crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
     return { kp, raw: new Uint8Array(await crypto.subtle.exportKey('raw', kp.publicKey)) };
   }
-  proofMsg(cfg, doc) { const { proofValue, ...c } = cfg; return new TextEncoder().encode(this.jcs(c) + this.jcs(doc)); }
+  // eddsa-jcs-2022 (DI): the signed message is sha256(JCS(proofConfig))
+  // concatenated with sha256(JCS(document)) — two 32-byte digests, NOT the
+  // raw JCS bytes. This is what the Node engine and any conformant verifier do.
+  async proofMsg(cfg, doc) {
+    const { proofValue, ...c } = cfg;
+    const hc = await this.sha256(new TextEncoder().encode(this.jcs(c)));
+    const hd = await this.sha256(new TextEncoder().encode(this.jcs(doc)));
+    return new Uint8Array([...hc, ...hd]);
+  }
   async sign(dev, doc) {
     const id = dev.anchor.slice('did:key:'.length);
     const cfg = { type: 'DataIntegrityProof', cryptosuite: 'eddsa-jcs-2022', created: this.iso(this.now(dev)),
       verificationMethod: dev.anchor + '#' + id, proofPurpose: 'assertionMethod' };
-    const msg = this.proofMsg(cfg, doc);
-    let sig;
-    if (this.edOK) sig = new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, dev.sign.kp.privateKey, msg));
-    else sig = await this.sha256(new Uint8Array([...msg, ...dev.sign.raw]));
+    const msg = await this.proofMsg(cfg, doc);
+    const sig = new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, dev.sign.kp.privateKey, msg));
     return { ...cfg, proofValue: 'z' + this.b58(sig) };
   }
-  async verify(anchor, doc, proof) {
-    if (!proof || !proof.proofValue) return false;
-    const msg = this.proofMsg(proof, doc);
+  // The proof binds to the anchor the DOCUMENT claims (expectedAnchor):
+  // verificationMethod must be exactly that anchor's did:key method, so a
+  // proof signed under a foreign key cannot pass under someone else's anchor.
+  async verify(expectedAnchor, doc, proof) {
+    if (!proof || !proof.proofValue || !proof.verificationMethod || !expectedAnchor) return false;
+    if (proof.verificationMethod !== expectedAnchor + '#' + expectedAnchor.slice('did:key:'.length)) return false;
+    const msg = await this.proofMsg(proof, doc);
     const sig = this.ub58(proof.proofValue.slice(1));
-    const pub = this.anchorPub(anchor);
-    if (!this.edOK) { const h = await this.sha256(new Uint8Array([...msg, ...pub])); return this.b58(h) === proof.proofValue.slice(1); }
+    const pub = this.anchorPub(expectedAnchor);
     try {
       const key = await crypto.subtle.importKey('raw', pub, { name: 'Ed25519' }, false, ['verify']);
       return await crypto.subtle.verify({ name: 'Ed25519' }, key, sig, msg);
@@ -376,13 +397,25 @@ class Component extends DCLogic {
 
   // ---------- boot ----------
   async boot() {
+    // a fresh generation: every timer/animation from the previous run checks
+    // this and no-ops if it is stale, so a reset is a clean state boundary
+    this.gen = (this.gen || 0) + 1;
     this.anim = null; this.animEls = null; clearTimeout(this.animT3);
     (this.waAnims || []).forEach(a => { try { a.cancel(); } catch (e) {} });
     this.waAnims = [];
+    if (this.dev) ['A', 'B'].forEach(id => { const d = this.dev[id]; if (d) { clearTimeout(d.autoCapture); d.busy = false; } });
     this.faultDefs.forEach(([k]) => (this.f[k] = false));
+    // No crypto fallback: eddsa-jcs-2022 requires real Ed25519. If the browser
+    // lacks it we say so honestly and stop, rather than serializing SHA-256
+    // stand-ins under a cryptosuite name they do not satisfy.
     try { await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify']); this.edOK = true; }
     catch (e) { this.edOK = false; }
-    this.cryptoBadge = this.edOK ? 'webcrypto: Ed25519 · X25519 · HKDF · AES-GCM' : 'Ed25519 unsupported — proofs are SHA-256 stand-ins';
+    if (!this.edOK) {
+      this.cryptoBadge = 'Ed25519 unsupported — this simulator needs a browser with Ed25519 WebCrypto';
+      this.dev = null; this.log('CH', 'Ed25519 WebCrypto unavailable — simulator cannot run here (no stand-in proofs)');
+      this.bump(); return;
+    }
+    this.cryptoBadge = 'webcrypto: Ed25519 · X25519 · HKDF · AES-GCM';
     this.dev = { A: await this.mkDev('A', 'Anna'), B: await this.mkDev('B', 'Ben') };
     await this.newChallenge(this.dev.A);
     await this.newChallenge(this.dev.B);
@@ -478,8 +511,26 @@ class Component extends DCLogic {
   // ---------- device actions ----------
   other(dev) { return dev.id === 'A' ? this.dev.B : this.dev.A; }
 
+  // mutual is a property of ONE enactment (Encounter 4.2): a credential we
+  // ISSUED and one we RECEIVED must share the same enactmentBinding. Two
+  // independent one-sided enactments merge into one edge but never "mutual".
+  isMutualEnactment(dev, peerAnchor, binding) {
+    const issuedHere = dev.issued.some(i => i.credential.credentialSubject.enactmentBinding === binding);
+    const recvHere = dev.received.some(r => r.issuer === peerAnchor && r.credential.credentialSubject.enactmentBinding === binding);
+    return issuedHere && recvHere;
+  }
+
   onScan(dev) {
     dev.screen = 'scanner'; dev.peer = this.other(dev);
+    // the camera needs a code to look at: if the other device is mid-dialog
+    // (confirm, prompt, …), it briefly jumps back to its displayed QR and
+    // returns to exactly that dialog once the capture is done (5.2: what is
+    // displayed changes, what is retained never does).
+    const peer = dev.peer;
+    if (peer.screen !== 'ready' && peer.screen !== 'fallback' && !peer.resumeScreen) {
+      peer.resumeScreen = peer.screen;
+      peer.screen = 'ready';
+    }
     // the camera recognizes the code by itself — one tap less
     clearTimeout(dev.autoCapture);
     dev.autoCapture = setTimeout(() => {
@@ -488,7 +539,19 @@ class Component extends DCLogic {
     this.bump();
     setTimeout(() => this.animScanStart(dev), 60); // measure after the scanner screen rendered
   }
-  onCancel(dev) { clearTimeout(dev.autoCapture); this.clearAnim(); dev.screen = 'ready'; dev.work = null; this.bump(); }
+  onCancel(dev) { clearTimeout(dev.autoCapture); this.clearAnim(); this.restorePeer(dev); dev.screen = 'ready'; dev.work = null; this.bump(); }
+  restorePeer(dev) {
+    const peer = this.other(dev);
+    if (!peer.resumeScreen) return;
+    peer.screen = peer.resumeScreen;
+    delete peer.resumeScreen;
+    if (peer.screen === 'scanner') { // its own scan was interrupted — re-arm
+      clearTimeout(peer.autoCapture);
+      peer.autoCapture = setTimeout(() => {
+        if (this.dev && this.dev[peer.id] === peer && peer.screen === 'scanner') this.onCapture(peer);
+      }, 2500);
+    }
+  }
 
   // ---------- scan choreography ----------
   // Both phones travel on one smooth arc (quadratic bezier via the Web
@@ -553,14 +616,16 @@ class Component extends DCLogic {
   }
   clearAnim() {
     if (!this.anim) return;
-    // phones glide straight home from wherever they are, staying above the page
+    // phones glide straight home from wherever they are, staying above the page;
+    // register the return flights too, so a reset can cancel them
+    const returns = [];
     Object.values(this.animEls || {}).forEach(el => {
       const cur = getComputedStyle(el).transform;
       (this.waAnims || []).forEach(a => { try { if (a.effect && a.effect.target === el) a.cancel(); } catch (e) {} });
-      if (cur && cur !== 'none') el.animate([{ transform: cur }, { transform: 'none' }],
-        { duration: 750, easing: 'cubic-bezier(.4,0,.2,1)' });
+      if (cur && cur !== 'none') returns.push(el.animate([{ transform: cur }, { transform: 'none' }],
+        { duration: 750, easing: 'cubic-bezier(.4,0,.2,1)' }));
     });
-    this.waAnims = [];
+    this.waAnims = returns;
     const keep = {};
     Object.keys(this.anim.styles).forEach(k => (keep[k] = k === this.anim.scanner ? 'z-index:130;' : 'z-index:120;'));
     this.anim = { scanner: null, styles: keep };
@@ -570,8 +635,14 @@ class Component extends DCLogic {
   onDone(dev) { dev.screen = 'ready'; dev.err = null; this.bump(); }
 
   async onCapture(dev) {
+    if (dev.busy || dev.screen !== 'scanner') return;
+    dev.busy = true;
+    try { await this._onCapture(dev); } finally { dev.busy = false; }
+  }
+  async _onCapture(dev) {
     clearTimeout(dev.autoCapture);
     this.clearAnim(); // recognition: both phones return to their places
+    this.restorePeer(dev); // the borrowed QR screen goes back to its dialog
     const peer = this.other(dev);
     if (peer.screen === 'fallback' && peer.sentCard) {
       // Offline continuation of the SAME enactment: the peer's screen shows
@@ -588,12 +659,17 @@ class Component extends DCLogic {
       // boundTo selects the own challenge under the resolution rule (5.3)
       const res = this.resolveCh(dev, card.boundTo);
       if (res.state === 'unknown') {
+        this.gateExpired = true; // now — and only now — a fresh enactment (E2) is the sanctioned last resort
         dev.err = { title: 'gate-expired', code: 'boundTo resolves unknown (aged out — latched — or never this device’s)', text: 'This enactment cannot complete. Last resort: a fresh enactment — the merge rule keeps it one edge.' };
         dev.screen = 'error'; this.bump(); return;
       }
       if (res.state === 'recorded') {
         const same = (await this.mdigest(res.rec.counterpartyCard)) === (await this.mdigest(card));
-        if (same) { dev.screen = 'prompt'; dev.peer = peer; this.log(dev.id, 're-scan: the one record already exists (idempotent)', 'ok'); this.bump(); return; }
+        if (same) {
+          dev.screen = 'opticalPrompt'; dev.peer = peer; dev.promptBinding = res.rec.enactmentBinding;
+          dev.promptPending = !dev.received.some(r => r.issuer === card.anchor && r.credential.credentialSubject.enactmentBinding === res.rec.enactmentBinding);
+          this.log(dev.id, 're-scan: the one record already exists (idempotent)', 'ok'); this.bump(); return;
+        }
         dev.err = { title: 'Challenge consumed', code: res.rec.counterparty !== card.anchor ? 'consumed by another enactment' : 'same counterparty, different material', text: 'No second record arises (5.5).' };
         dev.screen = 'error'; this.bump(); return;
       }
@@ -610,7 +686,9 @@ class Component extends DCLogic {
       dev.consumed.push(card.boundTo);
       dev.peer = peer;
       dev.thread = peer.outBundle ? peer.outBundle.doc.threadId : dev.thread;
-      dev.screen = 'prompt';
+      // optical leg: only a SENT CARD has arrived — the peer's credential is
+      // still in transit. This is NOT recognition yet (F4/Encounter 4.2).
+      dev.screen = 'opticalPrompt'; dev.promptBinding = bind; dev.promptPending = true;
       this.log(dev.id, 'scanned ' + peer.name + "'s sent card — same enactment, record created optically · their credential follows over the network", 'ok');
       await this.newChallenge(dev);
       this.bump();
@@ -631,6 +709,11 @@ class Component extends DCLogic {
   }
 
   async onConfirm(dev) {
+    if (dev.busy || dev.screen !== 'confirm') return; // one human confirmation = one enactment (C4)
+    dev.busy = true;
+    try { await this._onConfirm(dev); } finally { dev.busy = false; }
+  }
+  async _onConfirm(dev) {
     const peer = this.other(dev);
     const w = dev.work;
     const ceremony = this.C1; // the ONE ceremony — what varies is the carrier, never the ceremony
@@ -670,8 +753,16 @@ class Component extends DCLogic {
   }
 
   async onConfirmBack(dev) {
+    if (dev.busy || (dev.screen !== 'prompt' && dev.screen !== 'opticalPrompt')) return;
+    dev.busy = true;
+    try { await this._onConfirmBack(dev); } finally { dev.busy = false; }
+  }
+  async _onConfirmBack(dev) {
     const peer = this.other(dev);
-    const rec = dev.records.find(r => r.counterparty === peer.anchor);
+    // the record this prompt is about (F9): the enactment that triggered it,
+    // never simply the first record for this counterparty
+    const rec = dev.records.find(r => r.enactmentBinding === dev.promptBinding)
+      || dev.records.find(r => r.counterparty === peer.anchor);
     const n = this.now(dev);
     const subj = { id: peer.anchor, format: this.CREDF, ceremony: rec.ceremony,
       challenge: rec.peerChallenge, enactmentBinding: rec.enactmentBinding, channel: 'in-person' };
@@ -708,9 +799,15 @@ class Component extends DCLogic {
     } catch (e) { dev.fallbackQr = ''; dev.qrErr = e.message; }
   }
   async onFallback(dev) {
-    // last resort only (the peer's challenge aged out — gate-expired at the
-    // optical leg): a genuinely FRESH ENACTMENT of the same one ceremony;
-    // merge rule 4.2 keeps it one edge.
+    // last resort ONLY after a real optical gate-expired: E2 is reserved for
+    // when boundTo actually resolves unknown (Encounter 5.8). Without that the
+    // same enactment still stands — switching carriers is not a new enactment.
+    if (!this.gateExpired) {
+      this.log(dev.id, 'no gate-expired yet — the same enactment still stands; a fresh scan is not warranted', 'w');
+      this.bump(); return;
+    }
+    this.gateExpired = false;
+    // a genuinely FRESH ENACTMENT of the same one ceremony; merge rule 4.2 keeps it one edge.
     const peer = this.other(dev);
     dev.fallbackBanner = true; peer.fallbackBanner = true;
     dev.ackDeadline = 0; dev.outBundle = null; dev.fallbackQr = '';
@@ -727,8 +824,8 @@ class Component extends DCLogic {
     const recCard = to.card;
     const { sealed, plaintext } = await this.seal(doc, to.kaKey, to.ka.raw, null);
     const env = { k: ++this.seq, from: from.id, to: to.id, doc, digest, sealed, plaintext, type: doc.type.split('trust-tasks/')[1],
-      status: 'accepted', stages: [], at: Date.now(), delivered: false };
-    from.sent[digest] = { status: 'accepted', type: env.type, threadId: doc.threadId };
+      status: 'accepted', stages: [], at: Date.now(), delivered: false, gen: this.gen };
+    from.sent[digest] = { status: 'accepted', type: env.type, threadId: doc.threadId, recipient: doc.recipient };
     from.thread = doc.threadId;
     if (env.type.startsWith('encounter-bundle')) from.outBundle = env;
     this.channel.unshift(env);
@@ -747,6 +844,7 @@ class Component extends DCLogic {
     this.bump();
   }
   tryDeliver(env, again) {
+    if (env.gen !== this.gen || !this.dev) return; // stale envelope from a previous run
     const from = this.dev[env.from];
     const to = this.dev[env.to];
     if (!from.online) {
@@ -768,15 +866,24 @@ class Component extends DCLogic {
     const push = (label, ok) => { st.push({ label, ok }); return ok; };
     let disp = null;
     try {
-      if (!push('1 size bound ≤ 65536 B (' + env.plaintext.length + ' B)', env.plaintext.length <= 65536)) disp = 'failed(oversize)';
-      else if (!push('2 envelope schema · base64url canonical · rkid known', !!dev.keyStore[env.sealed.rkid])) disp = 'failed(malformed)';
+      // stage 1: size of the actual sealed ciphertext, before decryption
+      const ctLen = this.ub64u(env.sealed.ciphertext || '').length;
+      if (!push('1 size bound: ciphertext − tag ≤ 65536 B (' + Math.max(0, ctLen - 16) + ' B)', ctLen >= 16 && ctLen - 16 <= 65536)) disp = 'failed(oversize)';
+      // stage 2: envelope schema — base64url canonical (round-trips), field lengths, rkid known
+      else if (!push('2 envelope: base64url canonical · epk 32 B · nonce 12 B · rkid known',
+        this.b64uCanonical(env.sealed.epk) && this.ub64u(env.sealed.epk).length === 32
+        && this.b64uCanonical(env.sealed.nonce) && this.ub64u(env.sealed.nonce).length === 12
+        && this.b64uCanonical(env.sealed.ciphertext) && !!dev.keyStore[env.sealed.rkid])) disp = 'failed(malformed)';
       else {
         let pt = null;
         try { pt = await this.unseal(dev, env.sealed); } catch (e) { pt = null; }
         if (!push('3 decryption · X25519 + HKDF(rltp/v1/seal) + AES-256-GCM tag', !!pt)) disp = 'failed(decryption-failed)';
         else {
-          const doc = JSON.parse(pt);
-          const digest = await this.mdigest(pt);
+          let doc = null; try { doc = JSON.parse(pt); } catch (e) { doc = null; }
+          if (!doc || typeof doc !== 'object') { push('4 parse — not a JSON object', false); disp = 'failed(malformed)'; }
+          else {
+          // digest over the canonical form of the PARSED document (not the raw bytes)
+          const digest = await this.mdigest(doc);
           const known = dev.cache[digest];
           push('4 parse + digest ' + digest.slice(0, 14) + '… · completed-effect cache', true);
           if (known) {
@@ -784,7 +891,12 @@ class Component extends DCLogic {
             disp = 'duplicate-known';
             if (known.ack) await this.resendAck(dev, known);
           } else {
-            if (!push('5 document profile + recipient = own anchor', doc.recipient === dev.anchor)) disp = 'failed(wrong-recipient)';
+            // stage 5: document profile (required members, no expiresAt) THEN recipient
+            const prof = doc.id && doc.type && doc.issuer && doc.recipient && doc.threadId
+              && doc.issuedAt && !Number.isNaN(Date.parse(doc.issuedAt)) && !('expiresAt' in doc)
+              && doc.payload && typeof doc.payload === 'object';
+            if (!push('5 document profile · required members, no expiresAt', prof)) disp = 'failed(malformed)';
+            else if (!push('5 recipient = own anchor', doc.recipient === dev.anchor)) disp = 'failed(wrong-recipient)';
             else {
               const type = doc.type.replace(this.TT, '');
               const known3 = ['encounter-bundle/0.1', 'delivery-ack/0.1', 'encounter-credential-delivery/0.1'].includes(type);
@@ -801,16 +913,20 @@ class Component extends DCLogic {
               }
             }
           }
+          }
         }
       }
     } catch (e) { st.push({ label: 'internal: ' + e.message, ok: false }); disp = disp || 'failed(malformed)'; }
     env.stages = st;
     env.disposition = disp;
     env.delivered = true;
-    env.status = (disp === 'unique' || disp === 'duplicate-known') ? disp : disp;
+    env.status = disp;
     const from = this.dev[env.from];
     if (disp && disp.startsWith('failed') && from.sent[env.digest]) {
-      from.sent[env.digest].status = disp;
+      // sender-side status is the CLOSED form (Contract 4.2): the sender never
+      // adopts the receiver's raw disposition, only rejected-by-receiver(reason)
+      const reason = (disp.match(/^failed\((.+)\)$/) || [, disp])[1];
+      from.sent[env.digest].status = 'failed(rejected-by-receiver(' + reason + '))';
       if (env.type.startsWith('encounter-bundle')) { from.ackDeadline = Math.min(from.ackDeadline || Infinity, Date.now() + 1200); }
     }
     this.log(dev.id, env.type + ' → ' + disp, disp === 'unique' || disp === 'duplicate-known' ? 'ok' : 'e');
@@ -821,18 +937,32 @@ class Component extends DCLogic {
     if (type === 'delivery-ack/0.1') {
       const body = { ...doc }; delete body.proof;
       const sig = await this.verify(doc.issuer, body, doc.proof);
-      if (!st.push({ label: '8 ack proof verifies under issuer anchor', ok: sig }) && !sig) return { ok: false, disp: 'failed(validation-failed)' };
-      const sent = dev.sent[doc.payload.ref];
-      const cons = !!sent && sent.threadId === doc.threadId && doc.issuer !== dev.anchor;
-      st.push({ label: '8 ref matches a document we sent on this thread', ok: cons });
-      if (!sig || !cons) return { ok: false, disp: 'failed(validation-failed)' };
+      st.push({ label: '8 ack proof verifies under issuer anchor', ok: sig });
+      // match the ref semantically (u AND z multibase), then require the ack to
+      // come from exactly the anchor we sent that document to (Contract 4.2)
+      let sentKey = null, sent = null;
+      for (const k in dev.sent) { if (this.sameDigest(k, doc.payload.ref)) { sentKey = k; sent = dev.sent[k]; break; } }
+      const authentic = !!sent && sent.threadId === doc.threadId && doc.issuer === sent.recipient && doc.recipient === dev.anchor;
+      st.push({ label: '8 ack is from the recipient we sent to, same thread' + (authentic ? '' : ' — forged/misrouted'), ok: authentic });
+      if (!sig || !authentic) return { ok: false, disp: 'failed(validation-failed)' };
+      doc.__ackKey = sentKey;
       return { ok: true };
     }
     const cred = doc.payload.credential;
+    const outer = doc.issuer === cred.issuer && doc.recipient === cred.credentialSubject.id;
+    // credential-delivery: the delivery effect (buffer + ack) depends ONLY on
+    // document/payload schema and outer/inner consistency — NEVER on the
+    // credential signature. Acceptance (5.6, incl. the signature) runs later
+    // and is never signalled back.
+    if (type === 'encounter-credential-delivery/0.1') {
+      st.push({ label: '8 outer/inner consistency · issuer = credential.issuer, recipient = subject', ok: outer });
+      const cerOk = !doc.ceremony || !doc.ceremony.enactment || doc.ceremony.enactment === cred.credentialSubject.enactmentBinding;
+      st.push({ label: '8 ceremony.enactment (if present) matches enclosed credential', ok: cerOk });
+      return (outer && cerOk) ? { ok: true } : { ok: false, disp: 'failed(validation-failed)' };
+    }
     const cbody = { ...cred }; delete cbody.proof;
     const csig = await this.verify(cred.issuer, cbody, cred.proof);
     st.push({ label: '8 credential proof (eddsa-jcs-2022) verifies' + (csig ? '' : ' — ERR_SIG'), ok: csig });
-    const outer = doc.issuer === cred.issuer && doc.recipient === cred.credentialSubject.id;
     st.push({ label: '8 outer/inner consistency · issuer = credential.issuer, recipient = subject', ok: outer });
     let extra = true;
     if (type === 'encounter-bundle/0.1') {
@@ -891,7 +1021,7 @@ class Component extends DCLogic {
     const from = this.dev[env.from];
     if (type === 'delivery-ack/0.1') {
       st.push({ label: '9 effect: sender status accepted → delivered', ok: true });
-      dev.sent[doc.payload.ref].status = 'delivered';
+      if (doc.__ackKey && dev.sent[doc.__ackKey]) dev.sent[doc.__ackKey].status = 'delivered';
       dev.cache[digest] = { disposition: 'unique' };
       if (dev.screen === 'waiting' || dev.screen === 'fallback') { dev.screen = 'delivered'; dev.ackDeadline = 0; }
       this.log(dev.id, 'ack valid · delivered (arrival, never acceptance)', 'ok');
@@ -906,8 +1036,10 @@ class Component extends DCLogic {
           const ack = await this.mkAck(dev, doc, digest);
           dev.cache[digest] = { disposition: 'unique', ack };
           st.push({ label: '9 credential accepted via existing record · ack enqueued', ok: true });
-          const mutual = dev.issued.some(i => i.subject === cred.issuer);
-          if (mutual && (dev.screen === 'prompt' || dev.screen === 'ready' || dev.screen === 'oneSided' || dev.screen === 'verifiedBack')) dev.screen = 'confirmed';
+          const mutual = this.isMutualEnactment(dev, cred.issuer, cred.credentialSubject.enactmentBinding);
+          if (mutual && (dev.screen === 'prompt' || dev.screen === 'opticalPrompt' || dev.screen === 'ready' || dev.screen === 'oneSided' || dev.screen === 'verifiedBack')) dev.screen = 'confirmed';
+          // credential now HELD: an optical prompt is no longer "pending"
+          else if (dev.screen === 'opticalPrompt' && cred.credentialSubject.enactmentBinding === dev.promptBinding) dev.promptPending = false;
           this.log(dev.id, 'network bundle arrived after optical completion · credential accepted, edge ' + (mutual ? 'mutual' : 'incoming'), 'ok');
           await this.send(dev, this.dev[env.from], ack);
           return 'unique';
@@ -935,6 +1067,7 @@ class Component extends DCLogic {
       dev.cache[digest] = { disposition: 'unique', ack };
       st.push({ label: '9 one transaction: record + accepted credential + cache entry + ack enqueued', ok: true });
       dev.peer = this.other(dev);
+      dev.promptBinding = bind; dev.promptPending = false; // credential is HELD — real recognition
       dev.thread = doc.threadId;
       dev.screen = 'prompt';
       this.log(dev.id, 'bundle accepted · credential is accepted, no later check can fail it', 'ok');
@@ -954,10 +1087,10 @@ class Component extends DCLogic {
     if (acc.ok) {
       dev.received.push({ credential: cred, digest: await this.mdigest(cred), direction: 'incoming', issuer: cred.issuer });
       dev.ackDeadline = 0; dev.fallbackBanner = false;
-      const mutual = dev.issued.some(i => i.subject === cred.issuer);
+      const mutual = this.isMutualEnactment(dev, cred.issuer, cred.credentialSubject.enactmentBinding);
       dev.peer = this.other(dev);
       dev.screen = mutual ? 'confirmed' : 'prompt';
-      this.log(dev.id, 'counter-credential accepted · fallback offer cancelled · edge mutual', 'ok');
+      this.log(dev.id, 'counter-credential accepted · edge ' + (mutual ? 'mutual' : 'incoming'), 'ok');
     } else { this.log(dev.id, 'credential rejected: ' + acc.code, 'e'); }
     return 'unique';
   }
@@ -1006,10 +1139,10 @@ class Component extends DCLogic {
       }
     });
     this.channel.forEach(env => {
-      if (env.pending && !this.f.hold && this.dev[env.to].online && this.dev[env.from].online) {
+      if (env.gen === this.gen && env.pending && !this.f.hold && this.dev[env.to].online && this.dev[env.from].online) {
         const again = env.pending === 'dup'; env.pending = null; env.status = 'accepted';
         this.receive(env, again);
-        if (env.pendingDup) { env.pendingDup = false; setTimeout(() => this.tryDeliver(env, true), 1200); }
+        if (env.pendingDup) { env.pendingDup = false; const g = this.gen; setTimeout(() => { if (this.gen === g) this.tryDeliver(env, true); }, 1200); }
       }
     });
     this.setState(s => ({ tick: s.tick + 1 }));
@@ -1024,7 +1157,9 @@ class Component extends DCLogic {
     const ageS = Math.max(0, Math.round(ageMs / 1000));
     const left = dev.ackDeadline ? Math.max(0, Math.ceil((dev.ackDeadline - Date.now()) / 1000)) : 0;
     const enact = dev.records.filter(r => r.counterparty === peer.anchor).length;
-    const mutual = dev.issued.some(i => i.subject === peer.anchor) && dev.received.some(r => r.issuer === peer.anchor);
+    // mutual is per-enactment (Encounter 4.2): issued and received must share a binding
+    const mutual = dev.issued.some(i => dev.received.some(r =>
+      r.issuer === peer.anchor && r.credential.credentialSubject.enactmentBinding === i.credential.credentialSubject.enactmentBinding));
     const w = dev.work;
     return {
       name: dev.name, anchorShort: dev.anchor.slice(0, 20) + '…' + dev.anchor.slice(-6),
@@ -1034,12 +1169,18 @@ class Component extends DCLogic {
       skewLabel: 'clock ' + (dev.skew === 0 ? '±0' : (dev.skew > 0 ? '+' : '') + Math.round(dev.skew / 60000) + 'm'),
       skewBg: dev.skew === 0 ? 'transparent' : 'oklch(35% 0.09 55)',
       toggleOnline: () => { dev.online = !dev.online; this.log(dev.id, dev.online ? 'back online' : 'went offline · envelopes wait in the channel', 'w'); this.bump(); },
-      cycleSkew: () => { dev.skew = dev.skew === 0 ? 7 * 60 * 1000 : dev.skew > 0 ? -7 * 60 * 1000 : 0; this.log(dev.id, 'clock offset ' + Math.round(dev.skew / 60000) + ' min · skew always widens, never rejects', 'w'); this.bump(); },
+      cycleSkew: () => { dev.skew = dev.skew === 0 ? 4 * 60 * 1000 : dev.skew > 0 ? -4 * 60 * 1000 : 0; this.log(dev.id, 'clock offset ' + Math.round(dev.skew / 60000) + ' min · within PT5M skew tolerance — widens the window, never rejects', 'w'); this.bump(); },
       isReady: scr === 'ready', isScanner: scr === 'scanner', isConfirm: scr === 'confirm', isWaiting: scr === 'waiting',
-      isDelivered: scr === 'delivered', isPrompt: scr === 'prompt', isFallback: scr === 'fallback',
+      isDelivered: scr === 'delivered', isPrompt: scr === 'prompt' || scr === 'opticalPrompt', isFallback: scr === 'fallback',
       bundleQr: dev.fallbackQr || '',
       isConfirmed: scr === 'confirmed', isOneSided: scr === 'oneSided', isError: scr === 'error',
       isVerifiedBack: scr === 'verifiedBack',
+      // honest prompt copy: only real when the peer's CREDENTIAL is held
+      promptRecognized: !dev.promptPending,
+      promptTitle: dev.promptPending ? 'You met ' + peer.name : peer.name + ' recognized you',
+      promptSub: dev.promptPending
+        ? peer.name + "'s credential is still on its way — you can verify them back now"
+        : 'One-sided is a legitimate outcome. Nothing goes back unless you confirm.',
       qr: dev.qr,
       peerQr: (peer.screen === 'fallback' && peer.fallbackQr) ? peer.fallbackQr : peer.qr,
       peerName: peer.name, peerInitial: peer.name.slice(0, 1), selfInitial: dev.name.slice(0, 1),
