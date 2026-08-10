@@ -37,29 +37,18 @@ witnessed succession, specified separately in *RLTP Succession*
 
 ## Status of This Document
 
-This is an **Editor's Draft**, developed through an adversarial
-convergence process: every casting is reviewed in full by an
-independent adversarial reviewer, findings are triaged, and the
-document is recast — never patched — until a casting is judged
-blocker-free and compatibly implementable. The nineteenth casting is
-the current one; its final review round returned **no findings**.
-
-What this version specifies, in one paragraph: **one registered
-ceremony**, `encounter-scan@0.19`, with a connected path (the bundle
-travels through the delivery service) and an offline path (the sent
-card is presented optically; the credential follows later and is
-accepted via the enactment record). Switching between the paths is
-free in both directions at any moment — the application switches the
-carrier of the enactment material, never the ceremony. Every
-acceptance branch is selected by the **own-challenge state model**
-(5.3): a value resolves to `open`, `recorded`, or `unknown` under a
-normative precedence algorithm with a monotone aging latch, which
-makes the outcome deterministic under challenge rotation, races,
-restarts, and backward-moving clocks. Sent cards carry `boundTo`, so
-the optical receiver always knows which of its own challenges an
-enactment answers. Mutuality is held, never inferred. The
-transmission leg is specified by normative reference to the **RLTP
-Delivery Contract 0.17**. Open issues: Section 16.
+This is an **Editor's Draft** with no standing beyond its own
+argument. It is developed through an adversarial convergence process:
+every casting is reviewed in full by an independent adversarial
+reviewer, findings are triaged, and the document is recast — never
+patched — until a casting is judged blocker-free and compatibly
+implementable. The current casting is the nineteenth; its review
+round returned no findings. The transmission leg is specified by
+normative reference to the **RLTP Delivery Contract 0.17**, which
+converged alongside. The document will keep changing as
+implementation experience accumulates; known open questions are
+collected in Section 16. Feedback is welcome via the issues of the
+publication repository (github.com/real-life-org/rltp-spec).
 
 ## 1. Introduction (informative)
 

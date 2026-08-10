@@ -32,27 +32,16 @@ travel in.
 
 ## Status of This Document
 
-This is an **Editor's Draft**, developed through the same adversarial
-convergence process as the Encounter Layer (casting, independent
-adversarial review, full recast — never a patch). The seventeenth
-casting is the current one; its final review round returned **no
-findings**.
-
-What this version specifies, in one paragraph: how the documents of
-the `encounter-scan` ceremony travel and land. Every bundle branch is
-selected by **challenge resolution** (Encounter 5.3) inside a
-critical section keyed on the document digest and the record key:
-`open` selects the record-creating effect (explicit future check,
-`gate-future`), `recorded` lets the record decide
-(`consumed-challenge` for a foreign counterparty, record-aware
-acceptance otherwise — the enclosed card must be JCS-identical to the
-card the record stores), and `unknown` is `failed(validation-failed)`
-— the expiry side of the gate is structural, so no `gate-expired`
-disposition exists for bundles. The acknowledgement is arrival-only,
-proof-carrying, and **terminal** (no acknowledgement of an
-acknowledgement); retired key identifiers remain known as tombstones
-so a retired-key envelope fails honestly at decryption. Open issues:
-Section 12.
+This is an **Editor's Draft** with no standing beyond its own
+argument. It is developed together with the Encounter Layer through
+an adversarial convergence process — each casting is reviewed in full
+by an independent adversarial reviewer and recast, never patched. The
+current casting is the seventeenth; its review round returned no
+findings, and the pair was judged blocker-free and compatibly
+implementable. The document will keep changing as implementation
+experience accumulates; known open questions are collected in
+Section 12. Feedback is welcome via the issues of the publication
+repository (github.com/real-life-org/rltp-spec).
 
 ## 1. Introduction (informative)
 
