@@ -1,0 +1,47 @@
+{
+  "$comment": "RLTP's two-way-scan ceremony expressed in the ToIP DTGWG ceremony-definition format (informative interop artifact). The normative definition is spec/encounter-layer.md 5.8; this file exists so DTGWG tooling can read the RLTP ceremony, and to concretely instantiate the loosely described derivation of the registry's mutual-attestation/0.1.",
+  "slug": "rltp-two-way-scan",
+  "version": "0.9",
+  "title": "RLTP two-way scan (offline mutual encounter)",
+  "summary": "Both parties display and scan each other's contact cards, each confirms recognition, and each issues the other an encounter credential. No third party, no ordering, no network during the enactment; credentials may move long afterwards.",
+  "status": "draft",
+  "targetFrameworkVersion": "0.4",
+  "authors": ["Anton Tranelis (Real Life Organisation)"],
+  "keywords": ["offline", "bilateral", "local-first", "web-of-trust", "rltp"],
+  "roles": {
+    "first-person": { "description": "One of the two people present; the name distinguishes, it does not order.", "cardinality": "one" },
+    "second-person": { "description": "The other person present.", "cardinality": "one" }
+  },
+  "steps": {
+    "attest-first": {
+      "kind": "task",
+      "type": "https://real-life.org/trust-tasks/encounter-credential-delivery/0.1",
+      "issuer": "first-person",
+      "recipient": "second-person",
+      "description": "Delivers the encounter credential this party issues about the other, binding the other's fresh challenge. Anchor-rooted; simultaneous with attest-second.",
+      "prev": [],
+      "terminal": true
+    },
+    "attest-second": {
+      "kind": "task",
+      "type": "https://real-life.org/trust-tasks/encounter-credential-delivery/0.1",
+      "issuer": "second-person",
+      "recipient": "first-person",
+      "description": "The mirror of attest-first.",
+      "prev": [],
+      "terminal": true
+    }
+  },
+  "anchor": {
+    "kind": "coDerived",
+    "boundBy": ["first-person", "second-person"],
+    "derivation": "The RLTP enactment binding (Encounter Layer 5.4): a multibase-encoded multihash over the JCS canonicalization of {ceremony, challenges}, where the challenges are the two fresh single-use values (>=128 bits each) from the two exchanged contact cards -- material neither party could have produced alone. This concretely instantiates the derivation the DTGWG registry's mutual-attestation/0.1 describes loosely."
+  },
+  "completion": { "allOf": ["attest-first", "attest-second"] },
+  "evidence": { "level": "countersigned" },
+  "maxDuration": "PT1H",
+  "enactmentPrivacy": "plain",
+  "sideEffects": { "level": "mutating", "rationale": "Each party mints an immutable, never-revoked encounter credential about the other." },
+  "exposure": { "discloses": "secret", "actsAsSubject": true, "rationale": "Each step delivers credential material the other party retains. enactmentPrivacy is plain, deliberately: under RLTP's stable anchors the credential pair is correlatable from the anchors alone, so blinding the enactment identifier would claim a privacy property the anchors do not support. RLTP states this honestly (Encounter Layer, Privacy Considerations)." },
+  "related": ["https://github.com/trustoverip/dtgwg-trust-tasks-tf/blob/main/ceremonies/mutual-attestation/0.1/ceremony.json"]
+}

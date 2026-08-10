@@ -1,0 +1,8 @@
+{
+  "name": "rltp-spec",
+  "private": true,
+  "type": "module",
+  "description": "Publication checks for the RLTP specifications",
+  "scripts": { "validate": "node scripts/validate.mjs" },
+  "devDependencies": { "ajv": "^8.17.1" }
+}

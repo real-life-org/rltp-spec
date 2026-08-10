@@ -1,0 +1,37 @@
+{
+  "description": "RLTP Delivery Contract 0.7 section 5 seal vector. Digests are multibase(multihash) per CID 1.0. SEAL-ONLY SAMPLE: the plaintext document uses the reserved sample type and exercises the construction of section 5, not the document profile; it MUST NOT be processed as a delivery document. Deterministic inputs; implementations MUST reproduce ciphertext and documentDigest byte-for-byte.",
+  "inputs": {
+    "recipientPrivateKeyRaw": "CgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgo",
+    "recipientPublicKeyRaw": "93_0sQeIv9ymLKC7Fg1CfPV2LYXytcrWgH7Jw_673gk",
+    "rkid": "z6LStLK2kxribiLHz6U4vpGfzMtmgc4q5WjR4mvhS6KG1W16",
+    "ephemeralPrivateKeyRaw": "CwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCws",
+    "nonce": "DAwMDAwMDAwMDAwM",
+    "document": {
+      "id": "11111111-2222-4333-8444-555555555555",
+      "issuedAt": "2026-08-10T12:00:00Z",
+      "issuer": "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+      "payload": {
+        "meaning": "received",
+        "ref": "uEiANDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ"
+      },
+      "recipient": "did:key:z6MkjchhfUsD6mmvni8mCdXHw216Xrm9bQe2mBH1P5RDjVJG",
+      "threadId": "99999999-8888-4777-a666-555555555555",
+      "type": "https://real-life.org/trust-tasks/seal-vector-sample/0.1"
+    }
+  },
+  "intermediate": {
+    "plaintextJcs": "{\"id\":\"11111111-2222-4333-8444-555555555555\",\"issuedAt\":\"2026-08-10T12:00:00Z\",\"issuer\":\"did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK\",\"payload\":{\"meaning\":\"received\",\"ref\":\"uEiANDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ\"},\"recipient\":\"did:key:z6MkjchhfUsD6mmvni8mCdXHw216Xrm9bQe2mBH1P5RDjVJG\",\"threadId\":\"99999999-8888-4777-a666-555555555555\",\"type\":\"https://real-life.org/trust-tasks/seal-vector-sample/0.1\"}",
+    "sharedSecret": "wJ2KF_VPBqU_hE6svGJzAXWBubxTtfMfPTOMw__XuGs",
+    "hkdfInfo": "rltp/v1/seal",
+    "aesKey": "_cXntSwE-neUfOxJZdOJCopdY-jNCH--68_L0JZ5eNM"
+  },
+  "output": {
+    "sealedEnvelope": {
+      "rkid": "z6LStLK2kxribiLHz6U4vpGfzMtmgc4q5WjR4mvhS6KG1W16",
+      "epk": "c7LYt2qptTZgAyvI9di-46OuTjs6f9Sa3oH3NHo0qmg",
+      "nonce": "DAwMDAwMDAwMDAwM",
+      "ciphertext": "spEE13Z8F8xxHBCL9hOFenGvUUN0yxwi1UuB8H_6WmVmqV8t6P3iLuzliTKI42fKkSxoa3CzQXzQWQKsH0sy2gW7nY68Ge78IN9BgpKie_uOFWZC1Y1FMwiwgnkancL_n5H3A9_ZQfa3B_OcXED_gMDOeO7gWzfd_1CGuX3JHk1tNkXBQu6hku3ljK0O7dRYwK6uukHFTi67noCzCA0h4uSichwl9VeQ6TtxBL_zPrMV6GQA5yCD3lqz6aEEfshT-cVPw0tYy0ITrZVIgzRxlsumuLzuJ4hb48RXjv5-HXN1EkL7X_n9J0gyUClua0PjdYqVyZvj20PkmSczufM0ejDwgicLBRdiV4BdkrOxTiAjIAZURxkmwfZEUSRZFh9_LiKo4t4HmytUvmDCUr-37zu3SUaic4UPS5nsLK5QR0VBHq8THtqFWEHYLhkxODRDaJkP-IDnnc7fSaBqEk9qmjq2LJww3BytAKSs3c8HqWsEH_PmTek6yD22Su2nskGQ3eYJCDXzZxGEa-NGNeqiUrUOppyJQ0vb9kkyRoHNW_T3OgPfIEqnOAFpS_EtypvZDiMNMzabHA"
+    },
+    "documentDigest": "uEiAP1JJxup-V-g7lQVzRKJSxPKug1RDGvdI80l4dY8tpeQ"
+  }
+}
