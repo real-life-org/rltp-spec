@@ -16,7 +16,7 @@ been exercised at festivals and community gatherings since 2026.
 
 | Path | Content |
 |---|---|
-| [`spec/encounter-layer.md`](spec/encounter-layer.md) | **RLTP Encounter Layer** — how two people establish, record, and maintain mutual recognition: ceremonies (`two-way-scan`, offline; `one-way-scan-online`, connected with offline fallback), contact cards, challenges, the enactment binding, encounter credentials, edges |
+| [`spec/encounter-layer.md`](spec/encounter-layer.md) | **RLTP Encounter Layer** — how two people establish, record, and maintain mutual recognition: the one registered ceremony (`encounter-scan`, with a connected path and an offline path and free switching between them), contact cards, challenges, the own-challenge state model, the enactment binding, encounter credentials, edges |
 | [`spec/delivery-contract.md`](spec/delivery-contract.md) | **RLTP Delivery Contract** — how documents travel: private Trust Task types (`encounter-bundle`, `delivery-ack`, `encounter-credential-delivery`), the sealed envelope, staged dispositions, delivery promises |
 | [`schemas/`](schemas/) | Normative JSON Schemas for every wire artifact |
 | [`contexts/`](contexts/) | The pinned RLTP JSON-LD context |
@@ -31,7 +31,15 @@ adversarial convergence process: each casting is reviewed by an
 independent adversarial reviewer, findings are triaged, and the
 document is fully recast — never patched — until a casting pair is
 judged **blocker-free and compatibly implementable**. The current pair
-(Encounter 0.9 · Delivery Contract 0.7) has reached that criterion.
+(Encounter 0.19 · Delivery Contract 0.17) has reached that criterion —
+its final review round returned no findings. Notable in this pair: the
+two earlier ceremonies are unified into one with a connected and an
+offline path; a formally complete own-challenge state model
+(open / recorded / unknown) with a monotone aging latch makes every
+acceptance branch deterministic under challenge rotation, races,
+restarts, and backward-moving clocks; and sent cards carry `boundTo`
+so the optical receiver always knows which of its own challenges an
+enactment answers.
 
 The Identity layer (the interim securing profile in Encounter §2.3 will
 move there), the Access layer, and the Data layer are in earlier stages

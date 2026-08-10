@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://real-life.org/rltp/v1/schemas/contact-card.schema.json",
-  "title": "RLTP Contact Card (rltp-encounter@0.9)",
-  "description": "Normative wire format per RLTP Encounter Layer 0.9 section 6. The root is CLOSED. The challenge is REQUIRED whenever the card is used in an enactment. sentTo is REQUIRED on sent cards (names the recipient anchor; receivers reject sent cards without it or with a foreign value) and MUST be absent on displayed cards. Keys are verified decoded (multicodec + 32 bytes).",
+  "title": "RLTP Contact Card (rltp-encounter@0.19)",
+  "description": "Normative wire format per RLTP Encounter Layer 0.19 section 6. The root is CLOSED. The challenge is REQUIRED whenever the card is used in an enactment. sentTo and boundTo are REQUIRED on sent cards (sentTo names the recipient anchor, boundTo the counterparty displayed-challenge value the enactment answers; receivers reject sent cards missing either or with a foreign sentTo) and MUST be absent on displayed cards. Keys are verified decoded (multicodec + 32 bytes).",
   "type": "object",
   "required": [
     "version",
@@ -11,9 +11,13 @@
     "proof"
   ],
   "additionalProperties": false,
+  "dependentRequired": {
+    "sentTo": ["boundTo"],
+    "boundTo": ["sentTo"]
+  },
   "properties": {
     "version": {
-      "const": "rltp-card/0.9"
+      "const": "rltp-card/0.19"
     },
     "anchor": {
       "type": "string",
@@ -45,6 +49,11 @@
       "type": "string",
       "description": "recipient anchor; REQUIRED on sent cards, absent on displayed cards (spec 5.3, 6)",
       "pattern": "^did:key:z6Mk[1-9A-HJ-NP-Za-km-z]{44}$"
+    },
+    "boundTo": {
+      "type": "string",
+      "description": "the counterparty displayed-challenge value this enactment answers; REQUIRED on sent cards (selects the receiver's own challenge under the resolution rule, spec 5.3), absent on displayed cards; in a bundle MUST equal the enclosed credential's bound challenge",
+      "pattern": "^[A-Za-z0-9_-]{22,88}$"
     },
     "name": {
       "type": "string",

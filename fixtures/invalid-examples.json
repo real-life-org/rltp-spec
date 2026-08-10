@@ -4,14 +4,20 @@
     "credential": {
       "schema": "https://real-life.org/rltp/v1/schemas/encounter-credential.schema.json",
       "document": {
-        "@context": ["https://www.w3.org/ns/credentials/v2", "https://real-life.org/rltp/v1"],
-        "type": ["VerifiableCredential", "EncounterCredential"],
+        "@context": [
+          "https://www.w3.org/ns/credentials/v2",
+          "https://real-life.org/rltp/v1"
+        ],
+        "type": [
+          "VerifiableCredential",
+          "EncounterCredential"
+        ],
         "issuer": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
         "validFrom": "2026-08-10T12:00:00Z",
         "credentialSubject": {
           "id": "did:key:z6Mkjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
-          "format": "rltp-encounter-credential/0.9",
-          "ceremony": "two-way-scan@0.9",
+          "format": "rltp-encounter-credential/0.19",
+          "ceremony": "encounter-scan@0.19",
           "challenge": "AAAAAAAAAAAAAAAAAAAAAA",
           "enactmentBinding": "uEiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
         },
@@ -28,10 +34,13 @@
     "card": {
       "schema": "https://real-life.org/rltp/v1/schemas/contact-card.schema.json",
       "document": {
-        "version": "rltp-card/0.9",
+        "version": "rltp-card/0.19",
         "anchor": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
         "keyAgreement": "z6LShhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
-        "challenge": { "value": "AAAAAAAAAAAAAAAAAAAAAA", "issuedAt": "2026-08-10T12:00:00Z" },
+        "challenge": {
+          "value": "AAAAAAAAAAAAAAAAAAAAAA",
+          "issuedAt": "2026-08-10T12:00:00Z"
+        },
         "proof": {
           "type": "DataIntegrityProof",
           "cryptosuite": "eddsa-jcs-2022",
@@ -67,32 +76,195 @@
         "recipient": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
         "threadId": "99999999-8888-4777-a666-555555555555",
         "issuedAt": "2026-08-10T12:00:00Z",
-        "payload": { "ref": "uEiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "meaning": "received" }
+        "payload": {
+          "ref": "uEiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "meaning": "received"
+        }
       }
     }
   },
   "cases": [
-    { "name": "credential root closed: validUntil is structurally impossible (never revoked, never expires)", "base": "credential", "set": { "/validUntil": "2027-01-01T00:00:00Z" } },
-    { "name": "credential root closed: credentialStatus rejected", "base": "credential", "set": { "/credentialStatus": { "id": "https://example.com/status/1" } } },
-    { "name": "legacy DTG type stamp rejected (RLTP-owned type, exactly two entries)", "base": "credential", "set": { "/type": ["VerifiableCredential", "DTGCredential", "WitnessCredential"] } },
-    { "name": "pinned contexts: a third context is rejected", "base": "credential", "set": { "/@context": ["https://www.w3.org/ns/credentials/v2", "https://real-life.org/rltp/v1", "https://example.com/ctx"] } },
-    { "name": "challenge below the 22-char entropy floor (UUID-v4-class values fail)", "base": "credential", "set": { "/credentialSubject/challenge": "AAAAAAAAAAAAAAAAAAAAA" } },
-    { "name": "stale credential format version rejected", "base": "credential", "set": { "/credentialSubject/format": "rltp-encounter-credential/0.8" } },
-    { "name": "closed subject: smuggled peerChallenge rejected", "base": "credential", "set": { "/credentialSubject/peerChallenge": "BBBBBBBBBBBBBBBBBBBBBB" } },
-    { "name": "raw digest without multihash header rejected (43-char legacy form)", "base": "credential", "set": { "/credentialSubject/enactmentBinding": "uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" } },
-    { "name": "calendar-syntax gate: leap second is excluded from the profile", "base": "credential", "set": { "/validFrom": "2026-12-31T23:59:60Z" } },
-    { "name": "wrong cryptosuite rejected", "base": "credential", "set": { "/proof/cryptosuite": "eddsa-rdfc-2022" } },
-    { "name": "card version drift rejected", "base": "card", "set": { "/version": "rltp-card/0.8" } },
-    { "name": "raw unprefixed key-agreement key rejected (Multikey required)", "base": "card", "set": { "/keyAgreement": "zhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh" } },
-    { "name": "challenge without issuance time rejected", "base": "card", "delete": "/challenge/issuedAt" },
-    { "name": "envelope without recipient key identifier rejected", "base": "envelope", "delete": "/rkid" },
-    { "name": "tag-only ciphertext rejected (below 23-char minimum)", "base": "envelope", "set": { "/ciphertext": "AAAAAAAAAAAAAAAAAAAAAA" } },
-    { "name": "non-canonical base64url ciphertext length rejected (mod 4 = 1)", "base": "envelope", "set": { "/ciphertext": "AAAAAAAAAAAAAAAAAAAAAAAAA" } },
-    { "name": "wrong nonce length rejected", "base": "envelope", "set": { "/nonce": "AAAAAAAAAAAAAAA" } },
-    { "name": "ack meaning is a closed one-value set", "base": "ack-payload", "set": { "/meaning": "accepted" } },
-    { "name": "ack ref must carry the multihash header", "base": "ack-payload", "set": { "/ref": "uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" } },
-    { "name": "expiresAt is forbidden on delivery documents (delivery time is unbounded)", "base": "delivery-document", "set": { "/expiresAt": "2026-09-01T00:00:00Z" } },
-    { "name": "reserved public task namespace rejected (private types only)", "base": "delivery-document", "set": { "/type": "https://trusttasks.org/spec/kyc-handoff/1.0" } },
-    { "name": "threadId must be a UUID", "base": "delivery-document", "set": { "/threadId": "not-a-uuid" } }
+    {
+      "name": "credential root closed: validUntil is structurally impossible (never revoked, never expires)",
+      "base": "credential",
+      "set": {
+        "/validUntil": "2027-01-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "credential root closed: credentialStatus rejected",
+      "base": "credential",
+      "set": {
+        "/credentialStatus": {
+          "id": "https://example.com/status/1"
+        }
+      }
+    },
+    {
+      "name": "legacy DTG type stamp rejected (RLTP-owned type, exactly two entries)",
+      "base": "credential",
+      "set": {
+        "/type": [
+          "VerifiableCredential",
+          "DTGCredential",
+          "WitnessCredential"
+        ]
+      }
+    },
+    {
+      "name": "pinned contexts: a third context is rejected",
+      "base": "credential",
+      "set": {
+        "/@context": [
+          "https://www.w3.org/ns/credentials/v2",
+          "https://real-life.org/rltp/v1",
+          "https://example.com/ctx"
+        ]
+      }
+    },
+    {
+      "name": "challenge below the 22-char entropy floor (UUID-v4-class values fail)",
+      "base": "credential",
+      "set": {
+        "/credentialSubject/challenge": "AAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    {
+      "name": "stale credential format version rejected",
+      "base": "credential",
+      "set": {
+        "/credentialSubject/format": "rltp-encounter-credential/0.18"
+      }
+    },
+    {
+      "name": "closed subject: smuggled peerChallenge rejected",
+      "base": "credential",
+      "set": {
+        "/credentialSubject/peerChallenge": "BBBBBBBBBBBBBBBBBBBBBB"
+      }
+    },
+    {
+      "name": "raw digest without multihash header rejected (43-char legacy form)",
+      "base": "credential",
+      "set": {
+        "/credentialSubject/enactmentBinding": "uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    {
+      "name": "calendar-syntax gate: leap second is excluded from the profile",
+      "base": "credential",
+      "set": {
+        "/validFrom": "2026-12-31T23:59:60Z"
+      }
+    },
+    {
+      "name": "wrong cryptosuite rejected",
+      "base": "credential",
+      "set": {
+        "/proof/cryptosuite": "eddsa-rdfc-2022"
+      }
+    },
+    {
+      "name": "card version drift rejected",
+      "base": "card",
+      "set": {
+        "/version": "rltp-card/0.18"
+      }
+    },
+    {
+      "name": "raw unprefixed key-agreement key rejected (Multikey required)",
+      "base": "card",
+      "set": {
+        "/keyAgreement": "zhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh"
+      }
+    },
+    {
+      "name": "challenge without issuance time rejected",
+      "base": "card",
+      "delete": "/challenge/issuedAt"
+    },
+    {
+      "name": "envelope without recipient key identifier rejected",
+      "base": "envelope",
+      "delete": "/rkid"
+    },
+    {
+      "name": "tag-only ciphertext rejected (below 23-char minimum)",
+      "base": "envelope",
+      "set": {
+        "/ciphertext": "AAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    {
+      "name": "non-canonical base64url ciphertext length rejected (mod 4 = 1)",
+      "base": "envelope",
+      "set": {
+        "/ciphertext": "AAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    {
+      "name": "wrong nonce length rejected",
+      "base": "envelope",
+      "set": {
+        "/nonce": "AAAAAAAAAAAAAAA"
+      }
+    },
+    {
+      "name": "ack meaning is a closed one-value set",
+      "base": "ack-payload",
+      "set": {
+        "/meaning": "accepted"
+      }
+    },
+    {
+      "name": "ack ref must carry the multihash header",
+      "base": "ack-payload",
+      "set": {
+        "/ref": "uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    {
+      "name": "expiresAt is forbidden on delivery documents (delivery time is unbounded)",
+      "base": "delivery-document",
+      "set": {
+        "/expiresAt": "2026-09-01T00:00:00Z"
+      }
+    },
+    {
+      "name": "reserved public task namespace rejected (private types only)",
+      "base": "delivery-document",
+      "set": {
+        "/type": "https://trusttasks.org/spec/kyc-handoff/1.0"
+      }
+    },
+    {
+      "name": "threadId must be a UUID",
+      "base": "delivery-document",
+      "set": {
+        "/threadId": "not-a-uuid"
+      }
+    },
+    {
+      "base": "card",
+      "name": "sentTo without boundTo rejected (co-presence, dependentRequired)",
+      "set": {
+        "/sentTo": "did:key:z6Mkjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj"
+      }
+    },
+    {
+      "base": "card",
+      "name": "boundTo without sentTo rejected (co-presence, dependentRequired)",
+      "set": {
+        "/boundTo": "BBBBBBBBBBBBBBBBBBBBBB"
+      }
+    },
+    {
+      "base": "card",
+      "name": "boundTo below the 22-char entropy floor rejected",
+      "set": {
+        "/sentTo": "did:key:z6Mkjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
+        "/boundTo": "zukurz"
+      }
+    }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://real-life.org/rltp/v1/schemas/rltp-delivery-document.schema.json",
-  "title": "RLTP Delivery Document Profile (rltp-delivery@0.7)",
+  "title": "RLTP Delivery Document Profile (rltp-delivery@0.17)",
   "description": "Outer-member profile per Delivery Contract section 3 for Trust Task documents (target framework 0.4) of RLTP task types. Payload content is governed by the type's payload schema, whose $id is the Type URI. proof is REQUIRED on delivery-ack and MUST be absent on the other types of this casting (enforced in prose; this schema admits both shapes). Offline rule: all $refs resolve from the local registry; network resolution is forbidden.",
   "type": "object",
   "required": ["id", "type", "issuer", "recipient", "threadId", "issuedAt", "payload"],

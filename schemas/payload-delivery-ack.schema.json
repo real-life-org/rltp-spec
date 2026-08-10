@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://real-life.org/trust-tasks/delivery-ack/0.1",
-  "title": "Payload: delivery-ack/0.1 (rltp-delivery@0.7, target Trust Tasks framework 0.4)",
+  "title": "Payload: delivery-ack/0.1 (rltp-delivery@0.17, target Trust Tasks framework 0.4)",
   "description": "Payload schema per Trust Tasks 6.3 ($id = Type URI, describes only the payload). Arrival acknowledgement per Delivery Contract 4.2: machine-generated at the durable recording of the referenced document's defined effect; the document carrying this payload MUST carry a proof under its issuer anchor; meaning is arrival only, never acceptance or any human act.",
   "type": "object",
   "required": [

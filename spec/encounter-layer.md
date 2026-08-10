@@ -3,11 +3,11 @@
 **Real Life Trust Protocol — Layer 2: Encounter**
 
 - **Status:** Editor's Draft
-- **Version:** 0.9.0-draft (ninth casting)
+- **Version:** 0.19.0-draft (nineteenth casting)
 - **Editors:** Anton Tranelis
 - **Date:** 2026-08-10
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
-- **Conformance profile:** `rltp-encounter@0.9` (draft)
+- **Conformance profile:** `rltp-encounter@0.19` (draft)
 - **Supersedes on adoption:** `02-wot-trust/001-encounter credentials.md` and
   `002-verifikation.md` (wot-spec v0.1, German); see Appendix B.
 
@@ -24,9 +24,9 @@ whose product is an **encounter credential**, immutable and issued to
 the person it is about. Credentials between two anchors form an
 **edge**, which may be one-sided or mutual; recognition is mutual when
 both parties confirm, and one-sided outcomes are legitimate. Every
-ceremony produces the same kind of credential; which ceremony an
-application enacts — the connected one-scan flow or the offline
-two-scan flow — is the application's choice, made per situation.
+ceremony produces the same kind of credential; the one registered
+ceremony has a connected path and an offline path, and the application
+switches carriers — never ceremonies — as conditions change.
 Relations that are not encounters exist as paths in the graph and are
 computed rather than asserted.
 
@@ -37,17 +37,47 @@ witnessed succession, specified separately in *RLTP Succession*
 
 ## Status of This Document
 
-Ninth casting — the upstream-alignment casting after convergence
-(the internal design journal). One normative change: every
-digest in this family becomes a **multibase-encoded multihash** over
-JCS (2.3), format-identical to DTGWG `digestMultibase` (their PR #207,
-DTG issue #37), so one verifier serves both ecosystems; emit `u`,
-accept `u`/`z` per CID 1.0. Informative additions: the upstream
-`mutual-attestation/0.1` ceremony as the DTGWG expression of this
-layer's mutual encounter (Appendix C), and their `blinded` enactment
-privacy and 1:N group sketch as noted material (14, OI-1). The
-transmission leg is specified by normative reference to the **RLTP
-Delivery Contract 0.7**. Open issues: Section 16.
+Nineteenth casting — the wording-alignment casting: one editorial contradiction from round 11 resolved (Contract 4.1 pre-lock preamble now names the aging latch as its one write, matching 5.3). Eighteenth casting — the monotone-latch casting
+(`../design/pair-review10-2026-08.md`). Round 10 showed the round-9
+rule still leaked: the provisional resolution was defined read-only,
+so its age observation died on the way to the lock, and the skipped
+pre-lock checks would never have been completed had the state moved.
+Two rules close this for good (5.3, Contract 4.1): **the aging latch
+is the one write every resolution performs** — provisional or
+authoritative, atomic per value, monotone (set-only), and therefore
+safe without a lock; and **a state change discovered at the
+serialization point sends the evaluation back to stage 4** (the
+existing waiter rule), so no skipped check ever survives into an
+effect. Dispositions still belong to the serialization point. From
+the seventeenth casting: no age-based `unknown` is final pre-lock.
+From the sixteenth casting: the one-way
+aging latch, the stated entry point (issuance → `open`), the
+complete transition set. From the fifteenth casting: the
+normative resolution algorithm (precedence recorded → open →
+unknown), atomic supersession, mandatory retention,
+`sentTo`/`boundTo` co-presence in the schema, and the `boundTo`
+privacy statement. The
+one ceremony
+`encounter-scan@0.19` keeps its connected path and its offline path,
+but the two legs are now stated honestly: the connected path delivers
+the **bundle** through the Delivery service; the offline path is a
+**ceremony-level optical input** that carries the sent card only —
+enactment material, never credentials — and triggers record creation,
+idempotent per own challenge (5.5). Each leg is idempotent at its own
+level; nothing pretends the optical leg is another delivery of the
+same document. Switching is free in both directions **at any moment**
+— `ack-wait` is only the recommended automatic trigger, never a
+conformance condition — and a bundle arriving after the optical leg
+is accepted **via the existing record**, under a serialization rule
+that closes the optical/network race (Contract 4.1, 6.2). Mutuality
+is held, never inferred: a device that has issued but not yet received
+shows an outgoing edge, whatever a `sentTo` card suggests. A fresh
+second enactment arises only for an aged-out challenge
+(`gate-expired`), kept at one edge by the merge rule — the old
+lost-acknowledgement fallback to a second enactment is gone from the
+conformance plan too. The transmission leg is specified by normative
+reference to the **RLTP Delivery Contract 0.17**. Open issues:
+Section 16.
 
 ## 1. Introduction (informative)
 
@@ -82,10 +112,10 @@ This layer consumes Layer-1 anchors and produces the edges that Layer
 authority substrate. It uses the Delivery service through a port
 (Section 11), whose message semantics are the **RLTP Delivery
 Contract**; nothing in this layer depends on a transport, and **the
-`two-way-scan` ceremony depends on no connectivity at all**.
-Applications SHOULD select the ceremony adaptively — the connected
-one-scan flow where connectivity exists, `two-way-scan` as the
-fallback, including mid-enactment (5.8).
+ceremony's offline path depends on no connectivity at all**.
+Applications switch **carriers**, never ceremonies: the connected path
+where connectivity exists, the optical path where it does not,
+including mid-enactment and back again (5.8).
 
 ### 1.3 Design-principles note
 
@@ -93,7 +123,7 @@ fallback, including mid-enactment (5.8).
 *OCP:* ceremonies and channels are an open set extended by
 registration. *LSP:* any enactment satisfying the contract in 5.2
 produces an equivalent encounter credential — which is what makes
-adaptive ceremony selection free. *ISP:* consumers of an edge need not
+adapter switching free. *ISP:* consumers of an edge need not
 understand the ceremony that produced it. *DIP:* the Delivery port is
 defined by this layer's needs.
 
@@ -275,7 +305,8 @@ both issued and received.
 
 **The merge rule.** There is exactly **one edge per anchor pair**,
 whatever the number of enactments between the two anchors — including
-parallel enactments born from a fallback (5.8 step 7). Every valid
+parallel enactments born from a `gate-expired` fresh enactment or the
+simultaneous-scan race (5.8 step 5). Every valid
 credential from any enactment attaches to the same edge; a late
 counter-credential to an earlier enactment is accepted under 5.6
 against that enactment's record, harmlessly. **Enactment multiplicity
@@ -308,8 +339,9 @@ unbacked, and this document makes none.
 
 A **ceremony** is a registered, versioned definition, and the
 registration **pins the ceremony's time parameters** (Section 9).
-Ceremonies are an open set. This version registers `two-way-scan@0.9`
-and `one-way-scan-online@0.9` (5.8). Two conforming parties evaluating
+Ceremonies are an open set. This version registers **one** ceremony,
+`encounter-scan@0.19` (5.8), whose connected and offline paths carry
+the same enactment material on different legs. Two conforming parties evaluating
 the same credential under the same registered ceremony reach the same
 verdict; there is no deployment-local parameter variation.
 
@@ -351,12 +383,85 @@ time**, and is generated by the party it protects:
 - **Displayed card:** the challenge is published for whoever scans;
   its owner rotates it and enforces single use across scans.
 - **Sent card:** the challenge is generated at the moment of sending,
-  dedicated to that one enactment, and the card names its recipient
-  (`sentTo`, Section 6). The display challenge MUST NOT be reused in
-  a sent card.
+  dedicated to that one enactment; the card names its recipient
+  (`sentTo`) **and the displayed-challenge value the enactment
+  answers (`boundTo`)** (Section 6). The display challenge MUST NOT
+  be reused in a sent card.
 
 A value present in any enactment record MUST NOT be accepted in a new
 enactment (single use, enforced by its generator's record store).
+
+**The own-challenge state model.** Every challenge value is, by a
+party's own state, in exactly one of three states — exclusivity is
+guaranteed not by disjoint predicates but by the **precedence of the
+resolution algorithm** below:
+
+- **open** — a challenge this party issued (displayed, or sent in an
+  enactment awaiting its record), held together with its issuance
+  time `t_ch`, not superseded by a record, and not aged out by the
+  party's own clock: `now ≤ t_ch + challenge-max-age +
+  skew-tolerance`. **Retention is mandatory:** a party MUST retain
+  every issued value with its issuance time until it becomes
+  recorded or ages past the bound — rotation changes which value is
+  *displayed*, never the retention of previously issued values, so
+  an unaged rotated value is still open. A value past the bound is
+  not open — the expiry side of the record gate is structural, not
+  a check that can be forgotten; the **future side** remains an
+  explicit check at record creation (5.5, outcome `gate-future`).
+  Aged-out values MAY be physically discarded.
+- **recorded** — the own challenge of a surviving enactment record
+  (5.5); the record holds `t_ch` and the counterparty. **Record
+  creation atomically supersedes the open entry** — the transition
+  `open → recorded` happens inside the record's transaction, within
+  the serialization point, so no observer ever resolves the same
+  value both ways.
+- **unknown** — everything else: never issued, aged out, or recorded
+  once but deleted with its relation. These cases are
+  **indistinguishable by design**; no challenge history exists
+  beyond open values and records.
+
+**The resolution algorithm** maps a bound challenge value to a state
+by precedence, and this order is normative:
+
+1. a surviving enactment record holds it as own challenge →
+   **`recorded`**;
+2. otherwise, a retained issued value within the age bound →
+   **`open`**;
+3. otherwise → **`unknown`**.
+
+Resolution is **total, deterministic, and read-only but for one
+write** — resolving never consumes anything, and the precedence
+makes the answer unique even in the one overlapping moment (a
+freshly recorded value whose open entry has not yet been discarded
+resolves `recorded`). The one write is the aging latch:
+**every resolution — provisional or authoritative — that finds a
+held value past the age bound MUST mark it `aged` before returning
+`unknown`.** The mark is atomic per value and **monotone**
+(set-only): concurrent, unserialized writers can only ever agree,
+so the latch needs no lock for its safety, and an aged value never
+resolves `open` again — whatever the clock later says. A
+backward-moving clock therefore cannot resurrect a value: the latch
+already stands from the first observation, wherever it was made,
+and the authoritative resolution observes every previously written
+latch. Whether an aged value is physically retained or discarded
+after the latch is unobservable. Dispositions still belong to the
+serialization point: a provisional `unknown` never finalizes a
+rejection — the evaluation proceeds to the lock, where the
+authoritative resolution decides (Contract 4.1; the optical leg's
+`unknown` refusal is likewise produced there, 5.5). The model's
+entry point is issuance: a newly issued value **enters as `open`**;
+"never issued" values are `unknown` without ever having been open.
+The complete transition set: *(issuance)* `→ open`,
+`open → recorded` (record creation, atomic, in-lock),
+`open → unknown` (the aging latch only — never early discard),
+`recorded → unknown` (record deleted with its relation). There is no
+transition out of `unknown` (single use, 5.3 above). A resolution
+performed outside the record-key serialization point (5.5, Delivery
+Contract 6.2) is provisional; the resolution performed inside it is
+authoritative and selects the branch taken (Contract 4.1). Every
+consumer of a bound challenge — bundle evaluation, optical input,
+credential acceptance — goes through resolution; no rule of this
+family references "the displayed challenge" in any other way.
 
 A step credential MUST bind the challenge of its **subject** in this
 enactment; acceptance is checked against the subject's own enactment
@@ -396,17 +501,35 @@ binding; and the local time of the enactment. Records MUST be retained
 for the life of the relation, and they subsume the consumed-challenge
 history.
 
-**Record creation applies the two-sided gate in every ceremony.** A
-record MUST be created only while, by the creating party's own clock,
-its own challenge satisfies
-`t_ch ≤ now + skew-tolerance` **and**
-`now ≤ t_ch + challenge-max-age + skew-tolerance`.
-In `two-way-scan` both parties apply this during the live exchange; in
-`one-way-scan-online` the receiver applies it at bundle receipt
-(5.8). **Record creation is idempotent and unique:** at most one
-record per own-challenge value; repeated or concurrent triggers with
-the same material (same document digest, Delivery Contract 6.2)
-converge on one record.
+**Record creation applies the gate in every ceremony, stated in
+resolution terms (5.3).** A record MUST be created only for an own
+challenge that **resolves `open`** — the expiry side is structural
+(an aged value is no longer open) — and whose issuance time passes
+the explicit **future check**, `t_ch ≤ now + skew-tolerance` by the
+creating party's own clock; a value failing it is refused with the
+named outcome **`gate-future`**, on every leg. The scanner applies
+this at scan time (trivially fresh); the receiver at receipt of the
+sent card — whichever carrier brought it (5.8). **Record creation is
+idempotent and unique:** at most one record per own-challenge value;
+repeated or concurrent triggers with the same material — a
+redelivered bundle (Delivery Contract 6.2), a re-scanned optical
+card, or one of each — converge on one record. Every trigger for the
+same own-challenge value MUST pass through the same serialization
+point — the record-key lock of Delivery Contract 6.2, one namespace
+and lifetime for bundles and optical inputs alike — so concurrent
+triggers observe each other, and the resolution performed inside it
+is the authoritative one. An optical input whose own challenge
+**resolves `recorded`** is handled by the same taxonomy a bundle
+meets (Contract 4.1): a JCS-identical counterparty card is an
+idempotent no-op; a card from a **different counterparty** is
+refused — the challenge is consumed; the same counterparty with
+different material is refused as invalid. An optical input whose
+`boundTo` **resolves `unknown`** creates nothing and is refused —
+the refusal produced **at the serialization point**, where the
+authoritative resolution latches any held aged value first (5.3) —
+the user-facing outcome named `gate-expired` in 5.8, honest in both
+of its indistinguishable causes (aged out or never this device's).
+No second record arises in any of these cases.
 
 ### 5.6 Acceptance
 
@@ -454,66 +577,98 @@ recorded as informative metadata and carry **no normative weight**.
 the Delivery Contract: confidentiality to the receiver via the sealed
 envelope, authenticity from the signed material inside.)*
 
-### 5.8 Registered ceremonies of this version
+### 5.8 The registered ceremony of this version
 
-**`two-way-scan@0.9`.** Both parties display and scan each other's
-cards; each applies the record gate (5.5), records, confirms, issues,
-and delivers via the Delivery port (task
-`encounter-credential-delivery`, step `deliver`), unbounded in time.
-Requires no connectivity and no third party during the enactment.
+**`encounter-scan@0.19`** — the one ceremony of this casting. It has a
+**connected path** and an **offline path**, which carry the same
+enactment material on different legs: the connected path delivers the
+**bundle** (card + credential) through the Delivery service; the
+offline path presents the **sent card alone** as a ceremony-level
+optical input. Switching between them is free in both directions at
+any moment, and neither path ever starts a second enactment. What
+varies is never the ceremony — only the carrier of the enactment
+material.
 
-**`one-way-scan-online@0.9`.** One party (A) scans; the other (B)
-confirms on their own device without scanning back. The enactment is
-**two-phase**: A's phase at the scan, B's phase at receipt, complete
-with B's record. The transmission leg is inside the enactment.
-
-Flow, normatively:
+Common trunk, normatively:
 
 1. B displays a card with challenge `c_B`.
 2. A scans it and generates a **sent card**: fresh challenge `c_A`
-   created now, `sentTo` = B's anchor (Section 6).
+   created now, `sentTo` = B's anchor, `boundTo` = `c_B` — the value
+   that tells B's device *which* of its own challenges this
+   enactment answers (Section 6).
 3. A applies the record gate on `c_A` (trivially fresh), records
    (5.5), confirms (C4), issues its step credential binding `c_B` and
-   the binding over `{c_B, c_A}`.
-4. A transmits the **bundle** — sent card and credential — as the
-   Delivery Contract task `encounter-bundle`, sealed to B's
-   key-agreement key. The Contract's staged evaluation (its 6.2)
-   governs B's processing: **validate, then consume** — nothing
-   consumes `c_B` before the bundle's credential has passed the
-   **complete record-independent acceptance set**, which is 5.6 with
-   step 4 trivially satisfied by the material in hand and step 8 by
-   record creation itself: format, signatures, addressee, ceremony,
-   **issuance window including `proof.created` (step 6 — `t_ch` is
-   the issuance time of B's own displayed challenge, known without
-   any record)**, and binding recomputation. A bundle failing any of
-   these consumes nothing and earns no acknowledgement.
-5. Only then — the Contract's final stage — B applies the record gate
-   on `c_B` (5.5, two-sided, own clock) and commits the effect **as
-   one durable transaction** (Contract 4.1/6.2): the enactment record,
-   **the accepted credential with its direction and digest** — the
-   state 4.2's `received` must survive a restart — and the enqueued
-   `delivery-ack` (proof-carrying, arrival-only), which goes back to A
-   automatically. After this point the credential is accepted; no
-   later check can fail it.
-6. B MAY then confirm (C4) and issue the counter-step, binding `c_A`,
-   delivered as task `encounter-credential-delivery` (step
-   `counter`), unbounded in time. A accepts under 5.6 with `t_ch` =
-   `c_A`'s issuance time.
-7. **Fallback and merge.** The acknowledgement is a delivery signal,
-   never acceptance (7.4). If A receives none within `ack-wait`
-   (Delivery Contract §7), A SHOULD offer completing the encounter as
-   `two-way-scan` with fresh challenges — a **second enactment**.
-   **Receipt of B's counter-credential cancels the fallback offer:**
-   the first enactment is then complete and mutual, and the timer is
-   moot whatever the acknowledgement's fate. Both enactments, where
-   both exist, are valid; a late first-enactment counter-credential
-   is accepted against the first record (5.6), and the merge rule
-   (4.2) attaches everything to the **one** edge between the two
-   anchors. Nothing is orphaned and nothing double-counts, whatever
-   the interleaving.
+   the binding over `{c_B, c_A}`, and hands the `encounter-bundle`
+   task (sent card + credential) to the Delivery service. **The
+   enactment completes when B holds a record**; how A's material
+   reaches B is the adapter's business:
 
-Requires connectivity for both parties during the enactment. Until
-step 6's counter-issuance, the edge is one-sided.
+**Connected path.** The bundle travels as the Delivery Contract task,
+sealed to B's key-agreement key. The Contract's staged evaluation
+governs B's processing — validate, then consume: nothing consumes
+`c_B` before the bundle's credential has passed the **complete
+pre-lock acceptance set** (Contract 4.1: format, signatures,
+addressee, ceremony, binding recomputation, and the issuance window
+with `t_ch` from `c_B`'s resolution — `open` here, 5.3). Only then,
+in the Contract's final stage — inside the lock-set critical section
+of Contract 6.2 — `c_B` is **re-resolved authoritatively**: `open`
+selects the record-creating effect (future check, `gate-future`;
+then one durable transaction: the record, the accepted credential
+with direction and digest, and the retained proof-carrying
+`delivery-ack`). After this point the credential is accepted; no
+later check can fail it.
+
+**Offline path.** A's device MAY present **the sent card itself**
+optically **at any moment after step 3** — presentation is never
+gated on a timer; `ack-wait` (Delivery Contract §7) is only the
+RECOMMENDED automatic trigger, and conformance never depends on when
+the switch happens. B scans the presented card. The optical leg is
+**not a delivery of the bundle**: it is a ceremony-level input
+carrying **enactment material only, never credentials** — the sent
+card is card-sized and scannable where a sealed bundle is not, and
+credentials belong to the delivery layer, whose time is unbounded. B
+validates the sent card (proof under its anchor, version, `sentTo` =
+own anchor), **resolves `boundTo`** (5.3) — `open` → future check →
+record creation under the serialization rule of 5.5; `recorded` →
+the idempotency taxonomy of 5.5; `unknown` → refused, the
+`gate-expired` outcome — idempotent per own challenge; a re-scan or
+a racing bundle converges on the one record. The
+enactment is complete; B's view of the edge is **outgoing at most**
+until A's credential arrives (4.2: mutuality is held, never inferred
+— a `sentTo` card suggests recognition, only the credential proves
+it). A's queued bundle then delivers whenever a network adapter next
+carries it, and is accepted **via the existing record** (Contract
+4.1 record-aware effect, selected inside the challenge-keyed critical
+section of Contract 6.2): the enclosed card MUST be JCS-identical to
+the record's stored counterparty card, the binding is verified against
+the record, the credential passes acceptance (5.6), effect =
+credential acceptance and acknowledgement — no second gate, no second
+record, no consumed-challenge conflict.
+
+4. B MAY confirm (C4) and issue the counter-step, binding `c_A`,
+   delivered as task `encounter-credential-delivery` (step
+   `counter`), unbounded in time, over any adapter. A accepts under
+   5.6 with `t_ch` = `c_A`'s issuance time.
+5. **Path switching and merge.** The acknowledgement is a delivery
+   signal, never acceptance (7.4); receipt of B's counter-credential
+   or of the acknowledgement cancels any pending automatic switch.
+   Switching is safe because each leg is idempotent at its own level:
+   record creation is unique per own challenge (5.5), delivery of the
+   bundle document is idempotent per document digest (`duplicate-known`
+   with byte-identical re-ack, Contract 6.2), and the two levels meet
+   only inside the lock-set critical section, where the authoritative
+   resolution selects the branch. A genuinely **fresh
+   enactment** remains only as the last resort — when the optical
+   leg's `boundTo` no longer resolves
+   (`gate-expired`) — and the merge rule (4.2) keeps even that at one
+   edge per anchor pair, as it does for the simultaneous-scan race
+   where both parties scan each other's displayed cards and two
+   enactments arise.
+
+Neither path requires a third party. The connected path requires
+transient connectivity for both ends; the offline path requires none.
+Until step 4's counter-issuance, the edge is one-sided — a legitimate
+outcome.
 
 ## 6. The Contact Card
 
@@ -524,9 +679,12 @@ A card MUST validate against `schemas/contact-card.schema.json` and
 carries: a **format version**; the **anchor**; a **key-agreement key**
 (Multikey, decoded-verified, 2.3); a **challenge** with its **issuance
 time**, whenever the card is used in an enactment; **`sentTo`** — the
-recipient's anchor — **whenever the card is sent** (a sent card
-without `sentTo`, or with a foreign `sentTo`, MUST be rejected by its
-receiver; a displayed card carries none); and a `DataIntegrityProof`
+recipient's anchor — and **`boundTo`** — the displayed-challenge
+value the enactment answers — **whenever the card is sent** (a sent
+card without either, with a foreign `sentTo`, or — in a bundle —
+with a `boundTo` differing from the enclosed credential's bound
+challenge, MUST be rejected by its receiver; a displayed card
+carries neither); and a `DataIntegrityProof`
 per 2.3 verifying under the anchor. It MAY carry a display name and
 delivery hints.
 
@@ -567,7 +725,7 @@ happens through a new format version, never through extra fields.
 | `issuer` | anchor | 1 | the recognizing party |
 | `validFrom` | datetime | 1 | issuance time (SHOULD equal enactment time) |
 | `credentialSubject.id` | anchor | 1 | the recognized party |
-| `credentialSubject.format` | string | 1 | `rltp-encounter-credential/0.9` |
+| `credentialSubject.format` | string | 1 | `rltp-encounter-credential/0.19` |
 | `credentialSubject.ceremony` | string | 1 | registered ceremony id and version |
 | `credentialSubject.challenge` | string | 1 | the subject's challenge |
 | `credentialSubject.enactmentBinding` | multibase | 1 | per 5.4 |
@@ -618,14 +776,15 @@ evidence joined by a shared descriptor — deliberately no more.)*
 
 ## 9. Time Parameters
 
-| Parameter | `two-way-scan@0.9` | `one-way-scan-online@0.9` | Meaning |
-|---|---|---|---|
-| `challenge-max-age` | PT5M | PT5M | max age of a challenge at record creation (5.5) |
-| `issuance-window` | PT24H | PT24H | max delay from enactment to credential issuance (5.6 step 6) |
-| `skew-tolerance` | PT5M | PT5M | clock-skew allowance; always widens, never rejects |
+| Parameter | `encounter-scan@0.19` | Meaning |
+|---|---|---|
+| `challenge-max-age` | PT5M | max age of a challenge at record creation (5.5), both paths |
+| `issuance-window` | PT24H | max delay from enactment to credential issuance (5.6 step 6) |
+| `skew-tolerance` | PT5M | clock-skew allowance; always widens, never rejects |
 
 The registered ceremony version pins these values; `ack-wait` (the
-fallback pacing of 5.8 step 7) is a Delivery Contract parameter. All
+recommended automatic switch trigger of 5.8) is a Delivery Contract
+parameter and never a conformance condition. All
 intervals are closed. Retention: enactment records for the life of the
 relation.
 
@@ -647,7 +806,7 @@ loss is non-conformant. The message semantics of this port are the
 the sealed envelope, the staged dispositions, and the status trias.
 Post-enactment delivery time is unbounded and never affects validity;
 the one-scan transmission leg is part of the enactment (5.8).
-Enactments MUST be possible without any service (`two-way-scan`).
+Enactments MUST be possible without any service (the offline path, 5.8).
 
 ## 12. Evolvability
 
@@ -686,9 +845,9 @@ Enactments MUST be possible without any service (`two-way-scan`).
 - **Backdating is bounded by the record gate, not by timestamps
   alone.** `validFrom` and `proof.created` are issuer-asserted; both
   are windowed and ordered (5.6 step 6), and what defeats a pocketed
-  card is that no record can exist for it — in `two-way-scan` because
-  the victim never participated, in `one-way-scan-online` because the
-  record gate is real-time-bounded in both directions.
+  card is that no record can exist for it: the record gate is
+  real-time-bounded in both directions on every path, and a party who
+  never participated holds no record for the bound challenge.
 - **Challenge entropy is load-bearing.** ≥128 bits; UUID v4 is
   non-conformant (Appendix A).
 - **Time gates are layered consistently.** Skew always widens;
@@ -701,8 +860,15 @@ Enactments MUST be possible without any service (`two-way-scan`).
   credential pair is correlatable by anyone holding both (5.4).
 - **Cards reveal what their author put in them**; implementations
   SHOULD default to minimal cards. A sent card additionally reveals
-  its recipient (`sentTo`) to whoever reads the plaintext — which,
-  sealed, is the recipient alone.
+  its recipient (`sentTo`) and the displayed-challenge value it
+  answers (`boundTo`) to whoever reads the plaintext — which,
+  sealed, is the recipient alone. On the **optical leg** the sent
+  card travels unsealed, and `boundTo` is then an exact session
+  correlator between the earlier displayed card and this sent card
+  for anyone observing both screens. This is stated, not mitigated:
+  the value is high-entropy, was publicly displayed by its owner,
+  grants nothing — and the stable anchors on both cards already
+  reveal the parties to the same observer.
 - **Anchors are stable and therefore correlatable** across contexts;
   channel and service identifiers MAY be derived per relationship.
   Minimal-disclosure presentations are OI-3. *(Informative: the DTGWG
@@ -719,30 +885,62 @@ Enactments MUST be possible without any service (`two-way-scan`).
 
 ## 15. Conformance
 
-- **Profile** `rltp-encounter@0.9`; includes the interim securing
+- **Profile** `rltp-encounter@0.19`; includes the interim securing
   profile (2.3) until `rltp-identity` is cast; **normatively
-  references `rltp-delivery@0.7`** for the one-scan transmission.
+  references `rltp-delivery@0.17`** for the one-scan transmission.
 - **Classes:** *participant* · *verifier*.
 - **Normative schemas (shipped):**
   `schemas/encounter-credential.schema.json`,
   `schemas/contact-card.schema.json`.
-- **Vector plan:** everything of 0.5, plus: record gate two-sided in
-  **both** ceremonies (future-stamped own challenge beyond skew
-  refused at two-way record creation too) · `proof.created` outside
+- **Vector plan:** everything of 0.5, plus: the gate on **both**
+  legs (future-stamped own challenge beyond skew refused as
+  `gate-future` at optical record creation too; aged-out value
+  resolves `unknown` — structural expiry) · **state-model vectors:**
+  resolution total on {open, recorded, unknown} with normative
+  precedence — a freshly recorded value whose open entry survives
+  the same instant resolves `recorded`, in every implementation ·
+  record creation supersedes the open entry atomically (no
+  interleaving observes both states) · record deletion moves the
+  value to `unknown`; no transition leaves `unknown` · sent card without
+  `boundTo` rejected; `boundTo` resolving `unknown` refused
+  (`gate-expired`), nothing created; bundle whose `card.boundTo` ≠
+  credential's bound challenge rejected · rotation leaves several
+  open values, each resolving independently; a rotated but unaged
+  value still resolves `open` (mandatory retention — early discard
+  is non-conformant) · `proof.created` outside
   window rejected; `proof.created` < `validFrom − skew` rejected ·
   sent card without `sentTo` rejected; foreign `sentTo` rejected;
   displayed card with `sentTo` rejected · closed root: `validUntil`,
   `credentialStatus`, unknown top-level property → `ERR_VERSION` ·
   decoded-key vectors (valid pattern, wrong multicodec → malformed) ·
-  **merge-rule vectors: lost-ack fallback creates E2; late E1
-  counter-credential accepted; one edge, no double count; both
-  orderings** · bundle path per Delivery Contract staged order
+  **merge-rule vectors: a lost acknowledgement switches carriers
+  within the same enactment (no E2); a fresh enactment E2 arises only
+  at `gate-expired`, and a late E1 counter-credential is still
+  accepted; one edge, no double count; both orderings; the
+  simultaneous-scan race yields two enactments, one edge** · bundle
+  path per Delivery Contract staged order
   (garbage bundle consumes nothing) · **polish-round additions:**
   legacy DTG-typed credential (`WitnessCredential`) → `ERR_VERSION` ·
   foreign ceremony label in a bundle credential rejected pre-record ·
   restart after bundle acceptance: `received` state and credential
   survive · counter-credential before ack-timeout cancels the
-  fallback offer.
+  automatic switch · **unification vectors:** optical sent-card leg
+  creates the record and completes the enactment; a later bundle for
+  that challenge is accepted via the record, never
+  `consumed-challenge` · optical input racing bundle stage 9 on the
+  same challenge → one record, deterministic branch selection inside
+  the critical section, no `consumed-challenge` on the loser ·
+  re-scan of the optical card → the one record, idempotent · two
+  different valid sent cards competing for one displayed challenge →
+  one record, the second refused (foreign counterparty → consumed;
+  same counterparty, different material → invalid) ·
+  outgoing-only state after optical record creation until the
+  credential is held; mutual exactly on acceptance · redelivered
+  bundle document → `duplicate-known`, byte-identical re-ack; the
+  optical leg never produces `duplicate-known` · aged-out challenge
+  at the optical leg → `gate-expired` → fresh enactment, one edge ·
+  switching in both directions before and after `ack-wait` — same
+  outcomes.
 - Every normative statement is vector-testable or explicitly marked
   state-dependent.
 
@@ -768,7 +966,7 @@ Enactments MUST be possible without any service (`two-way-scan`).
 |---|---|---|
 | Contact card | QR-challenge payload | no version field; `enc` → Multikey; **`sentTo` new** |
 | Challenge | `nonce` (UUID v4) | **non-conformant (122 bits)** — migration generates new values |
-| One-scan flow | relay counter-verification | `one-way-scan-online@0.9` over Delivery Contract tasks |
+| One-scan flow | relay counter-verification | the connected path of `encounter-scan@0.19` over Delivery Contract tasks; the offline path replaces manual two-way handling |
 | Ack | `attestation-receipt` | Delivery Contract `delivery-ack`: arrival semantics, **proof-carrying** |
 | Encounter credential | `WotVerification` VC-JWS | RLTP `EncounterCredential`, embedded `eddsa-jcs-2022`, closed root, pinned contexts |
 | Acceptance gate | Trust 002 gate | 5.6 with named errors, `proof.created` windowed |
@@ -806,5 +1004,5 @@ W3C Data Integrity EdDSA Cryptosuites v1.0 · W3C Verifiable
 Credentials Data Model 2.0 · DTG Credential Specification (ToIP DTGWG,
 draft) · ToIP DTGWG Trust Ceremonies ADR 0001 and design note
 (Proposed) · did:key method draft · Multikey / multicodec registry ·
-**RLTP Delivery Contract 0.7 (normative)** · wot-spec v0.1 (superseded
+**RLTP Delivery Contract 0.17 (normative)** · wot-spec v0.1 (superseded
 parts, Appendix B).

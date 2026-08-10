@@ -1,0 +1,47 @@
+{
+  "$comment": "RLTP's one registered ceremony expressed in the ToIP DTGWG ceremony-definition format (informative interop artifact). The normative definition is spec/encounter-layer.md 5.8; this file exists so DTGWG tooling can read the RLTP ceremony, and to concretely instantiate the loosely described derivation of the registry's mutual-attestation/0.1. The ceremony has a connected path (the bundle travels through the delivery service) and an offline path (the sent card is presented optically; the credential follows later and is accepted via the enactment record); the two paths differ only in the carrier of the enactment material, and switching between them is free in both directions. This step graph describes the credential flow common to both.",
+  "slug": "rltp-encounter-scan",
+  "version": "0.19",
+  "title": "RLTP encounter scan (mutual encounter, connected or offline)",
+  "summary": "One person displays a contact card with a fresh challenge; the other scans it, confirms recognition, and issues an encounter credential bound to both challenges, delivered together with their sent card as a bundle - through the delivery service when connected, or with the sent card presented optically when not. The displaying party may confirm back and issue the counter-credential, unbounded in time. No third party; the offline path needs no connectivity at all.",
+  "status": "draft",
+  "targetFrameworkVersion": "0.4",
+  "authors": ["Anton Tranelis (Real Life Organisation)"],
+  "keywords": ["offline", "local-first", "bilateral", "adaptive", "web-of-trust", "rltp"],
+  "roles": {
+    "scanner": { "description": "The person who scans the displayed card, confirms first, and issues the first step credential.", "cardinality": "one" },
+    "displayer": { "description": "The person whose card was scanned; receives the bundle (or scans the sent card optically), and may confirm back.", "cardinality": "one" }
+  },
+  "steps": {
+    "bundle": {
+      "kind": "task",
+      "type": "https://real-life.org/trust-tasks/encounter-bundle/0.1",
+      "issuer": "scanner",
+      "recipient": "displayer",
+      "description": "The scanner's sent card (naming its recipient and the displayed-challenge value it answers) plus the scanner's step credential binding the displayer's challenge. On the offline path the sent card alone travels optically and completes the enactment; the credential follows over any carrier and is accepted via the existing enactment record.",
+      "prev": [],
+      "terminal": false
+    },
+    "counter": {
+      "kind": "task",
+      "type": "https://real-life.org/trust-tasks/encounter-credential-delivery/0.1",
+      "issuer": "displayer",
+      "recipient": "scanner",
+      "description": "The displayer's counter-step credential, binding the scanner's sent challenge. Optional - one-sided outcomes are legitimate - and unbounded in time.",
+      "prev": ["bundle"],
+      "terminal": true
+    }
+  },
+  "anchor": {
+    "kind": "coDerived",
+    "boundBy": ["scanner", "displayer"],
+    "derivation": "The RLTP enactment binding (Encounter Layer 5.4): a multibase-encoded multihash over the JCS canonicalization of {ceremony, challenges}, where the challenges are the two fresh single-use values (>=128 bits each) - the displayed challenge and the sent challenge - material neither party could have produced alone. This concretely instantiates the derivation the DTGWG registry's mutual-attestation/0.1 describes loosely."
+  },
+  "completion": { "anyOf": ["bundle"], "mutualOn": "counter" },
+  "evidence": { "level": "countersigned" },
+  "maxDuration": "PT1H",
+  "enactmentPrivacy": "plain",
+  "sideEffects": { "level": "mutating", "rationale": "Each confirming party mints an immutable, never-revoked encounter credential about the other; the enactment record is durable local state." },
+  "exposure": { "discloses": "secret", "actsAsSubject": true, "rationale": "Each step delivers credential material the other party retains. enactmentPrivacy is plain, deliberately: under RLTP's stable anchors the credential pair is correlatable from the anchors alone, so blinding the enactment identifier would claim a privacy property the anchors do not support. RLTP states this honestly (Encounter Layer, Privacy Considerations)." },
+  "related": ["https://github.com/trustoverip/dtgwg-trust-tasks-tf/blob/main/ceremonies/mutual-attestation/0.1/ceremony.json"]
+}

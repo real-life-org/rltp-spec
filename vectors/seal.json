@@ -1,5 +1,5 @@
 {
-  "description": "RLTP Delivery Contract 0.7 section 5 seal vector. Digests are multibase(multihash) per CID 1.0. SEAL-ONLY SAMPLE: the plaintext document uses the reserved sample type and exercises the construction of section 5, not the document profile; it MUST NOT be processed as a delivery document. Deterministic inputs; implementations MUST reproduce ciphertext and documentDigest byte-for-byte.",
+  "description": "RLTP Delivery Contract 0.17 section 5 seal vector. Digests are multibase(multihash) per CID 1.0. SEAL-ONLY SAMPLE: the plaintext document uses the reserved sample type and exercises the construction of section 5, not the document profile; it MUST NOT be processed as a delivery document. Deterministic inputs; implementations MUST reproduce ciphertext and documentDigest byte-for-byte.",
   "inputs": {
     "recipientPrivateKeyRaw": "CgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgo",
     "recipientPublicKeyRaw": "93_0sQeIv9ymLKC7Fg1CfPV2LYXytcrWgH7Jw_673gk",

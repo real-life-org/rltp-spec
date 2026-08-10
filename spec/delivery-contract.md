@@ -3,13 +3,13 @@
 **Real Life Trust Protocol — service contract: Delivery**
 
 - **Status:** Editor's Draft
-- **Version:** 0.7.0-draft (seventh casting)
+- **Version:** 0.17.0-draft (seventeenth casting)
 - **Editors:** Anton Tranelis
 - **Date:** 2026-08-10
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
 - **Task-type namespace:** `https://real-life.org/trust-tasks/`
 - **Target Trust Tasks framework version:** 0.4
-- **Conformance profile:** `rltp-delivery@0.7` (draft)
+- **Conformance profile:** `rltp-delivery@0.17` (draft)
 - **Position:** not a layer. Delivery is the service behind the port
   that Encounter §11 requires; every layer may use it, none depends on
   its internals.
@@ -32,13 +32,39 @@ travel in.
 
 ## Status of This Document
 
-Seventh casting — the upstream-alignment casting after convergence.
-One normative change: the document digest becomes a multibase-encoded
-multihash over JCS (Encounter 2.3; emit `u`, accept `u`/`z` per
-CID 1.0), format-identical to DTGWG `digestMultibase`, so one verifier
-serves both ecosystems. The shipped seal vector is regenerated
-accordingly. The merge rule lives in Encounter 0.9 and is referenced.
-Open issues: Section 12.
+Seventeenth casting — the wording-alignment casting: the 4.1 pre-lock preamble now reads "read-only except for Encounter 5.3's aging latch, which every resolution writes", removing the round-11 contradiction with check 5. Sixteenth casting — the monotone-latch companion to Encounter 0.19
+(`../design/pair-review10-2026-08.md`): resolution's aging latch is
+written **wherever the observation happens** — provisional included
+— because it is atomic per value and monotone, needing no lock for
+safety; and an evaluation that entered stage 9 on a provisional
+`unknown` and finds any other authoritative state releases the lock
+and **re-enters at stage 4**, so the skipped pre-lock checks always
+complete before any effect (4.1 check 5, 6.2 stage 8 exception).
+From the fifteenth casting: no age-based `unknown` is final
+pre-lock. From the fourteenth casting: the one-way aging latch
+and the qualified distinct-digest vector. From the thirteenth
+casting:
+the normative resolution algorithm (precedence recorded → open →
+unknown, atomic supersession, mandatory retention) and the
+qualified competing-digest rule. From the
+twelfth casting: every bundle branch is
+**selected by challenge resolution** (Encounter 5.3: `open` /
+`recorded` / `unknown` — total, deterministic, read-only but for
+the aging latch): pre-lock
+checks resolve provisionally; the authoritative resolution inside
+the lock-set critical section picks the effect — `open` →
+record-creating (future check `gate-future`; the expiry side is
+structural, so `gate-expired` no longer exists as a bundle
+disposition), `recorded` → the record decides (`consumed-challenge`
+for a foreign counterparty, record-aware acceptance otherwise),
+`unknown` → `failed(validation-failed)`. The wrong-counterparty
+disposition is thereby operationally unique even across waiter
+re-entry. Sent cards carry `boundTo` (Encounter 5.3/6), consistency
+`card.boundTo` = the credential's bound challenge. Retired
+key-agreement identifiers remain known **indefinitely as
+tombstones**, so a retired-key envelope reaches decryption and fails
+honestly (`decryption-failed`), never `malformed`. Open issues:
+Section 12.
 
 ## 1. Introduction (informative)
 
@@ -68,11 +94,14 @@ Open issues: Section 12.
 
 After A scans and confirms, A's app shows a waiting state; the arrival
 acknowledgement dissolves it ("nothing more to do on your side"), and
-its absence within `ack-wait` flips A's screen to the two-way QR. When
-B's counter-credential later arrives, both sides see the relation
-confirmed. Section 8 gives both state machines; the reconciliation of
-a lost acknowledgement after B's commit is Encounter 0.9's merge rule
-(two enactments, one edge — Encounter 4.2).
+its absence within `ack-wait` flips A's screen to the optical
+presentation of the sent card — the same enactment on another
+carrier. When B's counter-credential later arrives, A sees the
+relation confirmed; B's own view becomes mutual only when A's
+credential reaches B (Encounter 4.2 — every view is local). Section 8
+gives both state machines; a lost acknowledgement after B's commit
+reconciles through redelivery and `duplicate-known`, never through a
+second enactment (6.3).
 
 ## 2. Conventions and Terminology
 
@@ -174,39 +203,105 @@ scanner's sent card and step credential.
 - **Outer/inner consistency (MUST, before any effect):**
   `issuer` = `card.anchor` = `credential.issuer`;
   `recipient` = `credential.credentialSubject.id`;
-  the card carries a sent-challenge with `sentTo` = `recipient`
+  the card carries a sent-challenge with `sentTo` = `recipient` and
+  `boundTo` = `credential.credentialSubject.challenge`
   (Encounter 6); a present `ceremony.enactment` equals
   `credential.credentialSubject.enactmentBinding`.
-- **Pre-record validation (MUST, in order — validate, then consume;
-  the COMPLETE record-independent acceptance set of Encounter 5.6):**
+- **Pre-lock validation (MUST, in order — validate, then consume:
+  read-only against local state **except for Encounter 5.3's aging
+  latch, which every resolution writes**, and consuming nothing;
+  together with the authoritative in-lock resolution this implements
+  the acceptance set of Encounter 5.6):**
   1. document profile + payload schema valid; timestamps
      calendar-valid; keys decode to correct multicodec + length;
   2. card proof verifies under `card.anchor`;
   3. credential proof verifies under its issuer anchor;
   4. `credential.credentialSubject.id` = the local anchor;
-  5. the credential's bound challenge = the local party's own
-     displayed challenge; **`credentialSubject.ceremony` equals this
-     ceremony (`one-way-scan-online@0.9`)** — a credential labelled
+  5. the credential's bound challenge **resolves** (Encounter 5.3;
+     the resolution itself latches any held aged value it observes —
+     the latch is monotone and lock-free, so this provisional
+     observation already stands) to `open` or `recorded` — an
+     `unknown` resolution ends the pre-lock checks, but is **never
+     final pre-lock**: the evaluation skips the remaining checks and
+     proceeds directly to the serialization point (6.2 stage 9),
+     where the authoritative resolution decides. If it is still
+     `unknown`, the disposition is `failed(validation-failed)` — the
+     one state-free outcome that covers garbage, foreign,
+     rotated-away, and record-gone bundles alike, always produced
+     under the lock. If it is **any other state** (the state moved —
+     e.g. the optical record arrived between pre-lock and lock), the
+     evaluation MUST NOT proceed on the skipped checks: it releases
+     the lock and **re-enters at stage 4** (the waiter rule of 6.2),
+     completing every check under the new state before any effect;
+     **`credentialSubject.ceremony` equals this
+     ceremony (`encounter-scan@0.19`)** — a credential labelled
      with any other ceremony is `failed(validation-failed)`, so the
      record's ceremony is grounded rather than copied from the
      sender's label; and the enactment binding recomputes per
-     Encounter 5.4 from {local displayed challenge, card's
+     Encounter 5.4 from {the resolved own challenge, card's
      sent-challenge};
   6. **the issuance window (Encounter 5.6 step 6):** `validFrom` and
-     `proof.created` inside the closed interval anchored at the
-     issuance time of the local party's own displayed challenge —
-     known without any record — and `proof.created ≥ validFrom −
-     skew-tolerance`.
+     `proof.created` inside the closed interval anchored at `t_ch`
+     from the resolution — held with an `open` value by its owner,
+     held in the record for a `recorded` one (Encounter 5.5/5.3) —
+     and `proof.created ≥ validFrom − skew-tolerance`.
+
+  This pre-lock resolution is **provisional**; the resolution
+  repeated inside the critical section is authoritative and alone
+  selects the effect.
   Only after 1–6 pass does evaluation reach the final stage (6.2
-  stage 9): the record gate (Encounter 5.5, two-sided, local clock),
-  then the effect committed **as one durable transaction** — the
-  enactment record, **the accepted credential itself with its
-  direction and credential digest** (the state Encounter 4.2 needs to
-  hold `received` across restarts), the completed-effect cache entry,
-  **and the acknowledgement durably enqueued for transmission** — and
-  after it the credential **is accepted**; no later check can fail
-  it. Any failure before that stage consumes nothing and earns no
-  acknowledgement (the poisoning rule).
+  stage 9), whose critical section is keyed for bundles on **both**
+  the document digest and the credential's bound challenge — the
+  **record key**, the same serialization point the optical input of
+  Encounter 5.8 passes through. Inside that section, and only there,
+  the bound challenge is **re-resolved authoritatively** (Encounter
+  5.3), and the resolution selects the effect:
+
+  **`open` → record-creating effect:** the explicit future check
+  (Encounter 5.5) — an own challenge future-dated beyond
+  `skew-tolerance` is `failed(gate-future)`; the expiry side is
+  structural (an aged value never resolves `open`), so no
+  `gate-expired` disposition exists — then the effect committed **as
+  one durable transaction**: the enactment record, **the accepted
+  credential itself with its direction and credential digest** (the
+  state Encounter 4.2 needs to hold `received` across restarts), the
+  completed-effect cache entry, **and the acknowledgement document
+  itself, retained with the cache entry** (4.2). After commit the
+  credential **is accepted**; no later check can fail it.
+
+  **`recorded` → the record decides:** a record whose counterparty is
+  **not** the document issuer means the challenge was consumed by a
+  different enactment — `failed(consumed-challenge)`, the only way
+  this disposition arises, and it is stable under waiter re-entry:
+  the record survives, so re-resolution yields `recorded` again and
+  the same disposition. Otherwise (the offline path completed first,
+  Encounter 5.8) the enclosed card MUST be **JCS-identical to the
+  counterparty card stored in that record** — a bundle combining a
+  valid credential with any other card, however well signed, is
+  `failed(validation-failed)`. The binding is verified against the
+  record, and the credential MUST pass Encounter acceptance (5.6) in
+  full, including uniqueness; `ERR_STALE_ISSUANCE` maps to
+  `failed(stale-issuance)`, every other rejection to
+  `failed(validation-failed)`, and nothing is consumed. On pass, the
+  **record-aware effect** committed as one durable transaction: the
+  accepted credential with direction and credential digest, the
+  completed-effect cache entry, and the retained acknowledgement —
+  **no gate, no record creation, no consumed-challenge conflict**.
+
+  **`unknown` → `failed(validation-failed)`:** nothing exists to
+  consume; a provisional pre-lock pass only means the state moved.
+
+  Any failure before a committed effect consumes nothing and earns no
+  acknowledgement (the poisoning rule). Documents with **distinct
+  digests** competing for one challenge serialize on the record key:
+  exactly one commits first; each later evaluation re-selects its
+  branch against the new state — an identical enclosed credential
+  (equal credential digest) lands idempotently via Encounter 5.6
+  step 8 with its own effect and acknowledgement; a conflicting
+  credential **from the record's counterparty** (it passed the
+  counterparty check) is `failed(validation-failed)`; a foreign
+  counterparty is always `failed(consumed-challenge)` (above) —
+  never a second record.
 
 ### 4.2 `delivery-ack/0.1`
 
@@ -227,8 +322,8 @@ The arrival acknowledgement (DO-1).
   failure → the ack is discarded (`failed(validation-failed)`) and the
   sender's status is unchanged.
 - Generation: **automatic at the durable recording of the referenced
-  document's defined effect** (4.1: enactment-record creation; 4.3:
-  durable buffering). It MUST NOT wait for, depend on, or reveal any
+  document's defined effect** (4.1: the committed bundle effect,
+  record-creating or record-aware; 4.3: durable buffering). It MUST NOT wait for, depend on, or reveal any
   human decision, and MUST NOT be sent for a document rejected at
   document level. **The acknowledgement document is created inside
   the effect's transaction and retained together with the
@@ -239,9 +334,20 @@ The arrival acknowledgement (DO-1).
   document MUST re-send exactly this stored document, byte-identical
   — never a newly generated one. After the bound, entry and stored
   acknowledgement MAY be discarded together; a document redelivered
-  later is re-evaluated as fresh, which is harmless: its sender has
-  long reported `failed`, and a bundle's gates fail closed on the
-  consumed challenge.
+  later is re-evaluated as fresh, and byte-identity binds only within
+  the retention bound. The re-evaluation is harmless in both possible
+  states: a bundle whose enactment record still exists (records live
+  for the life of the relation, Encounter 5.5) lands in the
+  **record-aware effect** and is accepted idempotently (equal
+  credential digest, Encounter 5.6 step 8), earning a **freshly
+  generated** acknowledgement; a bundle whose record is gone fails
+  **by derivation from the state model**: with the record deleted,
+  the bound challenge resolves `unknown` (Encounter 5.3 — no
+  challenge history exists beyond open values and records), so
+  check 5 of 4.1 fails — `failed(validation-failed)` — and no gate
+  is ever reached or needed. Its sender has long reported
+  `failed` either way, and a late acknowledgement only transitions
+  that status honestly (6.1).
 - Meaning, normatively and honestly bounded: *the recipient's anchor
   **attests** that the document reached its authenticated device and
   that its defined effect is durably recorded.* It is an attestation,
@@ -251,17 +357,27 @@ The arrival acknowledgement (DO-1).
   acceptance, verification beyond the recording gate, or any human
   act (Encounter 7.4). `meaning` is a closed one-value set in this
   version.
+- **Terminal.** The acknowledgement is a **terminal document**: its
+  defined effect (the sender-status update, idempotent by
+  construction) earns a completed-effect cache entry like any other,
+  retained at least `key-retention` after commit — the same bound as
+  every cache entry — but it generates **no acknowledgement of its
+  own**: there is no acknowledgement of an acknowledgement, and the
+  chain ends here by rule, not by accident. A stage-4 duplicate of a
+  terminal document is `duplicate-known` with **nothing to re-send**
+  (6.2).
 
 ### 4.3 `encounter-credential-delivery/0.1`
 
-Post-enactment delivery of a step credential (two-way ceremony, or the
-counter-step of the one-scan ceremony).
+Post-enactment delivery of a step credential: the counter-step of
+`encounter-scan` (`"counter"`), or a standalone credential delivery
+outside any bundle thread (`"deliver"`).
 
 - `payload`: `{ "credential" }` per
   `schemas/payload-encounter-credential-delivery.schema.json`.
 - **Declarations (TT §7.3):** side effects: buffering only; exposure:
   recipient-only.
-- `threadId`: fresh for two-way deliveries (`ceremony.step` =
+- `threadId`: fresh for standalone deliveries (`ceremony.step` =
   `"deliver"` when the member is used); = the bundle's `threadId` for
   a one-scan counter-step (`"counter"`). `proof`: absent.
 - **Outer/inner consistency (MUST, before any effect):**
@@ -319,9 +435,14 @@ Normative construction, exactly one way:
   knows them. `key-retention` MUST be at least the longest give-up
   horizon any adapter in the deployment declares (6.1), so a key can
   never retire while a delivery sealed to it is still live; adapters
-  therefore declare their horizon. After retirement, an envelope
-  sealed to the retired key fails honestly as
-  `failed(decryption-failed)`.
+  therefore declare their horizon. **A retired identifier remains
+  known indefinitely as a tombstone** — the `rkid` value alone, its
+  private key destroyed; tombstones are a few bytes per card ever
+  issued, and they keep the disposition honest: stage 2's "known"
+  includes tombstones (6.2), so an envelope sealed to a retired key
+  reaches decryption and fails as `failed(decryption-failed)` —
+  never `malformed`, which is reserved for identifiers this party
+  never issued.
 
 A **shipped test vector** (`vectors/seal.json`) fixes recipient key,
 ephemeral key, nonce, plaintext, ciphertext, and document digest;
@@ -359,39 +480,65 @@ failing stage names the disposition:
 
 1. size bound (5) — else `failed(oversize)`;
 2. envelope schema, **base64url canonicity** (lengths `mod 4 ≠ 1`,
-   zero trailing bits) and `rkid` known — else `failed(malformed)`;
+   zero trailing bits) and `rkid` known — live or tombstoned
+   (Section 5) — else `failed(malformed)`;
 3. decryption (all-zero check, tag) — else `failed(decryption-failed)`;
-4. document parse + digest computation; **duplicate check against the
+4. document parse + digest computation — a plaintext that does not
+   parse as JSON or defeats JCS/digest computation is
+   `failed(malformed)`; **duplicate check against the
    completed-effect cache** — the cache contains ONLY digests whose
    stage 9 completed successfully; a digest previously rejected at
    any stage is NOT in it and is re-evaluated in full. Duplicate →
    `duplicate-known`: the prior outcome applies idempotently and the
    **stored** acknowledgement of the completed effect **MUST be
-   re-sent, byte-identical** (it exists by construction: the ack
-   document is retained inside the effect's transaction, stage 9; a
-   crash between commit and transmission would otherwise lose it
-   permanently). Evaluation ends;
+   re-sent, byte-identical** (it exists by construction for every
+   acknowledging type: the ack document is retained inside the
+   effect's transaction, stage 9; a crash between commit and
+   transmission would otherwise lose it permanently — for a
+   **terminal** document, 4.2, no acknowledgement exists and nothing
+   is re-sent). Evaluation ends;
 5. document-profile schema + `recipient` = own anchor — else
    `failed(malformed)` / `failed(wrong-recipient)`;
 6. `type` known — else `failed(unknown-type)`;
 7. payload schema — else `failed(malformed)`;
-8. type consistency rules and record-independent acceptance checks
+8. type consistency rules and pre-lock acceptance checks
    (Section 4, incl. the issuance window for bundles) — else
-   `failed(validation-failed)` / `failed(stale-issuance)`;
-9. **gates and effect, serialized per digest:** stage 9 is a critical
-   section keyed on the document digest — an evaluation entering it
-   while another evaluation of the **same digest** is inside MUST
-   wait for that evaluation to finish and then **re-enter at stage
-   4**. The completed-effect cache therefore never holds provisional
-   state: the waiter either finds a completed entry (→
-   `duplicate-known`, mandatory re-ack, which now provably exists)
-   or finds nothing and proceeds as a fresh evaluation. Inside the
-   critical section: the type's real-time gates (record gate for
-   bundles) — else `failed(consumed-challenge)` /
-   `failed(gate-expired)` — then the effect committed as one durable
-   transaction (record, accepted material, cache entry, **the
-   acknowledgement document itself, retained together with the cache
-   entry per 4.2**; 4.1) → `unique`.
+   `failed(validation-failed)` / `failed(stale-issuance)`; **one
+   exception:** a bundle whose bound challenge provisionally
+   resolves `unknown` (the resolution itself has already latched any
+   held aged value — Encounter 5.3) skips the rest of this stage and
+   enters stage 9, where the authoritative resolution decides:
+   still `unknown` → dispose; any other state → release and
+   re-enter at stage 4 (4.1 check 5);
+9. **gates and effect, serialized per lock set:** stage 9 is a
+   critical section whose **lock set** is the document digest and,
+   for bundles, additionally the credential's bound challenge (the
+   **record key**). The lock protocol, normatively:
+   the full lock set is acquired **atomically, as one acquisition**
+   — never one key after the other; an evaluation whose set overlaps
+   a held set **holds nothing while waiting**; and when the way is
+   free it does not resume — it **re-enters at stage 4**, rechecking
+   the completed-effect cache and re-selecting its branch on the
+   state actually found. One rule covers both keys; there is no
+   ordering to get wrong and no lock held across the re-entry. The
+   record-key namespace and lifetime are shared with the optical
+   input of Encounter 5.8/5.5 — the same lock, not an equivalent one
+   — so record creation, branch selection, and credential uniqueness
+   are serialized with every competing trigger. The completed-effect
+   cache therefore never holds provisional state: a waiter either
+   finds a completed entry (→ `duplicate-known`, mandatory re-ack
+   where one is retained — for a terminal document, 4.2, there is
+   nothing to re-send) or finds nothing and proceeds as a fresh
+   evaluation. Inside the critical section: the authoritative
+   resolution and effects of 4.1 — `open` → record-creating behind
+   the future check (else `failed(gate-future)`), `recorded` → the
+   record decides (foreign counterparty: `failed(consumed-challenge)`;
+   else record-aware), `unknown` → `failed(validation-failed)` —
+   each effect committed as one durable
+   transaction (record where created, accepted material, cache
+   entry, **the acknowledgement document itself where the type
+   acknowledges, retained together with the cache entry per 4.2**;
+   4.1) → `unique`.
 
 **Validate, then consume:** no stage before 9 consumes single-use
 material, and stage 9 consumes only after 1–8 passed in full — for a
@@ -409,23 +556,27 @@ specification.
 Adapters MAY deliver any envelope multiple times; receivers converge
 via stage 4 (`duplicate-known`). A lost acknowledgement is
 indistinguishable from a lost document to the sender; the sender's
-remedy is bounded by `ack-wait` (Section 7) and the ceremony's
-fallback. The resulting parallel enactments are reconciled by
-**Encounter 0.9, 4.2 and 5.8**: both enactments are valid, a late
+remedy is the carrier switch of Encounter 5.8 — the **same
+enactment** continues on the optical leg, and the late bundle is
+accepted via the record (4.1). A **fresh enactment** arises only when
+the optical leg's `boundTo` no longer resolves — the `gate-expired`
+outcome of Encounter 5.8; the resulting parallel enactments are
+reconciled by **Encounter 0.19, 4.2 and 5.8**: both are valid, a late
 counter-credential to the first is accepted, and enactment
 multiplicity never multiplies edges (one edge per anchor pair). This
-contract adds nothing to that rule and relies on it.
+contract adds nothing to those rules and relies on them.
 
 ## 7. Timing
 
 | Parameter | Default | Meaning |
 |---|---|---|
-| `ack-wait` | PT30S | RECOMMENDED sender-side wait before treating a one-scan transmission as failed and offering the two-way fallback; **cancelled by an arriving counter-credential** (Encounter 5.8 step 7) |
+| `ack-wait` | PT30S | RECOMMENDED sender-side wait before **automatically** presenting the optical leg — the carrier switch within the same enactment (Encounter 5.8); presentation is permitted at any moment, and conformance never depends on when the switch happens; **cancelled by an arriving acknowledgement or counter-credential** |
 | `key-retention` | max(P90D, longest adapter give-up horizon) | minimum retention of a key-agreement private key after it last appeared in any card (Section 5) |
 
 `ack-wait` is a UX pacing parameter, not a validity rule: an
 acknowledgement arriving after it is still valid (6.1 late
-transition), and the Encounter merge rule makes any timing safe.
+transition), and the record-aware effect (4.1) makes any switch
+timing safe.
 Delivery time itself is unbounded; no rule in this contract references
 arrival time for validity.
 
@@ -434,8 +585,8 @@ arrival time for validity.
 **Sender (A, one-scan):**
 `scanning → confirmed/sent (waiting animation) → delivered ("nothing
 more to do") → [counter-credential accepted] → relation confirmed`
-— with `waiting --ack-wait elapsed--> two-way screen (show own QR)`,
-and `failed --late valid ack--> delivered`.
+— with `waiting --ack-wait elapsed--> optical presentation (show the
+sent card as QR)`, and `failed --late valid ack--> delivered`.
 
 **Receiver (B, one-scan):**
 `envelope → staged evaluation (6.2) → recorded + auto-ack → prompt:
@@ -473,18 +624,26 @@ no ack and consumes nothing; B's prompt is C4, never automated.
 - **An acknowledgement is a probe response, and this is stated
   precisely:** its presence tells the sender that the recipient's
   device was online **and** that the document passed every stage
-  through recording — including, for a bundle, that the displayed
-  challenge was still unconsumed and the gate open. A sender can
+  through recording — including, for a bundle, that either the
+  displayed challenge was still unconsumed and the gate open
+  (record-creating effect) or that the optical leg had already
+  created the matching record (record-aware effect); the
+  acknowledgement does not distinguish the two. A sender can
   distinguish "online but gate closed" from "recorded" by ack
-  presence. This is inherent to the flow the acknowledgement serves
-  and is bounded by the challenge's short life; implementations MUST
-  NOT extend the ack with further detail.
+  presence. This is inherent to the flow the acknowledgement serves.
+  Its life differs by effect, and this is stated honestly: the **gate
+  probe** ("was the challenge still open?") is bounded by the
+  challenge's short life, but on the **record-aware path** an
+  acknowledgement — stored or freshly generated after retention — can
+  arise for as long as the enactment record lives, revealing arrival
+  and the record's existence to its own counterparty, and nothing
+  more. Implementations MUST NOT extend the ack with further detail.
 - **Sealed content is opaque end to end.**
 
 ## 11. Conformance
 
-- **Profile** `rltp-delivery@0.7`.
-- **Classes:** *sender* (sealing, status trias, ack-wait fallback
+- **Profile** `rltp-delivery@0.17`.
+- **Classes:** *sender* (sealing, status trias, ack-wait switch
   trigger) · *receiver* (unsealing, staged dispositions, ack
   generation) · adapters are below the port line.
 - **Normative schemas (shipped, complete closure for offline
@@ -510,6 +669,47 @@ no ack and consumes nothing; B's prompt is C4, never automated.
   `ceremony` member absent (accepted), present-and-matching
   (accepted), present-and-wrong (rejected) · threadId rules per type
   · status trias transitions including every failure reason ·
+  **record-aware effect:** bundle after optical completion → accepted
+  via record + ack · binding mismatch against record → rejected,
+  nothing consumed · enclosed card not JCS-identical to
+  the record's stored counterparty card → `failed(validation-failed)`
+  · conflicting or re-proofed credential on an existing record →
+  `failed(validation-failed)`, no ack · every Encounter 5.6 rejection
+  exercised on the record-aware path · optical record creation racing
+  a bundle between stage 8 and stage 9 → branch re-selected inside
+  the critical section, accepted via record, never
+  `failed(consumed-challenge)` · two bundles with distinct digests
+  competing for one challenge → exactly one record-creating effect;
+  the other accepted idempotently (equal credential digest), or —
+  **from the record's same counterparty** — a conflicting credential
+  `failed(validation-failed)`, or — foreign counterparty —
+  `failed(consumed-challenge)`; never a second record · crash after a
+  record-aware commit and before ack transmission → redelivery yields
+  the mandatory byte-identical re-ack · **state-model additions:**
+  resolution selects every branch: `open` → record-creating,
+  `recorded` → record decides, `unknown` → `failed(validation-failed)`
+  · card `boundTo` ≠ credential's bound challenge →
+  `failed(validation-failed)` at outer/inner consistency ·
+  wrong-counterparty disposition stable under waiter re-entry
+  (re-resolution yields `recorded` again → `failed(consumed-challenge)`
+  both times) · aged-out challenge, no record → resolution `unknown`
+  → `failed(validation-failed)`, no gate disposition · envelope
+  sealed to a retired (tombstoned) `rkid` → passes stage 2, fails
+  stage 3 `failed(decryption-failed)`; `rkid` never issued →
+  `failed(malformed)` at stage 2 · **polish-round additions:**
+  future-dated own challenge beyond skew at the record-creating gate
+  → `failed(gate-future)` · record held by a different counterparty →
+  `failed(consumed-challenge)`, nothing consumed anew · redelivered
+  `delivery-ack` → `duplicate-known`, no ack-of-ack, sender status
+  unchanged · post-retention redelivery with surviving record →
+  record-aware idempotent acceptance, freshly generated ack;
+  without surviving record → `failed(validation-failed)` at the
+  pre-record checks (check 5), no gate reached · lock-set
+  atomicity: interleaved bundle/optical triggers on one record key
+  under load → no deadlock, one effect per document: every delivery
+  waiter re-enters at stage 4, every optical waiter reacquires its
+  singleton lock and reruns the record resolution of Encounter 5.5 ·
+  invalid JSON inside a valid seal → `failed(malformed)` at stage 4 ·
   **polish-round additions:** framework-expanded `ceremony`
   (`round`/`terminal`/`prev` present → accepted) · credential with
   foreign ceremony label in a bundle → `failed(validation-failed)` ·
@@ -549,5 +749,6 @@ no ack and consumes nothing; B's prompt is C4, never automated.
 [RFC2119] · [RFC8174] BCP 14 · [RFC3339] · [RFC8785] JCS · [RFC5869]
 HKDF · [TT] ToIP DTGWG Trust Tasks framework specification 0.4
 (§4.8.2, §4.11.1, §6.1, §6.3, §6.5, §7.2–7.3) · RLTP Encounter Layer
-0.9 (port §11, binding 5.4, ceremonies 5.8, merge rule 4.2) · Sync
+0.19 (port §11, binding 5.4, ceremony 5.8, state model 5.3, merge
+rule 4.2) · Sync
 001/003 (superseded transport specs, Appendix A).
