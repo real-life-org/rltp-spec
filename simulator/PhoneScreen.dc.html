@@ -18,7 +18,7 @@
     </sc-if>
     <div style="display:flex;justify-content:center;">
       <div style="background:#fff;border:2px solid oklch(90% 0.008 265);border-radius:12px;padding:12px;">
-        <img src="{{ d.qr }}" alt="contact card QR" style="width:196px;height:196px;display:block;image-rendering:pixelated;" />
+        <img src="{{ d.qr }}" alt="contact card QR" style="width:164px;height:164px;display:block;image-rendering:pixelated;" />
       </div>
     </div>
     <div style="text-align:center;font-family:ui-monospace,monospace;font-size:10px;color:oklch(46% 0.008 265);line-height:1.6;">challenge {{ d.challengeValue }}<br />{{ d.challengeAge }}</div>
@@ -34,9 +34,9 @@
 <sc-if value="{{ d.isScanner }}" hint-placeholder-val="{{ false }}">
   <div style="display:flex;flex-direction:column;gap:14px;">
     <div style="font-size:15px;font-weight:700;text-align:center;">Point at {{ d.peerName }}'s code</div>
-    <div style="position:relative;height:300px;border-radius:14px;background:oklch(28% 0.01 265);display:flex;align-items:center;justify-content:center;overflow:hidden;">
-      <div style="width:190px;height:190px;border:2px dashed oklch(78% 0.12 264);border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fff;">
-        <img src="{{ d.peerQr }}" alt="peer QR in viewfinder" style="width:160px;height:160px;image-rendering:pixelated;" />
+    <div style="position:relative;height:250px;border-radius:14px;background:oklch(28% 0.01 265);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+      <div style="width:160px;height:160px;border:2px dashed oklch(78% 0.12 264);border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fff;">
+        <img src="{{ d.peerQr }}" alt="peer QR in viewfinder" style="width:134px;height:134px;image-rendering:pixelated;" />
       </div>
       <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:10px;font-family:ui-monospace,monospace;color:oklch(82% 0.01 247);">camera — carries no traffic</div>
     </div>
@@ -101,7 +101,7 @@
     <div style="font-size:12px;color:oklch(44% 0.008 265);text-wrap:pretty;">No connection right now — the same encounter simply continues by camera.</div>
     <div style="display:flex;justify-content:center;">
       <div style="background:#fff;border:2px solid oklch(90% 0.008 265);border-radius:12px;padding:10px;">
-        <img src="{{ d.bundleQr }}" alt="sealed bundle QR" style="width:210px;height:210px;display:block;image-rendering:pixelated;" />
+        <img src="{{ d.bundleQr }}" alt="sealed bundle QR" style="width:176px;height:176px;display:block;image-rendering:pixelated;" />
       </div>
     </div>
     <div style="font-family:ui-monospace,monospace;font-size:9.5px;color:oklch(46% 0.008 265);line-height:1.6;">carries your contact card for this encounter — same enactment.<br/>your credential follows over the network; delivery time is unbounded</div>
