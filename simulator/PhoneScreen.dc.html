@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<sc-if value="{{ d.isReady }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;flex-direction:column;gap:14px;align-items:stretch;">
+    <div style="text-align:center;">
+      <div style="font-size:19px;font-weight:700;">Verify a person</div>
+      <div style="font-size:12px;color:oklch(44% 0.008 265);margin-top:2px;">Show your code, or scan theirs.</div>
+    </div>
+    <sc-if value="{{ d.fallbackBanner }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size:11px;padding:8px 10px;border-radius:8px;background:oklch(97% 0.04 55);border:1px solid oklch(87% 0.09 55);color:oklch(50% 0.14 55);text-wrap:pretty;">Two-way scan: fresh challenges, second enactment, same edge.</div>
+    </sc-if>
+    <div style="display:flex;justify-content:center;">
+      <div style="background:#fff;border:2px solid oklch(90% 0.008 265);border-radius:12px;padding:12px;">
+        <img src="{{ d.qr }}" alt="contact card QR" style="width:196px;height:196px;display:block;image-rendering:pixelated;" />
+      </div>
+    </div>
+    <div style="text-align:center;font-family:ui-monospace,monospace;font-size:10px;color:oklch(46% 0.008 265);line-height:1.6;">challenge {{ d.challengeValue }}<br />{{ d.challengeAge }}</div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="flex:1;height:1px;background:oklch(90% 0.008 265);"></div>
+      <span style="font-size:11px;color:oklch(55% 0.008 265);">or</span>
+      <div style="flex:1;height:1px;background:oklch(90% 0.008 265);"></div>
+    </div>
+    <button onClick="{{ d.onScan }}" style="align-self:center;display:flex;align-items:center;gap:8px;padding:12px 22px;border:none;border-radius:12px;background:oklch(55% 0.21 264);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Scan code</button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ d.isScanner }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div style="font-size:15px;font-weight:700;text-align:center;">Point at {{ d.peerName }}'s code</div>
+    <div style="position:relative;height:300px;border-radius:14px;background:oklch(28% 0.01 265);display:flex;align-items:center;justify-content:center;overflow:hidden;">
+      <div style="width:190px;height:190px;border:2px dashed oklch(78% 0.12 264);border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fff;">
+        <img src="{{ d.peerQr }}" alt="peer QR in viewfinder" style="width:160px;height:160px;image-rendering:pixelated;" />
+      </div>
+      <div style="position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:10px;font-family:ui-monospace,monospace;color:oklch(82% 0.01 247);">camera — carries no traffic</div>
+    </div>
+    <button onClick="{{ d.onCapture }}" style="padding:12px;border:none;border-radius:12px;background:oklch(55% 0.21 264);color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Capture code</button>
+    <button onClick="{{ d.onCancel }}" style="padding:10px;border:none;border-radius:12px;background:transparent;color:oklch(44% 0.008 265);font-size:13px;cursor:pointer;font-family:inherit;">Cancel</button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ d.isConfirm }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:13px;text-align:center;">
+    <div style="font-size:17px;font-weight:700;">Is this the person in front of you?</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+      <div style="width:70px;height:70px;border-radius:50%;background:oklch(93% 0.05 264);color:oklch(48% 0.18 264);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;">{{ d.peerInitial }}</div>
+      <div style="font-size:19px;font-weight:600;">{{ d.peerName }}</div>
+      <div style="font-family:ui-monospace,monospace;font-size:9.5px;color:oklch(50% 0.008 265);max-width:300px;word-break:break-all;">{{ d.peerAnchor }}</div>
+    </div>
+    <div style="font-size:12px;color:oklch(44% 0.008 265);text-wrap:pretty;">Confirm only if you are meeting them right now. This is the one step no machine takes for you.</div>
+    <div style="display:flex;gap:10px;">
+      <button onClick="{{ d.onCancel }}" style="flex:1;padding:12px;border:2px solid oklch(88% 0.06 27);border-radius:12px;background:transparent;color:oklch(54% 0.19 27);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Cancel</button>
+      <button onClick="{{ d.onConfirm }}" style="flex:1;padding:12px;border:none;border-radius:12px;background:oklch(55% 0.17 142);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Confirm</button>
+    </div>
+    <pre style="font-family:ui-monospace,monospace;font-size:9.5px;line-height:1.65;color:oklch(45% 0.008 265);text-align:left;background:oklch(95% 0.005 265);border-radius:8px;padding:9px 10px;white-space:pre-wrap;word-break:break-all;">{{ d.confirmMeta }}</pre>
+  </div>
+</sc-if>
+
+<sc-if value="{{ d.isWaiting }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:13px;padding-top:70px;text-align:center;">
+    <div style="width:44px;height:44px;border-radius:50%;border:3px solid oklch(90% 0.008 265);border-top-color:oklch(55% 0.21 264);animation:spin 900ms linear infinite;"></div>
+    <div style="font-size:17px;font-weight:700;">Sent to {{ d.peerName }}</div>
+    <div style="font-size:12px;color:oklch(44% 0.008 265);max-width:260px;text-wrap:pretty;">{{ d.waitNote }}</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ d.isDelivered }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding-top:56px;text-align:center;">
+    <div style="width:60px;height:60px;border-radius:50%;background:oklch(94% 0.06 142);color:oklch(48% 0.16 142);display:flex;align-items:center;justify-content:center;font-size:28px;">✓</div>
+    <div style="font-size:17px;font-weight:700;">Arrived on {{ d.peerName }}'s device</div>
+    <div style="font-size:12px;color:oklch(44% 0.008 265);max-width:265px;text-wrap:pretty;">Nothing more to do on your side. Arrival, not acceptance — {{ d.peerName }} decides for themselves.</div>
+    <button onClick="{{ d.onDone }}" style="margin-top:6px;padding:10px 18px;border:1px solid oklch(88% 0.008 265);border-radius:10px;background:transparent;color:oklch(35% 0.008 265);font-size:12px;cursor:pointer;font-family:inherit;">Back</button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ d.isPrompt }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:13px;text-align:center;">
+    <div style="font-size:12px;font-weight:600;color:oklch(48% 0.16 142);">{{ d.peerName }} recognized you</div>
+    <div style="font-size:17px;font-weight:700;">Verify {{ d.peerName }} back?</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:9px;">
+      <div style="width:70px;height:70px;border-radius:50%;background:oklch(93% 0.05 264);color:oklch(48% 0.18 264);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;">{{ d.peerInitial }}</div>
+      <div style="font-family:ui-monospace,monospace;font-size:9.5px;color:oklch(50% 0.008 265);max-width:300px;word-break:break-all;">{{ d.peerAnchor }}</div>
+    </div>
+    <div style="font-size:12px;color:oklch(44% 0.008 265);text-wrap:pretty;">One-sided is a legitimate outcome. Nothing goes back unless you confirm.</div>
+    <div style="display:flex;gap:10px;">
+      <button onClick="{{ d.onLater }}" style="flex:1;padding:12px;border:1px solid oklch(88% 0.008 265);border-radius:12px;background:transparent;color:oklch(40% 0.008 265);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Not now</button>
+      <button onClick="{{ d.onConfirmBack }}" style="flex:1;padding:12px;border:none;border-radius:12px;background:oklch(55% 0.17 142);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">Confirm</button>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ d.isFallback }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:12px;text-align:center;align-items:stretch;">
+    <div style="font-size:17px;font-weight:700;">Show this code to {{ d.peerName }}</div>
+    <div style="font-size:12px;color:oklch(44% 0.008 265);text-wrap:pretty;">No connection right now — the same encounter simply continues by camera.</div>
+    <div style="display:flex;justify-content:center;">
+      <div style="background:#fff;border:2px solid oklch(90% 0.008 265);border-radius:12px;padding:10px;">
+        <img src="{{ d.bundleQr }}" alt="sealed bundle QR" style="width:210px;height:210px;display:block;image-rendering:pixelated;" />
+      </div>
+    </div>
+    <div style="font-family:ui-monospace,monospace;font-size:9.5px;color:oklch(46% 0.008 265);line-height:1.6;">carries your contact card for this encounter — same enactment.<br/>your credential follows over the network; delivery time is unbounded</div>
+    <button onClick="{{ d.onKeepWaiting }}" style="padding:10px;border:none;background:transparent;color:oklch(44% 0.008 265);font-size:12px;cursor:pointer;font-family:inherit;">Keep waiting for the network instead</button>
+    <button onClick="{{ d.onFallback }}" style="padding:8px;border:none;background:transparent;color:oklch(50% 0.008 265);font-size:11px;cursor:pointer;font-family:inherit;">Start over with a fresh scan (if this code cannot be read)</button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ d.isVerifiedBack }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding-top:44px;text-align:center;">
+    <div style="width:62px;height:62px;border-radius:50%;background:oklch(93% 0.05 264);color:oklch(48% 0.18 264);display:flex;align-items:center;justify-content:center;font-size:28px;">→</div>
+    <div style="font-size:18px;font-weight:700;">You verified {{ d.peerName }}</div>
+    <div style="font-size:12px;color:oklch(44% 0.008 265);max-width:275px;text-wrap:pretty;">Your credential is on its way to them. Theirs about you arrives with the network — the edge becomes mutual only when you hold it. {{ d.edgeLine }}</div>
+    <button onClick="{{ d.onDone }}" style="margin-top:6px;padding:10px 18px;border:1px solid oklch(88% 0.008 265);border-radius:10px;background:transparent;color:oklch(35% 0.008 265);font-size:12px;cursor:pointer;font-family:inherit;">Back</button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ d.isConfirmed }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding-top:44px;text-align:center;">
+    <div style="width:62px;height:62px;border-radius:50%;background:oklch(94% 0.06 142);color:oklch(48% 0.16 142);display:flex;align-items:center;justify-content:center;font-size:30px;">✓</div>
+    <div style="font-size:18px;font-weight:700;">Mutual with {{ d.peerName }}</div>
+    <div style="font-size:12px;color:oklch(44% 0.008 265);max-width:275px;text-wrap:pretty;">{{ d.edgeLine }}</div>
+    <button onClick="{{ d.onDone }}" style="margin-top:6px;padding:10px 18px;border:1px solid oklch(88% 0.008 265);border-radius:10px;background:transparent;color:oklch(35% 0.008 265);font-size:12px;cursor:pointer;font-family:inherit;">Back</button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ d.isOneSided }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;padding-top:50px;text-align:center;">
+    <div style="width:60px;height:60px;border-radius:50%;background:oklch(95% 0.005 265);color:oklch(45% 0.008 265);display:flex;align-items:center;justify-content:center;font-size:26px;">→</div>
+    <div style="font-size:17px;font-weight:700;">Incoming only</div>
+    <div style="font-size:12px;color:oklch(44% 0.008 265);max-width:265px;text-wrap:pretty;">{{ d.edgeLine }}</div>
+    <button onClick="{{ d.onDone }}" style="margin-top:6px;padding:10px 18px;border:1px solid oklch(88% 0.008 265);border-radius:10px;background:transparent;color:oklch(35% 0.008 265);font-size:12px;cursor:pointer;font-family:inherit;">Back</button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ d.isError }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:11px;padding-top:56px;text-align:center;">
+    <div style="width:54px;height:54px;border-radius:50%;background:oklch(95% 0.05 27);color:oklch(54% 0.19 27);display:flex;align-items:center;justify-content:center;font-size:24px;">✕</div>
+    <div style="font-size:16px;font-weight:700;">{{ d.errorTitle }}</div>
+    <div style="font-family:ui-monospace,monospace;font-size:11px;color:oklch(54% 0.19 27);">{{ d.errorCode }}</div>
+    <div style="font-size:12px;color:oklch(44% 0.008 265);max-width:265px;text-wrap:pretty;">{{ d.errorText }}</div>
+    <button onClick="{{ d.onDone }}" style="margin-top:6px;padding:10px 18px;border:1px solid oklch(88% 0.008 265);border-radius:10px;background:transparent;color:oklch(35% 0.008 265);font-size:12px;cursor:pointer;font-family:inherit;">Back</button>
+  </div>
+</sc-if>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:400,&quot;height&quot;:560},&quot;d&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;object&quot;}}"></script>
+</body>
+</html>

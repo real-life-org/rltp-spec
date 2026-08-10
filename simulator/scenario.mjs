@@ -1,0 +1,111 @@
+#!/usr/bin/env node
+// The ONE ceremony, executable: encounter-scan@0.19 with its connected and
+// optical legs. Anton's unification — the lost-ack case now switches
+// carriers WITHIN the same enactment (no second enactment, no fresh
+// challenges), and the late bundle lands via the record-aware effect.
+// Run against the real engine.
+
+import {
+  createPerson, displayCard, sentCard, issueCredential, binding,
+  bundleDocument, credentialDeliveryDocument, seal, receiveEnvelope,
+  opticalInput, resolve, tryAccept, noteIssued, edgeState, docDigest,
+  PARAMS, CEREMONY,
+} from './engine.mjs'
+import { createPublicKey } from 'node:crypto'
+
+const X_SPKI = Buffer.from('302a300506032b656e032100', 'hex')
+const xPub = (p) => createPublicKey({ key: Buffer.concat([X_SPKI, p.keys.xRaw]), format: 'der', type: 'spki' })
+let now = Date.parse('2026-08-10T15:00:00Z')
+const t = (label) => console.log(`\n─── ${label} ───`)
+const assert = (cond, msg) => { if (!cond) { console.error(`✗ ASSERT: ${msg}`); process.exit(1) } console.log(`✓ ${msg}`) }
+
+// A scans B's displayed card and prepares the enactment (common trunk 1–3)
+function scan(scanner, displayed, when) {
+  const s = sentCard(scanner, displayed.anchor, displayed.challenge.value, when)
+  const bind = binding(CEREMONY, displayed.challenge.value, s.challenge.value)
+  const cred = issueCredential(scanner, displayed.anchor, CEREMONY, displayed.challenge.value, bind, when)
+  const bundle = bundleDocument(scanner, s.card, cred, bind, when)
+  scanner.records.set(s.challenge.value, { ceremony: CEREMONY, counterparty: displayed.anchor, card: displayed, own: s.challenge, other: displayed.challenge, binding: bind, time: when })
+  scanner.open.delete(s.challenge.value)
+  noteIssued(scanner, displayed.anchor, cred)
+  scanner.senderStatus.set(docDigest(bundle), 'accepted')
+  return { s, bind, cred, bundle }
+}
+
+const alice = createPerson('Alice')
+const bob = createPerson('Bob')
+
+// ════ Szenario 1: connected path (Netz da) ════
+t('Szenario 1: encounter-scan, connected path')
+const cardB = displayCard(bob, now)
+const e1 = scan(alice, cardB, now)
+const r1 = receiveEnvelope(bob, seal(e1.bundle, bob.keyAgreement, xPub(bob)), now += 5_000)
+assert(r1.disposition === 'unique' && r1.via === 'record-creating', 'Bs Record + Accept + Ack in einer Transaktion (record-creating)')
+receiveEnvelope(alice, seal(r1.ack, alice.keyAgreement, xPub(alice)), now += 2_000)
+assert(alice.senderStatus.get(docDigest(e1.bundle)) === 'delivered', 'A sieht delivered — Ladeanimation verschwindet')
+const counter1 = issueCredential(bob, alice.anchor, CEREMONY, e1.s.challenge.value, e1.bind, now += 60_000)
+noteIssued(bob, alice.anchor, counter1)
+const r1c = receiveEnvelope(alice, seal(credentialDeliveryDocument(bob, counter1, e1.bundle.threadId, 'counter', now), alice.keyAgreement, xPub(alice)), now += 3_000)
+assert(r1c.acceptance === 'accepted', 'As Acceptance des Gegen-Credentials')
+assert(edgeState(alice, bob.anchor) === 'mutual' && edgeState(bob, alice.anchor) === 'mutual', 'beidseitig mutual')
+
+// ════ Szenario 2: Bundle kommt nicht durch → OPTISCHER LEG, EIN Enactment ════
+t('Szenario 2: kein Ack → Carrier-Wechsel im SELBEN Enactment → später Bundle via Record')
+const carol = createPerson('Carol')
+const cardC = displayCard(carol, now)
+const e2 = scan(alice, cardC, now)
+// … das Bundle erreicht Carol nicht. A wartet ack-wait ab, zeigt die SENT CARD optisch:
+now += PARAMS.ackWait + 1_000
+assert(alice.senderStatus.get(docDigest(e2.bundle)) === 'accepted', 'A: kein Ack → optische Präsentation der Sent Card (kein neues Enactment)')
+const o2 = opticalInput(carol, e2.s.card, now)
+assert(o2.outcome === 'recorded', 'Carol: Record via optischem Scan — Enactment komplett')
+assert(edgeState(carol, alice.anchor) === 'none', 'Carols Kante ist höchstens outgoing — mutual wird nie inferiert')
+const o2again = opticalInput(carol, e2.s.card, now + 2_000)
+assert(o2again.outcome === 'idempotent', 'Re-Scan → derselbe eine Record (idempotent)')
+// … Stunden später kommt das Netz zurück: das ALTE Bundle liefert nach
+now += 2 * 3600_000
+const r2 = receiveEnvelope(carol, seal(e2.bundle, carol.keyAgreement, xPub(carol)), now)
+assert(r2.disposition === 'unique' && r2.via === 'record-aware', 'spätes Bundle via Record akzeptiert — nie consumed-challenge')
+receiveEnvelope(alice, seal(r2.ack, alice.keyAgreement, xPub(alice)), now += 2_000)
+assert(alice.senderStatus.get(docDigest(e2.bundle)) === 'delivered', 'A: spätes Ack → delivered')
+const counter2 = issueCredential(carol, alice.anchor, CEREMONY, e2.s.challenge.value, e2.bind, now += 30_000)
+noteIssued(carol, alice.anchor, counter2)
+const r2c = receiveEnvelope(alice, seal(credentialDeliveryDocument(carol, counter2, e2.bundle.threadId, 'counter', now), alice.keyAgreement, xPub(alice)), now)
+assert(r2c.acceptance === 'accepted', 'Gegen-Credential akzeptiert (Ausstellung zählt, Ankunft nie)')
+assert(edgeState(alice, carol.anchor) === 'mutual' && edgeState(carol, alice.anchor) === 'mutual', 'mutual — EIN Enactment, EINE Kante, kein E2')
+assert(alice.records.size === 2 && carol.records.size === 1, 'genau ein Record pro Seite für Alice–Carol')
+
+// ════ Szenario 3: gate-expired am optischen Leg → frisches Enactment, eine Kante ════
+t('Szenario 3: Challenge gealtert → gate-expired → frisches Enactment → Merge')
+const dave = createPerson('Dave')
+const cardD = displayCard(dave, now)
+const e3 = scan(alice, cardD, now)
+now += PARAMS.challengeMaxAge + PARAMS.skew + 60_000 // Daves Challenge altert aus
+const o3 = opticalInput(dave, e3.s.card, now)
+assert(o3.outcome === 'gate-expired', 'optischer Scan refused: gate-expired (Resolution: unknown, gelatcht)')
+// Rückwärts-Uhr kann nichts wiederbeleben — der Latch steht:
+const backThen = now - PARAMS.challengeMaxAge - PARAMS.skew - 50_000
+assert(resolve(dave, cardD.challenge.value, backThen).state === 'unknown', 'Rückwärts-Uhr: Wert bleibt unknown (monotoner Latch)')
+// frisches Enactment als letzter Ausweg:
+const cardD2 = displayCard(dave, now)
+const e3b = scan(alice, cardD2, now)
+const r3 = receiveEnvelope(dave, seal(e3b.bundle, dave.keyAgreement, xPub(dave)), now += 3_000)
+assert(r3.disposition === 'unique', 'frisches Enactment läuft durch')
+const counter3 = issueCredential(dave, alice.anchor, CEREMONY, e3b.s.challenge.value, e3b.bind, now += 5_000)
+noteIssued(dave, alice.anchor, counter3)
+receiveEnvelope(alice, seal(credentialDeliveryDocument(dave, counter3, e3b.bundle.threadId, 'counter', now), alice.keyAgreement, xPub(alice)), now)
+assert(edgeState(alice, dave.anchor) === 'mutual', 'Merge-Regel: EINE Kante Alice–Dave trotz zweier Enactments')
+assert(alice.edges.size === 3, 'Alice hat genau drei Kanten (Bob, Carol, Dave)')
+
+// ════ Szenario 4: Vergiftungs-Versuch — Müll-Bundle verbrennt nichts ════
+t('Szenario 4: Beobachter schickt Müll — validate, then consume')
+const mallory = createPerson('Mallory')
+const cardB2 = displayCard(bob, now)
+const sM = sentCard(mallory, bob.anchor, cardB2.challenge.value, now)
+const fakeBind = binding(CEREMONY, cardB2.challenge.value, sM.challenge.value)
+const fakeCred = issueCredential(mallory, bob.anchor, 'two-way-scan@0.9', cardB2.challenge.value, fakeBind, now) // falsches Label!
+const rM = receiveEnvelope(bob, seal(bundleDocument(mallory, sM.card, fakeCred, fakeBind, now), bob.keyAgreement, xPub(bob)), now)
+assert(rM.disposition.startsWith('failed'), `Müll-Bundle abgelehnt: ${rM.disposition}`)
+assert(resolve(bob, cardB2.challenge.value, now).state === 'open', 'Bs Challenge NICHT verbrannt — bleibt open, der echte Scanner kann noch')
+
+console.log('\n════ Alle Szenarien bestanden — die EINE Zeremonie läuft. ════')

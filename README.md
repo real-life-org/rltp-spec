@@ -22,6 +22,7 @@ been exercised at festivals and community gatherings since 2026.
 | [`contexts/`](contexts/) | The pinned RLTP JSON-LD context |
 | [`vectors/seal.json`](vectors/seal.json) | Deterministic seal test vector — implementations MUST reproduce it byte-for-byte |
 | [`interop/ceremonies/`](interop/ceremonies/) | RLTP ceremonies expressed in the ToIP DTGWG ceremony-definition format |
+| [`simulator/`](simulator/) | Interactive browser simulator of the full ceremony (both paths, fault injections) + a Node reference engine |
 | [`scripts/validate.mjs`](scripts/validate.mjs) | Publication checks: schema compilation, vector recomputation, and conformance fixtures that MUST fail |
 
 ## Status

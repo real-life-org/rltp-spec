@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  html,body{margin:0;padding:0;background:oklch(18% 0.018 265);}
+  *{box-sizing:border-box;}
+  a{color:oklch(70% 0.15 264);text-decoration:none;}
+  a:hover{color:oklch(80% 0.12 264);}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  pre{margin:0;}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+</helmet>
+<div style="min-width:1480px;min-height:100vh;padding:22px 26px 44px;background:oklch(18% 0.018 265);color:oklch(95% 0.01 247);font-family:'Helvetica Neue',Helvetica,-apple-system,system-ui,sans-serif;">
+
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding-bottom:16px;border-bottom:1px solid oklch(30% 0.02 265);">
+    <div>
+      <div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:oklch(70% 0.01 247);font-family:ui-monospace,'SF Mono',Menlo,monospace;">Real Life Trust Protocol</div>
+      <h1 style="margin:6px 0 4px;font-size:26px;font-weight:700;letter-spacing:-0.01em;">Ceremony Simulator</h1>
+      <div style="font-size:13px;color:oklch(70% 0.01 247);max-width:800px;text-wrap:pretty;">Two app instances, one delivery channel. Encounter Layer 0.19 — the one ceremony <span style="font-family:ui-monospace,monospace;">encounter-scan@0.19</span> with a connected and an optical leg — over Delivery Contract 0.17.</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:9px;">
+      <span style="font-family:ui-monospace,monospace;font-size:11px;padding:6px 9px;border-radius:6px;background:oklch(25% 0.02 265);border:1px solid oklch(32% 0.02 265);color:{{ cryptoColor }};">{{ cryptoBadge }}</span>
+      <span style="font-family:ui-monospace,monospace;font-size:11px;padding:6px 9px;border-radius:6px;background:oklch(25% 0.02 265);border:1px solid oklch(32% 0.02 265);color:{{ vectorColor }};">{{ vectorBadge }}</span>
+      <button onClick="{{ onReset }}" style="font-size:12px;font-weight:600;padding:9px 14px;border-radius:8px;border:1px solid oklch(38% 0.02 265);background:transparent;color:oklch(90% 0.01 247);cursor:pointer;font-family:inherit;">Reset both devices</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:400px minmax(560px,1fr) 400px;gap:22px;align-items:start;padding-top:20px;">
+
+    <!-- DEVICE A -->
+    <div style="display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;">{{ A.name }}</div>
+          <div style="font-family:ui-monospace,monospace;font-size:10px;color:oklch(65% 0.01 247);">{{ A.anchorShort }}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button onClick="{{ A.toggleOnline }}" style="font-size:10px;font-family:ui-monospace,monospace;padding:5px 8px;border-radius:6px;border:1px solid oklch(35% 0.02 265);background:{{ A.onlineBg }};color:oklch(88% 0.01 247);cursor:pointer;">{{ A.onlineLabel }}</button>
+          <button onClick="{{ A.cycleSkew }}" style="font-size:10px;font-family:ui-monospace,monospace;padding:5px 8px;border-radius:6px;border:1px solid oklch(35% 0.02 265);background:{{ A.skewBg }};color:oklch(88% 0.01 247);cursor:pointer;">{{ A.skewLabel }}</button>
+        </div>
+      </div>
+
+      <div style="width:400px;border-radius:34px;padding:9px;background:oklch(12% 0.01 265);box-shadow:0 18px 40px -16px rgba(0,0,0,.7);">
+        <div style="border-radius:26px;overflow:hidden;background:oklch(98% 0.003 265);color:oklch(22% 0.004 265);height:604px;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 4px;font-size:11px;font-family:ui-monospace,monospace;color:oklch(44% 0.008 265);">
+            <span>{{ A.clock }}</span><span>Web of Trust</span><span>{{ A.statusRight }}</span>
+          </div>
+          <div style="flex:1;overflow:auto;padding:14px 20px 22px;">
+            <dc-import name="PhoneScreen" d="{{ A }}" hint-size="100%,520px"></dc-import>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:oklch(62% 0.01 247);font-family:ui-monospace,monospace;padding-top:4px;">Stored on this device</div>
+      <sc-for list="{{ A.groups }}" as="g" hint-placeholder-count="6">
+        <div style="border:1px solid oklch(30% 0.02 265);border-radius:10px;background:oklch(22% 0.02 265);overflow:hidden;">
+          <button onClick="{{ g.toggle }}" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border:none;background:transparent;color:oklch(92% 0.01 247);font-size:12px;font-weight:600;cursor:pointer;text-align:left;font-family:inherit;">
+            <span>{{ g.title }}</span>
+            <span style="font-family:ui-monospace,monospace;font-size:10px;color:oklch(70% 0.01 247);">{{ g.badge }}</span>
+          </button>
+          <sc-if value="{{ g.open }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:0 11px 11px;display:flex;flex-direction:column;gap:8px;">
+              <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="1">
+                <div style="border-top:1px solid oklch(28% 0.02 265);padding-top:8px;">
+                  <div style="font-size:11px;font-weight:600;color:oklch(88% 0.01 247);">{{ it.title }}</div>
+                  <div style="font-family:ui-monospace,monospace;font-size:10px;color:oklch(68% 0.01 247);margin:2px 0 6px;">{{ it.sub }}</div>
+                  <pre style="font-family:ui-monospace,monospace;font-size:9.5px;line-height:1.5;color:oklch(84% 0.05 160);background:oklch(15% 0.015 265);border-radius:6px;padding:8px;overflow:auto;max-height:240px;white-space:pre-wrap;word-break:break-all;">{{ it.json }}</pre>
+                </div>
+              </sc-for>
+              <sc-if value="{{ g.empty }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:11px;color:oklch(62% 0.01 247);padding-top:6px;">empty</div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- CHANNEL COLUMN -->
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="border:1px solid oklch(30% 0.02 265);border-radius:12px;background:oklch(22% 0.02 265);padding:14px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;">
+          <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:oklch(62% 0.01 247);font-family:ui-monospace,monospace;">Fault injection</div>
+          <div style="font-family:ui-monospace,monospace;font-size:10px;color:oklch(62% 0.01 247);">clock skew: per-device buttons</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding-top:10px;">
+          <sc-for list="{{ faults }}" as="f" hint-placeholder-count="8">
+            <button onClick="{{ f.toggle }}" style="display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border:1px solid {{ f.border }};border-radius:9px;background:{{ f.bg }};color:oklch(92% 0.01 247);cursor:pointer;text-align:left;font-family:inherit;">
+              <span style="font-family:ui-monospace,monospace;font-size:11px;color:{{ f.dot }};">{{ f.mark }}</span>
+              <span>
+                <span style="display:block;font-size:11.5px;font-weight:600;">{{ f.label }}</span>
+                <span style="display:block;font-family:ui-monospace,monospace;font-size:9.5px;color:oklch(68% 0.01 247);margin-top:2px;">{{ f.effect }}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="border:1px solid oklch(30% 0.02 265);border-radius:12px;background:oklch(22% 0.02 265);padding:14px;">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;">
+          <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:oklch(62% 0.01 247);font-family:ui-monospace,monospace;">Delivery channel · sealed envelopes</div>
+          <div style="font-family:ui-monospace,monospace;font-size:10px;color:oklch(65% 0.01 247);">{{ channelNote }}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;padding-top:11px;">
+          <sc-for list="{{ envelopes }}" as="e" hint-placeholder-count="2">
+            <button onClick="{{ e.select }}" style="display:grid;grid-template-columns:76px 1fr auto;gap:10px;align-items:center;padding:9px 11px;border:1px solid {{ e.border }};border-radius:9px;background:{{ e.bg }};cursor:pointer;text-align:left;font-family:inherit;color:oklch(92% 0.01 247);">
+              <span style="font-family:ui-monospace,monospace;font-size:11px;color:oklch(78% 0.01 247);">{{ e.dir }}</span>
+              <span>
+                <span style="display:block;font-family:ui-monospace,monospace;font-size:11.5px;font-weight:600;">{{ e.type }}</span>
+                <span style="display:block;font-family:ui-monospace,monospace;font-size:9.5px;color:oklch(68% 0.01 247);margin-top:2px;">{{ e.meta }}</span>
+              </span>
+              <span style="font-family:ui-monospace,monospace;font-size:10px;padding:3px 7px;border-radius:5px;background:{{ e.pillBg }};color:{{ e.pillFg }};">{{ e.status }}</span>
+            </button>
+          </sc-for>
+          <sc-if value="{{ noEnvelopes }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:12px;color:oklch(64% 0.01 247);padding:10px 2px;text-wrap:pretty;">Nothing on the channel yet. Tap <strong style="color:oklch(85% 0.01 247);">Scan code</strong> on either device — the camera leg carries no traffic, so the first envelope appears when the scanner confirms recognition.</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ false }}">
+        <div style="border:1px solid oklch(36% 0.02 265);border-radius:12px;background:oklch(20% 0.02 265);padding:14px;">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;">
+            <div style="font-family:ui-monospace,monospace;font-size:12px;font-weight:600;">{{ selTitle }}</div>
+            <button onClick="{{ onCloseSel }}" style="border:none;background:transparent;color:oklch(70% 0.01 247);font-size:11px;cursor:pointer;font-family:inherit;">close</button>
+          </div>
+          <div style="font-family:ui-monospace,monospace;font-size:10px;color:oklch(68% 0.01 247);padding-top:3px;">{{ selSub }}</div>
+          <div style="padding-top:10px;display:flex;flex-direction:column;gap:3px;">
+            <sc-for list="{{ selStages }}" as="st" hint-placeholder-count="3">
+              <div style="display:flex;gap:8px;align-items:baseline;font-family:ui-monospace,monospace;font-size:10.5px;">
+                <span style="color:{{ st.color }};width:12px;flex:none;">{{ st.mark }}</span>
+                <span style="color:{{ st.textColor }};">{{ st.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <sc-for list="{{ selBlocks }}" as="b" hint-placeholder-count="3">
+            <div style="padding-top:12px;">
+              <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:oklch(62% 0.01 247);font-family:ui-monospace,monospace;padding-bottom:5px;">{{ b.title }}</div>
+              <pre style="font-family:ui-monospace,monospace;font-size:9.5px;line-height:1.6;color:oklch(86% 0.05 200);background:oklch(15% 0.015 265);border-radius:8px;padding:10px;overflow:auto;max-height:320px;white-space:pre-wrap;word-break:break-all;">{{ b.body }}</pre>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <div style="border:1px solid oklch(30% 0.02 265);border-radius:12px;background:oklch(22% 0.02 265);padding:14px;">
+        <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:oklch(62% 0.01 247);font-family:ui-monospace,monospace;">Protocol log</div>
+        <div style="display:flex;flex-direction:column;gap:2px;padding-top:9px;max-height:300px;overflow:auto;">
+          <sc-for list="{{ log }}" as="l" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:60px 34px 1fr;gap:9px;font-family:ui-monospace,monospace;font-size:10px;line-height:1.75;">
+              <span style="color:oklch(56% 0.01 247);">{{ l.t }}</span>
+              <span style="color:{{ l.who }};">{{ l.tag }}</span>
+              <span style="color:{{ l.color }};">{{ l.text }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noLog }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:11.5px;color:oklch(62% 0.01 247);">Nothing yet.</div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEVICE B -->
+    <div style="display:flex;flex-direction:column;gap:11px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div>
+          <div style="font-size:15px;font-weight:700;">{{ B.name }}</div>
+          <div style="font-family:ui-monospace,monospace;font-size:10px;color:oklch(65% 0.01 247);">{{ B.anchorShort }}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <button onClick="{{ B.toggleOnline }}" style="font-size:10px;font-family:ui-monospace,monospace;padding:5px 8px;border-radius:6px;border:1px solid oklch(35% 0.02 265);background:{{ B.onlineBg }};color:oklch(88% 0.01 247);cursor:pointer;">{{ B.onlineLabel }}</button>
+          <button onClick="{{ B.cycleSkew }}" style="font-size:10px;font-family:ui-monospace,monospace;padding:5px 8px;border-radius:6px;border:1px solid oklch(35% 0.02 265);background:{{ B.skewBg }};color:oklch(88% 0.01 247);cursor:pointer;">{{ B.skewLabel }}</button>
+        </div>
+      </div>
+
+      <div style="width:400px;border-radius:34px;padding:9px;background:oklch(12% 0.01 265);box-shadow:0 18px 40px -16px rgba(0,0,0,.7);">
+        <div style="border-radius:26px;overflow:hidden;background:oklch(98% 0.003 265);color:oklch(22% 0.004 265);height:604px;display:flex;flex-direction:column;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px 4px;font-size:11px;font-family:ui-monospace,monospace;color:oklch(44% 0.008 265);">
+            <span>{{ B.clock }}</span><span>Web of Trust</span><span>{{ B.statusRight }}</span>
+          </div>
+          <div style="flex:1;overflow:auto;padding:14px 20px 22px;">
+            <dc-import name="PhoneScreen" d="{{ B }}" hint-size="100%,520px"></dc-import>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:oklch(62% 0.01 247);font-family:ui-monospace,monospace;padding-top:4px;">Stored on this device</div>
+      <sc-for list="{{ B.groups }}" as="g" hint-placeholder-count="6">
+        <div style="border:1px solid oklch(30% 0.02 265);border-radius:10px;background:oklch(22% 0.02 265);overflow:hidden;">
+          <button onClick="{{ g.toggle }}" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;border:none;background:transparent;color:oklch(92% 0.01 247);font-size:12px;font-weight:600;cursor:pointer;text-align:left;font-family:inherit;">
+            <span>{{ g.title }}</span>
+            <span style="font-family:ui-monospace,monospace;font-size:10px;color:oklch(70% 0.01 247);">{{ g.badge }}</span>
+          </button>
+          <sc-if value="{{ g.open }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:0 11px 11px;display:flex;flex-direction:column;gap:8px;">
+              <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="1">
+                <div style="border-top:1px solid oklch(28% 0.02 265);padding-top:8px;">
+                  <div style="font-size:11px;font-weight:600;color:oklch(88% 0.01 247);">{{ it.title }}</div>
+                  <div style="font-family:ui-monospace,monospace;font-size:10px;color:oklch(68% 0.01 247);margin:2px 0 6px;">{{ it.sub }}</div>
+                  <pre style="font-family:ui-monospace,monospace;font-size:9.5px;line-height:1.5;color:oklch(84% 0.05 160);background:oklch(15% 0.015 265);border-radius:6px;padding:8px;overflow:auto;max-height:240px;white-space:pre-wrap;word-break:break-all;">{{ it.json }}</pre>
+                </div>
+              </sc-for>
+              <sc-if value="{{ g.empty }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:11px;color:oklch(62% 0.01 247);padding-top:6px;">empty</div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1480,&quot;height&quot;:1200}}">
+class Component extends DCLogic {
+  state = { tick: 0 };
+
+  // ---------- constants ----------
+  C1 = 'encounter-scan@0.19';        // the ONE ceremony (Encounter 5.8)
+  C2 = 'two-way-scan@0.9';           // legacy label, used only by the 'foreign' fault
+  CARDV = 'rltp-card/0.19';
+  CREDF = 'rltp-encounter-credential/0.19';
+  MAX_AGE = 5 * 60 * 1000;
+  SKEW = 5 * 60 * 1000;
+  ISSUANCE = 24 * 60 * 60 * 1000;
+  ACK_WAIT = 12000;
+  TT = 'https://real-life.org/trust-tasks/';
+
+  componentDidMount() {
+    this.channel = [];
+    this.logs = [];
+    this.open = {};
+    this.sel = null;
+    this.seq = 0;
+    this.faultDefs = [
+      ['ackLost', 'Lose the delivery-ack', 'ack-wait elapses -> optical leg (same enactment)'],
+      ['dup', 'Deliver the bundle twice', 'stage 4 duplicate-known, byte-identical re-ack'],
+      ['expired', 'Backdate displayed challenge 12 min', 'aged -> resolution unknown (latched) · failed(validation-failed)'],
+      ['consumed', 'Challenge already in a record', 'resolution recorded, foreign counterparty · failed(consumed-challenge)'],
+      ['tamper', 'Alter credential after signing', 'stage 8 ERR_SIG / validation-failed'],
+      ['foreign', 'Label credential two-way-scan@0.9 (legacy)', 'stage 8 failed(validation-failed)'],
+      ['hold', 'Hold envelopes in the channel', 'delivery delayed, unbounded'],
+    ];
+    this.f = {};
+    this.faultDefs.forEach(([k]) => (this.f[k] = false));
+    this.edOK = true;
+    this.cryptoBadge = 'webcrypto: booting';
+    this.vectorBadge = 'seal vector: checking';
+    this.boot();
+    this.timer = setInterval(() => this.beat(), 300);
+  }
+  componentWillUnmount() { clearInterval(this.timer); }
+
+  bump() { this.setState(s => ({ tick: s.tick + 1 })); }
+
+  // ---------- encoding ----------
+  b64u(b) { let s = ''; b.forEach(x => (s += String.fromCharCode(x))); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  ub64u(s) { const t = s.replace(/-/g, '+').replace(/_/g, '/'); const r = atob(t + '==='.slice((t.length + 3) % 4)); return Uint8Array.from(r, c => c.charCodeAt(0)); }
+  b58(bytes) {
+    const A = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    const d = []; let z = 0;
+    while (z < bytes.length && bytes[z] === 0) z++;
+    for (let i = z; i < bytes.length; i++) {
+      let c = bytes[i];
+      for (let j = 0; j < d.length; j++) { c += d[j] << 8; d[j] = c % 58; c = (c / 58) | 0; }
+      while (c) { d.push(c % 58); c = (c / 58) | 0; }
+    }
+    let out = '1'.repeat(z);
+    for (let i = d.length - 1; i >= 0; i--) out += A[d[i]];
+    return out || '1';
+  }
+  ub58(str) {
+    const A = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    const d = []; let z = 0;
+    while (z < str.length && str[z] === '1') z++;
+    for (let i = z; i < str.length; i++) {
+      let c = A.indexOf(str[i]); if (c < 0) return new Uint8Array();
+      for (let j = 0; j < d.length; j++) { c += d[j] * 58; d[j] = c & 255; c >>= 8; }
+      while (c) { d.push(c & 255); c >>= 8; }
+    }
+    const out = new Uint8Array(z + d.length);
+    for (let i = 0; i < d.length; i++) out[z + i] = d[d.length - 1 - i];
+    return out;
+  }
+  jcs(v) {
+    if (v === null || typeof v !== 'object') return JSON.stringify(v);
+    if (Array.isArray(v)) return '[' + v.map(x => this.jcs(x)).join(',') + ']';
+    const ks = Object.keys(v).filter(k => v[k] !== undefined).sort();
+    return '{' + ks.map(k => JSON.stringify(k) + ':' + this.jcs(v[k])).join(',') + '}';
+  }
+  async sha256(bytes) { return new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)); }
+  async mdigest(obj) {
+    const h = await this.sha256(new TextEncoder().encode(typeof obj === 'string' ? obj : this.jcs(obj)));
+    const mh = new Uint8Array(34); mh[0] = 0x12; mh[1] = 0x20; mh.set(h, 2);
+    return 'u' + this.b64u(mh);
+  }
+  multikey(raw, prefixA, prefixB) { const b = new Uint8Array(34); b[0] = prefixA; b[1] = prefixB; b.set(raw, 2); return 'z' + this.b58(b); }
+  anchorPub(anchor) { return this.ub58(anchor.slice('did:key:z'.length)).slice(2); }
+  fresh() { return this.b64u(crypto.getRandomValues(new Uint8Array(16))); }
+  iso(ms) { return new Date(ms).toISOString().replace(/\.\d+Z$/, 'Z'); }
+  now(dev) { return Date.now() + dev.skew; }
+
+  // ---------- keys / proofs ----------
+  async genSign() {
+    const kp = await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify']);
+    return { kp, raw: new Uint8Array(await crypto.subtle.exportKey('raw', kp.publicKey)) };
+  }
+  async genKA() {
+    const kp = await crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
+    return { kp, raw: new Uint8Array(await crypto.subtle.exportKey('raw', kp.publicKey)) };
+  }
+  proofMsg(cfg, doc) { const { proofValue, ...c } = cfg; return new TextEncoder().encode(this.jcs(c) + this.jcs(doc)); }
+  async sign(dev, doc) {
+    const id = dev.anchor.slice('did:key:'.length);
+    const cfg = { type: 'DataIntegrityProof', cryptosuite: 'eddsa-jcs-2022', created: this.iso(this.now(dev)),
+      verificationMethod: dev.anchor + '#' + id, proofPurpose: 'assertionMethod' };
+    const msg = this.proofMsg(cfg, doc);
+    let sig;
+    if (this.edOK) sig = new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, dev.sign.kp.privateKey, msg));
+    else sig = await this.sha256(new Uint8Array([...msg, ...dev.sign.raw]));
+    return { ...cfg, proofValue: 'z' + this.b58(sig) };
+  }
+  async verify(anchor, doc, proof) {
+    if (!proof || !proof.proofValue) return false;
+    const msg = this.proofMsg(proof, doc);
+    const sig = this.ub58(proof.proofValue.slice(1));
+    const pub = this.anchorPub(anchor);
+    if (!this.edOK) { const h = await this.sha256(new Uint8Array([...msg, ...pub])); return this.b58(h) === proof.proofValue.slice(1); }
+    try {
+      const key = await crypto.subtle.importKey('raw', pub, { name: 'Ed25519' }, false, ['verify']);
+      return await crypto.subtle.verify({ name: 'Ed25519' }, key, sig, msg);
+    } catch (e) { return false; }
+  }
+
+  // ---------- seal ----------
+  pkcs8X(raw) {
+    return new Uint8Array([0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6e, 0x04, 0x22, 0x04, 0x20, ...raw]);
+  }
+  async importXPriv(raw) { return crypto.subtle.importKey('pkcs8', this.pkcs8X(raw), { name: 'X25519' }, true, ['deriveBits']); }
+  async xPub(priv) {
+    const bp = await crypto.subtle.importKey('raw', Uint8Array.of(9, ...new Array(31).fill(0)), { name: 'X25519' }, false, []);
+    return new Uint8Array(await crypto.subtle.deriveBits({ name: 'X25519', public: bp }, priv, 256));
+  }
+  async aesKey(priv, peerRaw) {
+    const peer = await crypto.subtle.importKey('raw', peerRaw, { name: 'X25519' }, false, []);
+    const shared = new Uint8Array(await crypto.subtle.deriveBits({ name: 'X25519', public: peer }, priv, 256));
+    if (shared.every(b => b === 0)) throw new Error('all-zero shared secret');
+    const hk = await crypto.subtle.importKey('raw', shared, 'HKDF', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(0), info: new TextEncoder().encode('rltp/v1/seal') }, hk, 256);
+    return { key: await crypto.subtle.importKey('raw', bits, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']), shared: new Uint8Array(shared), bits: new Uint8Array(bits) };
+  }
+  async seal(doc, rkid, recipientRaw, fixed) {
+    const plaintext = this.jcs(doc);
+    const ephPriv = fixed ? await this.importXPriv(fixed.eph) : (await crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits'])).privateKey;
+    const epk = await this.xPub(ephPriv);
+    const { key } = await this.aesKey(ephPriv, recipientRaw);
+    const nonce = fixed ? fixed.nonce : crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce, tagLength: 128 }, key, new TextEncoder().encode(plaintext)));
+    return { sealed: { rkid, epk: this.b64u(epk), nonce: this.b64u(nonce), ciphertext: this.b64u(ct) }, plaintext };
+  }
+  async unseal(dev, sealed) {
+    const priv = dev.keyStore[sealed.rkid];
+    if (!priv) throw new Error('unknown rkid');
+    const { key } = await this.aesKey(priv, this.ub64u(sealed.epk));
+    const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: this.ub64u(sealed.nonce), tagLength: 128 }, key, this.ub64u(sealed.ciphertext));
+    return new TextDecoder().decode(pt);
+  }
+
+  // ---------- boot ----------
+  async boot() {
+    this.faultDefs.forEach(([k]) => (this.f[k] = false));
+    try { await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify']); this.edOK = true; }
+    catch (e) { this.edOK = false; }
+    this.cryptoBadge = this.edOK ? 'webcrypto: Ed25519 · X25519 · HKDF · AES-GCM' : 'Ed25519 unsupported — proofs are SHA-256 stand-ins';
+    this.dev = { A: await this.mkDev('A', 'Anna'), B: await this.mkDev('B', 'Ben') };
+    await this.newChallenge(this.dev.A);
+    await this.newChallenge(this.dev.B);
+    this.log('CH', 'two devices booted · did:key anchors self-certifying, no registry');
+    this.bump();
+    this.checkVector();
+  }
+  async mkDev(id, name) {
+    const sign = await this.genSign();
+    const ka = await this.genKA();
+    const anchor = 'did:key:' + this.multikey(sign.raw, 0xed, 0x01);
+    const kaKey = this.multikey(ka.raw, 0xec, 0x01);
+    const dev = { id, name, sign, ka, anchor, kaKey, skew: 0, online: true, screen: 'ready', ceremony: this.C1,
+      card: null, ch: null, qr: '', sentCard: null, records: [], issued: [], received: [], sent: {}, cache: {},
+      consumed: [], keyStore: {}, peer: null, work: null, err: null, ackDeadline: 0, fallbackBanner: false, buffered: [] };
+    dev.keyStore[kaKey] = ka.kp.privateKey;
+    return dev;
+  }
+  async checkVector() {
+    const V = {
+      rpriv: 'CgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgo', epriv: 'CwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCwsLCws',
+      nonce: 'DAwMDAwMDAwMDAwM', rkid: 'z6LStLK2kxribiLHz6U4vpGfzMtmgc4q5WjR4mvhS6KG1W16',
+      ct: 'spEE13Z8F8xxHBCL9hOFenGvUUN0yxwi1UuB8H_6WmVmqV8t6P3iLuzliTKI42fKkSxoa3CzQXzQWQKsH0sy2gW7nY68Ge78IN9BgpKie_uOFWZC1Y1FMwiwgnkancL_n5H3A9_ZQfa3B_OcXED_gMDOeO7gWzfd_1CGuX3JHk1tNkXBQu6hku3ljK0O7dRYwK6uukHFTi67noCzCA0h4uSichwl9VeQ6TtxBL_zPrMV6GQA5yCD3lqz6aEEfshT-cVPw0tYy0ITrZVIgzRxlsumuLzuJ4hb48RXjv5-HXN1EkL7X_n9J0gyUClua0PjdYqVyZvj20PkmSczufM0ejDwgicLBRdiV4BdkrOxTiAjIAZURxkmwfZEUSRZFh9_LiKo4t4HmytUvmDCUr-37zu3SUaic4UPS5nsLK5QR0VBHq8THtqFWEHYLhkxODRDaJkP-IDnnc7fSaBqEk9qmjq2LJww3BytAKSs3c8HqWsEH_PmTek6yD22Su2nskGQ3eYJCDXzZxGEa-NGNeqiUrUOppyJQ0vb9kkyRoHNW_T3OgPfIEqnOAFpS_EtypvZDiMNMzabHA',
+      digest: 'uEiAP1JJxup-V-g7lQVzRKJSxPKug1RDGvdI80l4dY8tpeQ',
+      doc: { id: '11111111-2222-4333-8444-555555555555', issuedAt: '2026-08-10T12:00:00Z',
+        issuer: 'did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK',
+        payload: { meaning: 'received', ref: 'uEiANDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ' },
+        recipient: 'did:key:z6MkjchhfUsD6mmvni8mCdXHw216Xrm9bQe2mBH1P5RDjVJG',
+        threadId: '99999999-8888-4777-a666-555555555555', type: 'https://real-life.org/trust-tasks/seal-vector-sample/0.1' } };
+    try {
+      const rpub = await this.xPub(await this.importXPriv(this.ub64u(V.rpriv)));
+      const out = await this.seal(V.doc, V.rkid, rpub, { eph: this.ub64u(V.epriv), nonce: this.ub64u(V.nonce) });
+      const dig = await this.mdigest(V.doc);
+      const ok = out.sealed.ciphertext === V.ct && dig === V.digest;
+      this.vectorBadge = ok ? 'seal vector: reproduced byte-for-byte' : 'seal vector: MISMATCH';
+      this.vectorOK = ok;
+      this.log('CH', ok ? 'vectors/seal.json reproduced — ciphertext and documentDigest identical' : 'seal vector mismatch');
+    } catch (e) { this.vectorBadge = 'seal vector: ' + e.message; this.vectorOK = false; }
+    this.bump();
+  }
+
+  // ---------- cards ----------
+  async newChallenge(dev, backdateMs) {
+    dev.ch = { value: this.fresh(), issuedAt: this.iso(this.now(dev) - (backdateMs || 0)) };
+    // mandatory retention (5.3): rotation changes what is displayed, never what is retained
+    dev.openCh = dev.openCh || {};
+    dev.openCh[dev.ch.value] = { issuedAt: dev.ch.issuedAt, aged: false };
+    dev.card = await this.mkCard(dev, dev.ch, null, null);
+    this.mkQr(dev);
+  }
+  // challenge resolution (Encounter 5.3): recorded > open > unknown; the
+  // aging latch is the one write, monotone, performed wherever observed
+  resolveCh(dev, value) {
+    const rec = dev.records.find(r => r.ownChallenge === value);
+    if (rec) return { state: 'recorded', rec };
+    const o = (dev.openCh || {})[value];
+    if (o && !o.aged) {
+      if (this.now(dev) > Date.parse(o.issuedAt) + this.MAX_AGE + this.SKEW) { o.aged = true; return { state: 'unknown' }; }
+      return { state: 'open', issuedAt: o.issuedAt };
+    }
+    return { state: 'unknown' };
+  }
+  async mkCard(dev, ch, sentTo, boundTo) {
+    const body = { version: this.CARDV, anchor: dev.anchor, keyAgreement: dev.kaKey, name: dev.name,
+      challenge: { value: ch.value, issuedAt: ch.issuedAt } };
+    if (sentTo) { body.sentTo = sentTo; body.boundTo = boundTo; }
+    return { ...body, proof: await this.sign(dev, body) };
+  }
+  mkQr(dev) {
+    const Q = window.qrcode;
+    if (!Q || !dev.card) return;
+    try {
+      const q = Q(0, 'L');
+      q.addData(JSON.stringify(dev.card));
+      q.make();
+      dev.qr = q.createDataURL(6, 8);
+      this.bump();
+    } catch (e) { dev.qrErr = e.message; }
+  }
+
+  // ---------- binding ----------
+  async binding(ceremony, c1, c2) {
+    const chs = [c1, c2].sort();
+    return this.mdigest({ ceremony, challenges: chs });
+  }
+
+  // ---------- log ----------
+  log(tag, text, kind) {
+    this.logs.unshift({ t: new Date().toLocaleTimeString('en-GB'), tag, text, kind: kind || 'i', k: ++this.seq });
+    if (this.logs.length > 120) this.logs.pop();
+  }
+
+  // ---------- device actions ----------
+  other(dev) { return dev.id === 'A' ? this.dev.B : this.dev.A; }
+
+  onScan(dev) { dev.screen = 'scanner'; dev.peer = this.other(dev); this.bump(); }
+  onCancel(dev) { dev.screen = 'ready'; dev.work = null; this.bump(); }
+  onDone(dev) { dev.screen = 'ready'; dev.err = null; this.bump(); }
+
+  async onCapture(dev) {
+    const peer = this.other(dev);
+    if (peer.screen === 'fallback' && peer.sentCard) {
+      // Offline continuation of the SAME enactment: the peer's screen shows
+      // their sent card as a QR. Scanning it completes the material exchange
+      // (C1) for this side; the credentials follow over the delivery layer,
+      // whose time is unbounded.
+      const card = peer.sentCard;
+      const body = { ...card }; delete body.proof;
+      const ok = await this.verify(card.anchor, body, card.proof);
+      if (!ok || card.sentTo !== dev.anchor || card.version !== this.CARDV || !card.boundTo) {
+        dev.err = { title: 'Card not usable', code: !ok ? 'card proof invalid' : (card.sentTo !== dev.anchor ? 'sentTo mismatch' : (!card.boundTo ? 'boundTo missing' : 'unknown card version')), text: 'A sent card must verify, name this device as its recipient, and say which challenge it answers (boundTo).' };
+        dev.screen = 'error'; this.bump(); return;
+      }
+      // boundTo selects the own challenge under the resolution rule (5.3)
+      const res = this.resolveCh(dev, card.boundTo);
+      if (res.state === 'unknown') {
+        dev.err = { title: 'gate-expired', code: 'boundTo resolves unknown (aged out — latched — or never this device’s)', text: 'This enactment cannot complete. Last resort: a fresh enactment — the merge rule keeps it one edge.' };
+        dev.screen = 'error'; this.bump(); return;
+      }
+      if (res.state === 'recorded') {
+        const same = (await this.mdigest(res.rec.counterpartyCard)) === (await this.mdigest(card));
+        if (same) { dev.screen = 'prompt'; dev.peer = peer; this.log(dev.id, 're-scan: the one record already exists (idempotent)', 'ok'); this.bump(); return; }
+        dev.err = { title: 'Challenge consumed', code: res.rec.counterparty !== card.anchor ? 'consumed by another enactment' : 'same counterparty, different material', text: 'No second record arises (5.5).' };
+        dev.screen = 'error'; this.bump(); return;
+      }
+      const n = this.now(dev);
+      if (Date.parse(res.issuedAt) > n + this.SKEW) {
+        dev.err = { title: 'gate-future', code: 'own challenge future-dated beyond skew', text: 'The explicit future check refused record creation.' };
+        dev.screen = 'error'; this.bump(); return;
+      }
+      const bind = await this.binding(this.C1, card.boundTo, card.challenge.value);
+      dev.records.push({ ceremony: this.C1, counterparty: card.anchor, counterpartyCard: card,
+        ownChallenge: card.boundTo, ownChallengeIssuedAt: res.issuedAt, peerChallenge: card.challenge.value,
+        enactmentBinding: bind, recordedAt: this.iso(n) });
+      delete dev.openCh[card.boundTo]; // open → recorded, atomic supersession
+      dev.consumed.push(card.boundTo);
+      dev.peer = peer;
+      dev.thread = peer.outBundle ? peer.outBundle.doc.threadId : dev.thread;
+      dev.screen = 'prompt';
+      this.log(dev.id, 'scanned ' + peer.name + "'s sent card — same enactment, record created optically · their credential follows over the network", 'ok');
+      await this.newChallenge(dev);
+      this.bump();
+      return;
+    }
+    if (this.f.expired) { await this.newChallenge(peer, 12 * 60 * 1000); this.log(peer.id, 'displayed challenge backdated 12 min (fault) · past challenge-max-age + skew-tolerance', 'w'); }
+    const card = peer.card;
+    const body = { ...card }; delete body.proof;
+    const ok = await this.verify(card.anchor, body, card.proof);
+    if (!ok || card.version !== this.CARDV) {
+      dev.err = { title: 'Card not usable', code: ok ? 'unknown card version' : 'card proof invalid', text: 'A card with an unknown version must not enter an enactment.' };
+      dev.screen = 'error'; this.bump(); return;
+    }
+    dev.work = { peerCard: card, peerCh: card.challenge };
+    dev.screen = 'confirm';
+    this.log(dev.id, 'scanned ' + peer.name + "'s card · proof verifies under its own anchor (offline)", 'ok');
+    this.bump();
+  }
+
+  async onConfirm(dev) {
+    const peer = this.other(dev);
+    const w = dev.work;
+    const ceremony = this.C1; // the ONE ceremony — what varies is the carrier, never the ceremony
+    const ownCh = { value: this.fresh(), issuedAt: this.iso(this.now(dev)) };
+    dev.sentCard = await this.mkCard(dev, ownCh, peer.anchor, w.peerCh.value); // boundTo = the challenge this enactment answers
+    // scanner-side gate: trivially fresh; explicit future check (gate-future)
+    const t = Date.parse(ownCh.issuedAt), n = this.now(dev);
+    if (t > n + this.SKEW) {
+      dev.err = { title: 'gate-future', code: 'own challenge future-dated beyond skew', text: 'The explicit future check refused record creation.' };
+      dev.screen = 'error'; this.bump(); return;
+    }
+    const bind = await this.binding(ceremony, ownCh.value, w.peerCh.value);
+    const rec = { ceremony, counterparty: peer.anchor, counterpartyCard: w.peerCard,
+      ownChallenge: ownCh.value, ownChallengeIssuedAt: ownCh.issuedAt, peerChallenge: w.peerCh.value,
+      enactmentBinding: bind, recordedAt: this.iso(n) };
+    dev.records.push(rec);
+    dev.consumed.push(ownCh.value);
+    this.log(dev.id, 'enactment record created · gate open · binding ' + bind.slice(0, 12) + '…', 'ok');
+
+    const subj = { id: peer.anchor, format: this.CREDF, ceremony,
+      challenge: w.peerCh.value, enactmentBinding: bind, channel: 'in-person' };
+    const body = { '@context': ['https://www.w3.org/ns/credentials/v2', 'https://real-life.org/rltp/v1'],
+      type: ['VerifiableCredential', 'EncounterCredential'], issuer: dev.anchor, validFrom: this.iso(n), credentialSubject: subj };
+    if (this.f.foreign) body.credentialSubject.ceremony = this.C2;
+    const cred = { ...body, proof: await this.sign(dev, body) };
+    if (this.f.tamper) { cred.credentialSubject = { ...cred.credentialSubject, channel: 'video' }; this.log(dev.id, 'credential altered after signing (fault)', 'w'); }
+    dev.issued.push({ credential: cred, digest: await this.mdigest(cred), subject: peer.anchor });
+    this.log(dev.id, 'human confirmed (C4) · EncounterCredential issued about ' + peer.name, 'ok');
+
+    const doc = { id: crypto.randomUUID(), type: this.TT + 'encounter-bundle/0.1', issuer: dev.anchor,
+      recipient: peer.anchor, threadId: crypto.randomUUID(), issuedAt: this.iso(n),
+      ceremony: { ceremony, enactment: bind, step: 'bundle' }, payload: { card: dev.sentCard, credential: cred } };
+    await this.send(dev, peer, doc);
+    dev.ackDeadline = Date.now() + this.ACK_WAIT;
+    dev.screen = 'waiting'; dev.work = null;
+    this.bump();
+  }
+
+  async onConfirmBack(dev) {
+    const peer = this.other(dev);
+    const rec = dev.records.find(r => r.counterparty === peer.anchor);
+    const n = this.now(dev);
+    const subj = { id: peer.anchor, format: this.CREDF, ceremony: rec.ceremony,
+      challenge: rec.peerChallenge, enactmentBinding: rec.enactmentBinding, channel: 'in-person' };
+    const body = { '@context': ['https://www.w3.org/ns/credentials/v2', 'https://real-life.org/rltp/v1'],
+      type: ['VerifiableCredential', 'EncounterCredential'], issuer: dev.anchor, validFrom: this.iso(n), credentialSubject: subj };
+    const cred = { ...body, proof: await this.sign(dev, body) };
+    dev.issued.push({ credential: cred, digest: await this.mdigest(cred), subject: peer.anchor });
+    this.log(dev.id, 'counter-step issued · binding unchanged, this is the mutual moment', 'ok');
+    const doc = { id: crypto.randomUUID(), type: this.TT + 'encounter-credential-delivery/0.1', issuer: dev.anchor,
+      recipient: peer.anchor, threadId: dev.thread || crypto.randomUUID(), issuedAt: this.iso(n),
+      ceremony: { ceremony: rec.ceremony, enactment: rec.enactmentBinding, step: 'counter' }, payload: { credential: cred } };
+    await this.send(dev, peer, doc);
+    // Honest state: mutual only when the counterparty's credential is HELD.
+    // After an optical scan of a sent card, their credential is still in
+    // transit — the edge is outgoing until it arrives (Encounter 4.2).
+    const mutualNow = dev.received.some(r => r.issuer === peer.anchor);
+    dev.screen = mutualNow ? 'confirmed' : 'verifiedBack';
+    this.bump();
+  }
+  onLater(dev) { dev.screen = 'oneSided'; this.bump(); }
+
+  mkFallbackQr(dev) {
+    // The fallback QR carries only the SENT CARD — the enactment material.
+    // The credential stays in the delivery layer (outbox), where time is
+    // unbounded. A card-sized QR scans with a phone camera; the sealed
+    // bundle would not.
+    const Q = window.qrcode;
+    if (!Q || !dev.sentCard) return;
+    try {
+      const q = Q(0, 'L');
+      q.addData(JSON.stringify(dev.sentCard));
+      q.make();
+      dev.fallbackQr = q.createDataURL(5, 8);
+    } catch (e) { dev.fallbackQr = ''; dev.qrErr = e.message; }
+  }
+  async onFallback(dev) {
+    // last resort only (the peer's challenge aged out — gate-expired at the
+    // optical leg): a genuinely FRESH ENACTMENT of the same one ceremony;
+    // merge rule 4.2 keeps it one edge.
+    const peer = this.other(dev);
+    dev.fallbackBanner = true; peer.fallbackBanner = true;
+    dev.ackDeadline = 0; dev.outBundle = null; dev.fallbackQr = '';
+    await this.newChallenge(dev); await this.newChallenge(peer);
+    dev.screen = 'ready'; peer.screen = 'ready';
+    this.log('CH', 'fresh enactment of encounter-scan@0.19 · new challenges, second enactment, one edge (merge rule 4.2)', 'w');
+    this.bump();
+  }
+  onKeepWaiting(dev) { dev.screen = 'waiting'; dev.ackDeadline = Date.now() + this.ACK_WAIT; this.bump(); }
+
+  // ---------- channel ----------
+  async send(from, to, doc) {
+    const digest = await this.mdigest(doc);
+    const recCard = to.card;
+    const { sealed, plaintext } = await this.seal(doc, to.kaKey, to.ka.raw, null);
+    const env = { k: ++this.seq, from: from.id, to: to.id, doc, digest, sealed, plaintext, type: doc.type.split('trust-tasks/')[1],
+      status: 'accepted', stages: [], at: Date.now(), delivered: false };
+    from.sent[digest] = { status: 'accepted', type: env.type, threadId: doc.threadId };
+    from.thread = doc.threadId;
+    if (env.type.startsWith('encounter-bundle')) from.outBundle = env;
+    this.channel.unshift(env);
+    this.log(from.id, 'sealed ' + env.type + ' -> ' + to.name + ' · ' + digest.slice(0, 14) + '… · accepted', 'i');
+    const ackLost = this.f.ackLost && env.type.startsWith('delivery-ack');
+    if (ackLost) { env.status = 'dropped by channel'; this.log('CH', 'delivery-ack dropped (fault) · sender learns nothing', 'w'); this.bump(); return; }
+    if (!from.online) {
+      env.status = 'held (sender offline — outbox)';
+      env.pending = 'first';
+      this.log(from.id, 'offline · ' + env.type + ' waits in the outbox, nothing reaches the channel', 'w');
+      if (this.f.dup && env.type.startsWith('encounter-bundle')) env.pendingDup = true;
+      this.bump(); return;
+    }
+    setTimeout(() => this.tryDeliver(env), 900);
+    if (this.f.dup && env.type.startsWith('encounter-bundle')) setTimeout(() => this.tryDeliver(env, true), 2100);
+    this.bump();
+  }
+  tryDeliver(env, again) {
+    const from = this.dev[env.from];
+    const to = this.dev[env.to];
+    if (!from.online) {
+      env.status = 'held (sender offline — outbox)';
+      env.pending = again ? 'dup' : 'first';
+      this.bump(); return;
+    }
+    if (this.f.hold || !to.online) {
+      env.status = 'held (recipient offline)';
+      env.pending = again ? 'dup' : 'first';
+      this.bump(); return;
+    }
+    this.receive(env, again);
+  }
+
+  async receive(env, again) {
+    const dev = this.dev[env.to];
+    const st = [];
+    const push = (label, ok) => { st.push({ label, ok }); return ok; };
+    let disp = null;
+    try {
+      if (!push('1 size bound ≤ 65536 B (' + env.plaintext.length + ' B)', env.plaintext.length <= 65536)) disp = 'failed(oversize)';
+      else if (!push('2 envelope schema · base64url canonical · rkid known', !!dev.keyStore[env.sealed.rkid])) disp = 'failed(malformed)';
+      else {
+        let pt = null;
+        try { pt = await this.unseal(dev, env.sealed); } catch (e) { pt = null; }
+        if (!push('3 decryption · X25519 + HKDF(rltp/v1/seal) + AES-256-GCM tag', !!pt)) disp = 'failed(decryption-failed)';
+        else {
+          const doc = JSON.parse(pt);
+          const digest = await this.mdigest(pt);
+          const known = dev.cache[digest];
+          push('4 parse + digest ' + digest.slice(0, 14) + '… · completed-effect cache', true);
+          if (known) {
+            st.push({ label: '  → duplicate-known · prior outcome applies · stored ack re-sent byte-identical', ok: true });
+            disp = 'duplicate-known';
+            if (known.ack) await this.resendAck(dev, known);
+          } else {
+            if (!push('5 document profile + recipient = own anchor', doc.recipient === dev.anchor)) disp = 'failed(wrong-recipient)';
+            else {
+              const type = doc.type.replace(this.TT, '');
+              const known3 = ['encounter-bundle/0.1', 'delivery-ack/0.1', 'encounter-credential-delivery/0.1'].includes(type);
+              if (!push('6 type known · ' + type, known3)) disp = 'failed(unknown-type)';
+              else {
+                const pOk = type === 'delivery-ack/0.1' ? (doc.payload.meaning === 'received' && !!doc.payload.ref)
+                  : type === 'encounter-bundle/0.1' ? (!!doc.payload.card && !!doc.payload.credential) : !!doc.payload.credential;
+                if (!push('7 payload schema', pOk)) disp = 'failed(malformed)';
+                else {
+                  const r = await this.stage8(dev, doc, type, st);
+                  if (!r.ok) disp = r.disp;
+                  else { const s9 = await this.stage9(dev, doc, type, digest, st, env); disp = s9; }
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) { st.push({ label: 'internal: ' + e.message, ok: false }); disp = disp || 'failed(malformed)'; }
+    env.stages = st;
+    env.disposition = disp;
+    env.delivered = true;
+    env.status = (disp === 'unique' || disp === 'duplicate-known') ? disp : disp;
+    const from = this.dev[env.from];
+    if (disp && disp.startsWith('failed') && from.sent[env.digest]) {
+      from.sent[env.digest].status = disp;
+      if (env.type.startsWith('encounter-bundle')) { from.ackDeadline = Math.min(from.ackDeadline || Infinity, Date.now() + 1200); }
+    }
+    this.log(dev.id, env.type + ' → ' + disp, disp === 'unique' || disp === 'duplicate-known' ? 'ok' : 'e');
+    this.bump();
+  }
+
+  async stage8(dev, doc, type, st) {
+    if (type === 'delivery-ack/0.1') {
+      const body = { ...doc }; delete body.proof;
+      const sig = await this.verify(doc.issuer, body, doc.proof);
+      if (!st.push({ label: '8 ack proof verifies under issuer anchor', ok: sig }) && !sig) return { ok: false, disp: 'failed(validation-failed)' };
+      const sent = dev.sent[doc.payload.ref];
+      const cons = !!sent && sent.threadId === doc.threadId && doc.issuer !== dev.anchor;
+      st.push({ label: '8 ref matches a document we sent on this thread', ok: cons });
+      if (!sig || !cons) return { ok: false, disp: 'failed(validation-failed)' };
+      return { ok: true };
+    }
+    const cred = doc.payload.credential;
+    const cbody = { ...cred }; delete cbody.proof;
+    const csig = await this.verify(cred.issuer, cbody, cred.proof);
+    st.push({ label: '8 credential proof (eddsa-jcs-2022) verifies' + (csig ? '' : ' — ERR_SIG'), ok: csig });
+    const outer = doc.issuer === cred.issuer && doc.recipient === cred.credentialSubject.id;
+    st.push({ label: '8 outer/inner consistency · issuer = credential.issuer, recipient = subject', ok: outer });
+    let extra = true;
+    if (type === 'encounter-bundle/0.1') {
+      const card = doc.payload.card;
+      const abody = { ...card }; delete abody.proof;
+      const asig = await this.verify(card.anchor, abody, card.proof);
+      st.push({ label: '8 sent card proof verifies · sentTo = own anchor', ok: asig && card.sentTo === dev.anchor && card.anchor === doc.issuer });
+      const btOk = card.boundTo === cred.credentialSubject.challenge;
+      st.push({ label: '8 card.boundTo = credential’s bound challenge (outer/inner)', ok: btOk });
+      const cerOk = cred.credentialSubject.ceremony === this.C1;
+      st.push({ label: '8 ceremony label = encounter-scan@0.19 (grounded, not copied)', ok: cerOk });
+      if (this.f.consumed && !dev.records.some(r => r.ownChallenge === cred.credentialSubject.challenge)) {
+        dev.records.push({ ceremony: this.C1, counterparty: 'did:key:z6MkSomeoneElseEntirely', counterpartyCard: { fake: true },
+          ownChallenge: cred.credentialSubject.challenge, ownChallengeIssuedAt: this.iso(this.now(dev)), peerChallenge: 'x',
+          enactmentBinding: 'u-fake', recordedAt: this.iso(this.now(dev)) });
+        this.log(dev.id, 'challenge pre-bound to a foreign enactment record (fault)', 'w');
+      }
+      // resolution selects the branch (5.3): recorded > open > unknown
+      const res = this.resolveCh(dev, cred.credentialSubject.challenge);
+      if (res.state === 'recorded') {
+        const rec = res.rec;
+        const cpOk = rec.counterparty === doc.issuer;
+        st.push({ label: '8 resolution: recorded · record’s counterparty = issuer' + (cpOk ? '' : ' — consumed by another enactment'), ok: cpOk });
+        if (!cpOk) return { ok: false, disp: 'failed(consumed-challenge)' };
+        const cardSame = (await this.mdigest(rec.counterpartyCard)) === (await this.mdigest(card));
+        st.push({ label: '8 enclosed card JCS-identical to the record’s stored card', ok: cardSame });
+        const bOk2 = rec.enactmentBinding === cred.credentialSubject.enactmentBinding;
+        st.push({ label: '8 binding verified against the record (optical leg completed first)', ok: bOk2 });
+        doc.__viaRecord = cardSame && bOk2;
+        return (asig && card.sentTo === dev.anchor && btOk && cerOk && cardSame && bOk2 && csig && outer) ? { ok: true } : { ok: false, disp: 'failed(validation-failed)' };
+      }
+      const chOk = res.state === 'open';
+      st.push({ label: '8 resolution: ' + res.state + (chOk ? ' (held, within age bound)' : ' — aged/foreign/rotated-away, latched'), ok: chOk });
+      if (!chOk) { if (!(csig && outer && asig && btOk && cerOk)) return { ok: false, disp: 'failed(validation-failed)' }; return { ok: false, disp: 'failed(validation-failed)' }; }
+      doc.__own = { value: cred.credentialSubject.challenge, issuedAt: res.issuedAt };
+      const bind = await this.binding(cred.credentialSubject.ceremony, doc.__own.value, card.challenge.value);
+      const bOk = bind === cred.credentialSubject.enactmentBinding;
+      st.push({ label: '8 enactment binding recomputes from {resolved own, sent} challenges', ok: bOk });
+      const t = Date.parse(res.issuedAt), n = this.now(dev);
+      const lo = t - this.SKEW, hi = t + this.MAX_AGE + this.ISSUANCE + this.SKEW;
+      const vf = Date.parse(cred.validFrom), pc = Date.parse(cred.proof.created);
+      const wOk = vf >= lo && vf <= hi && pc >= lo && pc <= hi && pc >= vf - this.SKEW;
+      st.push({ label: '8 issuance window (t_ch from the resolution)' + (wOk ? '' : ' — stale'), ok: wOk });
+      extra = asig && card.sentTo === dev.anchor && btOk && cerOk && chOk && bOk && wOk;
+      if (!wOk) { if (!(csig && outer)) return { ok: false, disp: 'failed(validation-failed)' }; return { ok: false, disp: 'failed(stale-issuance)' }; }
+    } else {
+      const cerOk = !doc.ceremony || !doc.ceremony.enactment || doc.ceremony.enactment === cred.credentialSubject.enactmentBinding;
+      st.push({ label: '8 ceremony.enactment recomputes against enclosed credential', ok: cerOk });
+      extra = cerOk;
+    }
+    const ok = csig && outer && extra;
+    return ok ? { ok: true } : { ok: false, disp: 'failed(validation-failed)' };
+  }
+
+  async stage9(dev, doc, type, digest, st, env) {
+    const from = this.dev[env.from];
+    if (type === 'delivery-ack/0.1') {
+      st.push({ label: '9 effect: sender status accepted → delivered', ok: true });
+      dev.sent[doc.payload.ref].status = 'delivered';
+      dev.cache[digest] = { disposition: 'unique' };
+      if (dev.screen === 'waiting' || dev.screen === 'fallback') { dev.screen = 'delivered'; dev.ackDeadline = 0; }
+      this.log(dev.id, 'ack valid · delivered (arrival, never acceptance)', 'ok');
+      return 'unique';
+    }
+    if (type === 'encounter-bundle/0.1') {
+      if (doc.__viaRecord) {
+        const cred = doc.payload.credential;
+        const acc = await this.accept56(dev, cred);
+        if (acc.ok || acc.code === 'idempotent (same digest)') {
+          if (acc.ok) dev.received.push({ credential: cred, digest: await this.mdigest(cred), direction: 'incoming', issuer: cred.issuer });
+          const ack = await this.mkAck(dev, doc, digest);
+          dev.cache[digest] = { disposition: 'unique', ack };
+          st.push({ label: '9 credential accepted via existing record · ack enqueued', ok: true });
+          const mutual = dev.issued.some(i => i.subject === cred.issuer);
+          if (mutual && (dev.screen === 'prompt' || dev.screen === 'ready' || dev.screen === 'oneSided' || dev.screen === 'verifiedBack')) dev.screen = 'confirmed';
+          this.log(dev.id, 'network bundle arrived after optical completion · credential accepted, edge ' + (mutual ? 'mutual' : 'incoming'), 'ok');
+          await this.send(dev, this.dev[env.from], ack);
+          return 'unique';
+        }
+        st.push({ label: '9 acceptance via record failed: ' + acc.code, ok: false });
+        return 'failed(validation-failed)';
+      }
+      // authoritative resolution selected the record-creating effect (open);
+      // the expiry side is structural — only the future check remains
+      const own = doc.__own;
+      const t = Date.parse(own.issuedAt), n = this.now(dev);
+      const future = t > n + this.SKEW;
+      st.push({ label: '9 explicit future check on the open value' + (future ? ' — gate-future' : ''), ok: !future });
+      if (future) return 'failed(gate-future)';
+      const cred = doc.payload.credential;
+      const card = doc.payload.card;
+      const bind = cred.credentialSubject.enactmentBinding;
+      dev.records.push({ ceremony: this.C1, counterparty: cred.issuer, counterpartyCard: card,
+        ownChallenge: own.value, ownChallengeIssuedAt: own.issuedAt, peerChallenge: card.challenge.value,
+        enactmentBinding: bind, recordedAt: this.iso(n) });
+      delete dev.openCh[own.value]; // open → recorded, atomic supersession
+      dev.consumed.push(own.value);
+      dev.received.push({ credential: cred, digest: await this.mdigest(cred), direction: 'incoming', issuer: cred.issuer });
+      const ack = await this.mkAck(dev, doc, digest);
+      dev.cache[digest] = { disposition: 'unique', ack };
+      st.push({ label: '9 one transaction: record + accepted credential + cache entry + ack enqueued', ok: true });
+      dev.peer = this.other(dev);
+      dev.thread = doc.threadId;
+      dev.screen = 'prompt';
+      this.log(dev.id, 'bundle accepted · credential is accepted, no later check can fail it', 'ok');
+      await this.send(dev, this.dev[env.from], ack);
+      await this.newChallenge(dev);
+      return 'unique';
+    }
+    // credential delivery
+    const cred = doc.payload.credential;
+    dev.buffered.push(cred);
+    const ack = await this.mkAck(dev, doc, digest);
+    dev.cache[digest] = { disposition: 'unique', ack };
+    st.push({ label: '9 effect: durable buffering + ack enqueued (acceptance runs separately)', ok: true });
+    await this.send(dev, this.dev[env.from], ack);
+    const acc = await this.accept56(dev, cred);
+    st.push({ label: '  Encounter 5.6 acceptance → ' + (acc.ok ? 'accepted' : acc.code) + ' (never acknowledged, never signalled back)', ok: acc.ok });
+    if (acc.ok) {
+      dev.received.push({ credential: cred, digest: await this.mdigest(cred), direction: 'incoming', issuer: cred.issuer });
+      dev.ackDeadline = 0; dev.fallbackBanner = false;
+      const mutual = dev.issued.some(i => i.subject === cred.issuer);
+      dev.peer = this.other(dev);
+      dev.screen = mutual ? 'confirmed' : 'prompt';
+      this.log(dev.id, 'counter-credential accepted · fallback offer cancelled · edge mutual', 'ok');
+    } else { this.log(dev.id, 'credential rejected: ' + acc.code, 'e'); }
+    return 'unique';
+  }
+
+  async accept56(dev, cred) {
+    if (cred.credentialSubject.format !== this.CREDF) return { ok: false, code: 'ERR_VERSION' };
+    const body = { ...cred }; delete body.proof;
+    if (!(await this.verify(cred.issuer, body, cred.proof))) return { ok: false, code: 'ERR_SIG' };
+    if (cred.credentialSubject.id !== dev.anchor) return { ok: false, code: 'ERR_ADDRESSEE' };
+    const rec = dev.records.find(r => r.ownChallenge === cred.credentialSubject.challenge);
+    if (!rec) return { ok: false, code: 'ERR_NO_RECORD' };
+    if (rec.counterparty !== cred.issuer) return { ok: false, code: 'ERR_NO_RECORD' };
+    if (rec.ceremony !== cred.credentialSubject.ceremony) return { ok: false, code: 'ERR_CEREMONY' };
+    const t = Date.parse(rec.ownChallengeIssuedAt);
+    const lo = t - this.SKEW, hi = t + this.MAX_AGE + this.ISSUANCE + this.SKEW;
+    const vf = Date.parse(cred.validFrom), pc = Date.parse(cred.proof.created);
+    if (!(vf >= lo && vf <= hi && pc >= lo && pc <= hi && pc >= vf - this.SKEW)) return { ok: false, code: 'ERR_STALE_ISSUANCE' };
+    if (cred.credentialSubject.enactmentBinding !== rec.enactmentBinding) return { ok: false, code: 'ERR_BINDING' };
+    const dig = await this.mdigest(cred);
+    if (dev.received.some(r => r.digest === dig)) return { ok: false, code: 'idempotent (same digest)' };
+    if (dev.received.some(r => r.issuer === cred.issuer && r.credential.credentialSubject.enactmentBinding === rec.enactmentBinding)) return { ok: false, code: 'ERR_CONFLICT' };
+    return { ok: true };
+  }
+
+  async mkAck(dev, doc, digest) {
+    const body = { id: crypto.randomUUID(), type: this.TT + 'delivery-ack/0.1', issuer: dev.anchor, recipient: doc.issuer,
+      threadId: doc.threadId, issuedAt: this.iso(this.now(dev)), payload: { ref: digest, meaning: 'received' } };
+    return { ...body, proof: await this.sign(dev, body) };
+  }
+  async resendAck(dev, known) {
+    const to = this.dev[dev.id === 'A' ? 'B' : 'A'];
+    this.log(dev.id, 'stored ack re-sent byte-identical (duplicate-known)', 'w');
+    await this.send(dev, to, known.ack);
+  }
+
+  // ---------- heartbeat ----------
+  beat() {
+    if (!this.dev) return;
+    let dirty = false;
+    ['A', 'B'].forEach(id => {
+      const d = this.dev[id];
+      if (!d.qr && d.card && window.QRCode) { this.mkQr(d); }
+      if (d.ackDeadline && Date.now() > d.ackDeadline && d.screen === 'waiting') {
+        d.ackDeadline = 0; d.screen = 'fallback'; this.mkFallbackQr(d); dirty = true;
+        this.log(d.id, 'ack-wait elapsed · same enactment continues optically: the sent card becomes a QR code (adapter switch, not a ceremony switch) — the credential follows over the network, delivery time is unbounded', 'w');
+      }
+    });
+    this.channel.forEach(env => {
+      if (env.pending && !this.f.hold && this.dev[env.to].online && this.dev[env.from].online) {
+        const again = env.pending === 'dup'; env.pending = null; env.status = 'accepted';
+        this.receive(env, again);
+        if (env.pendingDup) { env.pendingDup = false; setTimeout(() => this.tryDeliver(env, true), 1200); }
+      }
+    });
+    this.setState(s => ({ tick: s.tick + 1 }));
+    if (dirty) return;
+  }
+
+  // ---------- view model ----------
+  devVM(dev) {
+    const peer = this.other(dev);
+    const scr = dev.screen;
+    const ageMs = dev.ch ? this.now(dev) - Date.parse(dev.ch.issuedAt) : 0;
+    const ageS = Math.max(0, Math.round(ageMs / 1000));
+    const left = dev.ackDeadline ? Math.max(0, Math.ceil((dev.ackDeadline - Date.now()) / 1000)) : 0;
+    const enact = dev.records.filter(r => r.counterparty === peer.anchor).length;
+    const mutual = dev.issued.some(i => i.subject === peer.anchor) && dev.received.some(r => r.issuer === peer.anchor);
+    const w = dev.work;
+    return {
+      name: dev.name, anchorShort: dev.anchor.slice(0, 20) + '…' + dev.anchor.slice(-6),
+      clock: new Date(this.now(dev)).toLocaleTimeString('en-GB'),
+      statusRight: (dev.online ? '' : 'offline · ') + (dev.skew ? (dev.skew > 0 ? '+' : '') + Math.round(dev.skew / 60000) + ' min' : 'in sync'),
+      onlineLabel: dev.online ? 'online' : 'offline', onlineBg: dev.online ? 'transparent' : 'oklch(35% 0.09 55)',
+      skewLabel: 'clock ' + (dev.skew === 0 ? '±0' : (dev.skew > 0 ? '+' : '') + Math.round(dev.skew / 60000) + 'm'),
+      skewBg: dev.skew === 0 ? 'transparent' : 'oklch(35% 0.09 55)',
+      toggleOnline: () => { dev.online = !dev.online; this.log(dev.id, dev.online ? 'back online' : 'went offline · envelopes wait in the channel', 'w'); this.bump(); },
+      cycleSkew: () => { dev.skew = dev.skew === 0 ? 7 * 60 * 1000 : dev.skew > 0 ? -7 * 60 * 1000 : 0; this.log(dev.id, 'clock offset ' + Math.round(dev.skew / 60000) + ' min · skew always widens, never rejects', 'w'); this.bump(); },
+      isReady: scr === 'ready', isScanner: scr === 'scanner', isConfirm: scr === 'confirm', isWaiting: scr === 'waiting',
+      isDelivered: scr === 'delivered', isPrompt: scr === 'prompt', isFallback: scr === 'fallback',
+      bundleQr: dev.fallbackQr || '',
+      isConfirmed: scr === 'confirmed', isOneSided: scr === 'oneSided', isError: scr === 'error',
+      isVerifiedBack: scr === 'verifiedBack',
+      qr: dev.qr,
+      peerQr: (peer.screen === 'fallback' && peer.fallbackQr) ? peer.fallbackQr : peer.qr,
+      peerName: peer.name, peerInitial: peer.name.slice(0, 1),
+      peerAnchor: w ? w.peerCard.anchor : peer.anchor,
+      challengeValue: dev.ch ? dev.ch.value : '', challengeAge: dev.ch ? 'issued ' + ageS + ' s ago · max age PT5M' : '',
+      fallbackBanner: dev.fallbackBanner,
+      confirmMeta: w ? ['ceremony   ' + dev.ceremony, 'their challenge ' + w.peerCh.value, 'their card proof  verified offline',
+        'on confirm: fresh sent challenge, record, credential'].join('\n') : '',
+      waitNote: left ? 'ack-wait ' + left + ' s left (PT30S, compressed here).' : 'Delivery time is unbounded — validity never depends on it.',
+      ackWaitLabel: 'ack-wait',
+      edgeLine: enact + (enact === 1 ? ' enactment' : ' enactments') + ' · 1 edge · ' + (mutual ? 'mutual' : 'one-sided') + ' (merge rule 4.2)',
+      errorTitle: dev.err ? dev.err.title : '', errorCode: dev.err ? dev.err.code : '', errorText: dev.err ? dev.err.text : '',
+      onScan: () => this.onScan(dev), onCapture: () => this.onCapture(dev), onCancel: () => this.onCancel(dev),
+      onConfirm: () => this.onConfirm(dev), onDone: () => this.onDone(dev), onConfirmBack: () => this.onConfirmBack(dev),
+      onLater: () => this.onLater(dev), onFallback: () => this.onFallback(dev), onKeepWaiting: () => this.onKeepWaiting(dev),
+      groups: this.groups(dev),
+    };
+  }
+
+  groups(dev) {
+    const J = o => JSON.stringify(o, null, 2);
+    const g = [];
+    const add = (key, title, items) => {
+      const k = dev.id + ':' + key;
+      g.push({ k, title, badge: String(items.length), open: !!this.open[k], empty: items.length === 0,
+        items, toggle: () => { this.open[k] = !this.open[k]; this.bump(); } });
+    };
+    add('id', 'Identity — anchor & keys', [{ title: 'did:key (self-certifying)', sub: 'Ed25519 · X25519 key agreement',
+      json: J({ anchor: dev.anchor, keyAgreement: dev.kaKey, keyStore: Object.keys(dev.keyStore).map(k => k + ' (private key retained ≥ key-retention)') }) }]);
+    add('card', 'Contact cards', [dev.card && { title: 'displayed card', sub: 'challenge rotates · no sentTo', json: J(dev.card) },
+      dev.sentCard && { title: 'sent card', sub: 'sentTo names the recipient', json: J(dev.sentCard) }].filter(Boolean));
+    add('rec', 'Enactment records', dev.records.map((r, i) => ({ title: 'record ' + (i + 1) + ' · ' + r.ceremony,
+      sub: 'own challenge ' + r.ownChallenge.slice(0, 10) + '… · retained for the life of the relation', json: J(r) })));
+    add('iss', 'Credentials issued', dev.issued.map((c, i) => ({ title: 'outgoing · about ' + c.subject.slice(0, 16) + '…',
+      sub: 'digest ' + c.digest.slice(0, 16) + '… · evidence about the other party', json: J(c.credential) })));
+    add('recv', 'Credentials received', dev.received.map(c => ({ title: 'incoming · from ' + c.issuer.slice(0, 16) + '…',
+      sub: 'digest ' + c.digest.slice(0, 16) + '… · immutable, never revoked', json: J(c.credential) })));
+    const sent = Object.entries(dev.sent).map(([d, s]) => ({ title: s.type + ' · ' + s.status,
+      sub: d.slice(0, 20) + '…', json: J({ documentDigest: d, status: s.status, threadId: s.threadId }) }));
+    const cache = Object.entries(dev.cache).map(([d, c]) => ({ title: 'completed effect · ' + c.disposition,
+      sub: d.slice(0, 20) + '… · stored ack retained with the entry', json: J({ documentDigest: d, storedAck: c.ack || null }) }));
+    add('del', 'Delivery state', sent.concat(cache));
+    add('cons', 'Consumed challenges', dev.consumed.map(c => ({ title: c, sub: 'single use, enforced by its generator', json: '"' + c + '"' })));
+    return g;
+  }
+
+  renderVals() {
+    if (!this.dev) {
+      return { cryptoBadge: this.cryptoBadge, vectorBadge: this.vectorBadge, cryptoColor: 'oklch(80% 0.01 247)',
+        vectorColor: 'oklch(80% 0.01 247)', A: {}, B: {}, faults: [], envelopes: [], log: [], noLog: true,
+        noEnvelopes: true, hasSel: false, selStages: [], selBlocks: [], channelNote: 'booting', onReset: () => {}, onCloseSel: () => {} };
+    }
+    const A = this.devVM(this.dev.A), B = this.devVM(this.dev.B);
+    const faults = this.faultDefs.map(([k, label, effect]) => ({
+      k, label, effect, mark: this.f[k] ? '●' : '○',
+      dot: this.f[k] ? 'oklch(70% 0.17 55)' : 'oklch(55% 0.01 247)',
+      bg: this.f[k] ? 'oklch(27% 0.05 55)' : 'oklch(25% 0.02 265)',
+      border: this.f[k] ? 'oklch(45% 0.11 55)' : 'oklch(32% 0.02 265)',
+      toggle: () => { this.f[k] = !this.f[k]; this.log('CH', (this.f[k] ? 'fault armed: ' : 'fault cleared: ') + label, 'w'); this.bump(); },
+    }));
+    const pill = s => s === 'unique' ? ['oklch(30% 0.09 142)', 'oklch(85% 0.14 142)']
+      : s === 'duplicate-known' ? ['oklch(32% 0.08 55)', 'oklch(85% 0.13 55)']
+      : s === 'accepted' ? ['oklch(28% 0.02 265)', 'oklch(80% 0.01 247)']
+      : s === 'delivered' ? ['oklch(30% 0.09 142)', 'oklch(85% 0.14 142)']
+      : s.startsWith('held') || s.startsWith('dropped') ? ['oklch(32% 0.08 55)', 'oklch(86% 0.12 55)']
+      : ['oklch(30% 0.08 27)', 'oklch(84% 0.13 27)'];
+    const envelopes = this.channel.map(e => {
+      const senderStatus = (this.dev[e.from].sent[e.digest] || {}).status;
+      const shown = e.delivered ? (e.disposition || e.status) : e.status;
+      const [pb, pf] = pill(shown);
+      return { k: e.k, dir: e.from + ' → ' + e.to, type: e.type, select: () => { this.sel = e.k; this.bump(); },
+        meta: e.digest.slice(0, 18) + '… · sender: ' + (senderStatus || '—') + ' · ' + (e.plaintext.length) + ' B',
+        status: shown, pillBg: pb, pillFg: pf,
+        bg: this.sel === e.k ? 'oklch(26% 0.03 265)' : 'oklch(24% 0.02 265)',
+        border: this.sel === e.k ? 'oklch(50% 0.08 264)' : 'oklch(31% 0.02 265)' };
+    });
+    const sel = this.channel.find(e => e.k === this.sel);
+    const logColor = k => k === 'ok' ? 'oklch(82% 0.13 142)' : k === 'w' ? 'oklch(83% 0.12 55)' : k === 'e' ? 'oklch(78% 0.14 27)' : 'oklch(82% 0.01 247)';
+    return {
+      cryptoBadge: this.cryptoBadge, vectorBadge: this.vectorBadge,
+      cryptoColor: this.edOK ? 'oklch(84% 0.12 142)' : 'oklch(84% 0.12 55)',
+      vectorColor: this.vectorOK ? 'oklch(84% 0.12 142)' : 'oklch(84% 0.12 55)',
+      A, B, faults, envelopes, noEnvelopes: envelopes.length === 0,
+      channelNote: (this.f.hold ? 'holding · ' : '') + this.channel.length + ' envelope(s) · adapters untrusted for content',
+      hasSel: !!sel,
+      selTitle: sel ? sel.from + ' → ' + sel.to + '  ' + sel.type : '',
+      selSub: sel ? 'documentDigest ' + sel.digest + (sel.disposition ? ' · disposition ' + sel.disposition : '') : '',
+      selStages: sel ? sel.stages.map((s, i) => ({ k: i, label: s.label, mark: s.ok ? '✓' : '✕',
+        color: s.ok ? 'oklch(80% 0.13 142)' : 'oklch(78% 0.14 27)',
+        textColor: s.ok ? 'oklch(84% 0.01 247)' : 'oklch(80% 0.11 27)' })) : [],
+      selBlocks: sel ? [
+        { k: 1, title: 'sealed envelope (what the channel sees)', body: JSON.stringify(sel.sealed, null, 2) },
+        { k: 2, title: 'digest computation', body: ['JCS(document) length  ' + sel.plaintext.length + ' bytes',
+          'sha2-256 → multihash 0x12 0x20 + 32 bytes', 'multibase base64url, emit "u"',
+          'documentDigest        ' + sel.digest, 'computed over the plaintext, never the ciphertext'].join('\n') },
+        { k: 3, title: 'plaintext document (JCS canonical)', body: sel.plaintext },
+        { k: 4, title: 'document, expanded', body: JSON.stringify(sel.doc, null, 2) },
+      ] : [],
+      log: this.logs.map(l => ({ k: l.k, t: l.t, tag: l.tag, text: l.text, color: logColor(l.kind),
+        who: l.tag === 'A' ? 'oklch(78% 0.12 264)' : l.tag === 'B' ? 'oklch(80% 0.10 300)' : 'oklch(70% 0.01 247)' })),
+      noLog: this.logs.length === 0,
+      onCloseSel: () => { this.sel = null; this.bump(); },
+      onReset: () => { this.channel = []; this.logs = []; this.sel = null; this.faultDefs.forEach(([k]) => (this.f[k] = false)); this.boot(); },
+    };
+  }
+}
+
+</script>
+</body>
+</html>
