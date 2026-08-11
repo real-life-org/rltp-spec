@@ -457,37 +457,24 @@ are normative):
 
 ```mermaid
 flowchart TD
-    E[envelope arrives] --> S1{"1 size ≤ 65536 B"}
-    S1 -- no --> F1["failed(oversize)"]
-    S1 --> S2{"2 envelope schema · rkid known
-(live or tombstoned)"}
-    S2 -- no --> F2["failed(malformed)"]
-    S2 --> S3{"3 decryption"}
-    S3 -- no --> F3["failed(decryption-failed)"]
-    S3 --> S4{"4 parse + digest ·
-completed-effect cache"}
-    S4 -- "parse/digest fails" --> F4["failed(malformed)"]
-    S4 -- duplicate --> DK["duplicate-known ·
-stored ack re-sent byte-identical
-(terminal types: nothing to re-send)"]
-    S4 --> S5{"5–7 profile · recipient ·
-type · payload schema"}
-    S5 -- no --> F5["failed(...)"]
-    S5 --> S8{"8 type consistency ·
-pre-lock checks"}
-    S8 -- no --> F8["failed(validation-failed) /
-failed(stale-issuance)"]
-    S8 --> S9["9 critical section, lock set =
-digest + record key ·
-authoritative resolution selects effect"]
-    S9 --> EO["open → record-creating
-(future check: gate-future)"]
-    S9 --> ER["recorded → record decides
-(foreign counterparty: consumed-challenge;
-else record-aware acceptance)"]
-    S9 --> EU["unknown → failed(validation-failed)"]
-    EO --> U[unique · effect + retained ack,
-one durable transaction]
+    E[envelope arrives] --> S1{stage 1 size gate}
+    S1 -- no --> F1[failed oversize]
+    S1 --> S2{stage 2 envelope schema, rkid known}
+    S2 -- no --> F2[failed malformed]
+    S2 --> S3{stage 3 decryption}
+    S3 -- no --> F3[failed decryption-failed]
+    S3 --> S4{stage 4 parse, digest, dedup}
+    S4 -- fails --> F4[failed malformed]
+    S4 -- duplicate --> DK[duplicate-known, stored ack re-sent]
+    S4 --> S5{stages 5 to 7 profile, recipient, type, payload}
+    S5 -- no --> F5[failed at the failing stage]
+    S5 --> S8{stage 8 consistency, pre-lock checks}
+    S8 -- no --> F8[failed validation or stale-issuance]
+    S8 --> S9[stage 9 critical section under the lock set]
+    S9 --> EO[own challenge open: record-creating effect]
+    S9 --> ER[recorded: the record decides]
+    S9 --> EU[unknown: failed validation-failed]
+    EO --> U[effect plus retained ack, one durable transaction]
     ER --> U
 ```
 

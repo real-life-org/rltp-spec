@@ -100,18 +100,18 @@ The flow, as a picture (informative):
 ```mermaid
 sequenceDiagram
     participant I as Invitee
-    participant V as Inviter (member)
+    participant V as Inviter
     participant M as Any authorized member
-    participant L as Group log (replica)
-    V->>I: membership-invite (proof; inviter card; genesisDigest; NO keys)
-    Note over I: human decision —<br/>"invited"
-    I->>V: membership-accept (signed consent, bound to that invite, fresh card)
-    Note over I: "accepted — waiting for a group member<br/>to come online and hand over the keys"
-    V-->>M: membership-evidence (optional relay: complete pair)
-    M->>L: member.add — body encloses invite + accept,<br/>commits welcome digest (consumed once)
-    M->>I: access-operation: member.add + welcome<br/>(current-epoch keys, sealed to the accept's card)
-    Note over I: verify own chain → unseal welcome →<br/>fetch log → genesis = own invite's digest →<br/>materialize → member
-    I->>L: full history opens via epoch-key lineage
+    participant L as Group log
+    V->>I: membership-invite, carries no keys
+    Note over I: human decision
+    I->>V: membership-accept, signed consent, fresh card
+    Note over I: accepted, waiting for a member to hand over the keys
+    V-->>M: membership-evidence, the complete pair relayed
+    M->>L: member.add, body encloses invite and accept
+    M->>I: access-operation with welcome, sealed to the accept's card
+    Note over I: unseal, fetch log, verify own genesis digest, materialize
+    I->>L: full history opens via the epoch-key lineage
 ```
 
 ### 1.3 History through lineage, not through the welcome
