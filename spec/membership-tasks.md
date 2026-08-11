@@ -95,6 +95,25 @@ own registries — belongs to the Access layer and its service ports.
    waiting for a group member to come online and hand over the keys*
    (Section 7).
 
+The flow, as a picture (informative):
+
+```mermaid
+sequenceDiagram
+    participant I as Invitee
+    participant V as Inviter (member)
+    participant M as Any authorized member
+    participant L as Group log (replica)
+    V->>I: membership-invite (proof; inviter card; genesisDigest; NO keys)
+    Note over I: human decision —<br/>"invited"
+    I->>V: membership-accept (signed consent, bound to that invite, fresh card)
+    Note over I: "accepted — waiting for a group member<br/>to come online and hand over the keys"
+    V-->>M: membership-evidence (optional relay: complete pair)
+    M->>L: member.add — body encloses invite + accept,<br/>commits welcome digest (consumed once)
+    M->>I: access-operation: member.add + welcome<br/>(current-epoch keys, sealed to the accept's card)
+    Note over I: verify own chain → unseal welcome →<br/>fetch log → genesis = own invite's digest →<br/>materialize → member
+    I->>L: full history opens via epoch-key lineage
+```
+
 ### 1.3 History through lineage, not through the welcome
 
 The welcome carries **only the current epoch**. The group's history
@@ -562,6 +581,23 @@ arrived → bootstrapping (fetch log, verify genesis against own
 invite, materialize incl. own admission) → member` — the waiting
 state MUST be user-visible as such; decline or expiry ends the
 thread with local state only.
+
+```mermaid
+stateDiagram-v2
+    [*] --> invited: membership-invite arrives
+    invited --> accepted: human accepts (signs membership-accept)
+    invited --> [*]: decline / validUntil expiry
+    accepted --> welcomeArrived: member.add + welcome delivered
+    note right of accepted
+        user-visible! waiting for a group
+        member to come online and
+        hand over the keys
+    end note
+    welcomeArrived --> bootstrapping: chain verified, welcome unsealed
+    bootstrapping --> member: canonical admission for own accept materialized
+    bootstrapping --> [*]: no canonical admission (chain failed) — state discarded
+    bootstrapping --> bootstrapping: history withheld — safe, no authority adopted
+```
 
 **Admitting member (any authorized member):** `admission evidence at
 hand → verify chain → issue member.add enclosing invite + accept,

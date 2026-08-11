@@ -560,6 +560,35 @@ any moment, and neither path ever starts a second enactment. What
 varies is never the ceremony — only the carrier of the enactment
 material.
 
+The ceremony, as a picture (informative — the normative rules follow
+below):
+
+```mermaid
+sequenceDiagram
+    participant A as A (scanner)
+    participant D as Delivery service
+    participant B as B (displayer)
+    B->>A: displays card with challenge c_B
+    Note over A: scan → sent card (c_A, sentTo=B, boundTo=c_B)<br/>gate → record → confirm (C4) → issue credential
+    rect rgb(235,244,255)
+    Note over A,B: connected path
+    A->>D: encounter-bundle (sent card + credential), sealed to B
+    D->>B: bundle → staged evaluation → resolution selects effect
+    Note over B: record-creating effect: record + accept + ack,<br/>one durable transaction
+    B->>D: delivery-ack (arrival only)
+    D->>A: ack → "nothing more to do on your side"
+    end
+    rect rgb(255,247,235)
+    Note over A,B: offline path — free switch, any moment
+    A->>B: presents the SENT CARD optically (never the bundle)
+    Note over B: resolve boundTo → record created —<br/>enactment complete, edge outgoing at most
+    D->>B: the old bundle, whenever a network next carries it
+    Note over B: accepted via the existing record —<br/>never consumed-challenge
+    end
+    B->>A: counter-credential (optional, unbounded in time)
+    Note over A,B: mutual — held on each side only when<br/>that side holds the other's credential
+```
+
 Common trunk, normatively:
 
 1. B displays a card with challenge `c_B`.

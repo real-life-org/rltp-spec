@@ -452,6 +452,45 @@ No other states exist — in particular, no acceptance state.
 
 ### 6.2 Receiver: dispositions, in mandatory order
 
+The pipeline, as a picture (informative — the numbered stages below
+are normative):
+
+```mermaid
+flowchart TD
+    E[envelope arrives] --> S1{"1 size ≤ 65536 B"}
+    S1 -- no --> F1["failed(oversize)"]
+    S1 --> S2{"2 envelope schema · rkid known
+(live or tombstoned)"}
+    S2 -- no --> F2["failed(malformed)"]
+    S2 --> S3{"3 decryption"}
+    S3 -- no --> F3["failed(decryption-failed)"]
+    S3 --> S4{"4 parse + digest ·
+completed-effect cache"}
+    S4 -- "parse/digest fails" --> F4["failed(malformed)"]
+    S4 -- duplicate --> DK["duplicate-known ·
+stored ack re-sent byte-identical
+(terminal types: nothing to re-send)"]
+    S4 --> S5{"5–7 profile · recipient ·
+type · payload schema"}
+    S5 -- no --> F5["failed(...)"]
+    S5 --> S8{"8 type consistency ·
+pre-lock checks"}
+    S8 -- no --> F8["failed(validation-failed) /
+failed(stale-issuance)"]
+    S8 --> S9["9 critical section, lock set =
+digest + record key ·
+authoritative resolution selects effect"]
+    S9 --> EO["open → record-creating
+(future check: gate-future)"]
+    S9 --> ER["recorded → record decides
+(foreign counterparty: consumed-challenge;
+else record-aware acceptance)"]
+    S9 --> EU["unknown → failed(validation-failed)"]
+    EO --> U[unique · effect + retained ack,
+one durable transaction]
+    ER --> U
+```
+
 Every received envelope is evaluated in this order, and the first
 failing stage names the disposition:
 
