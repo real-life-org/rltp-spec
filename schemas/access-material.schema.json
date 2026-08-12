@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://real-life.org/rltp/v1/schemas/access-material.schema.json",
   "title": "RLTP Access key material (Access Layer 0.24 sections 7.1 and 9.5)",
-  "description": "The two plaintext shapes the adapter produces: rltp-access-material/0.24 (the welcome material of Membership section 4 — proposed MO-4 pin) and rltp-access-keydist/0.24 (the keydist/refresh plaintext of Access 7.1/10.1). Both forms carry the registered adapter id; keys is owned and CLOSED by the adapter registration. linear/0.1 carries exactly the content key — every further secret is DERIVED from it (HKDF info rltp/v1/epoch-secret/<genesis digest>), never transported, so the log's contentKeyCommitment authenticates all consensus-relevant material.",
+  "description": "The two plaintext shapes the adapter produces: rltp-access-material/0.24 (the welcome material of Membership section 4 — the MO-4 pin, adopted by Membership 0.9) and rltp-access-keydist/0.24 (the keydist/refresh plaintext of Access 7.1/10.1). Both forms carry the registered adapter id; keys is owned and CLOSED by the adapter registration. linear/0.1 carries exactly the content key — every further secret is DERIVED from it (HKDF info rltp/v1/epoch-secret/<genesis digest>), never transported, so the log's contentKeyCommitment authenticates all consensus-relevant material.",
   "type": "object",
   "required": [
     "v",

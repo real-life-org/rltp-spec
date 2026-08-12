@@ -3,17 +3,21 @@
 **Real Life Trust Protocol — Layer 3: Access**
 
 - **Status:** Editor's Draft
-- **Version:** 0.24.0-draft (twenty-fourth casting)
+- **Version:** 0.25.0-draft (twenty-fifth casting)
 - **Editors:** Anton Tranelis
-- **Date:** 2026-08-11
+- **Date:** 2026-08-12
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
-- **Conformance profile:** `rltp-access@0.24` (draft)
+- **Conformance profile:** `rltp-access@0.25` (draft). The **wire
+  versions of every artifact stay at `0.24`**: this casting changes
+  receiver-side obligations and the keying of local state, and no
+  byte of any wire form (Section 11).
 - **Position:** Layer 3 of RLTP, above the Encounter Layer 0.19 and
   the Identity layer, carried by the Delivery Contract 0.17 where
   operations or keys must reach parties outside the replica; the
-  Membership Tasks 0.7 register the task types that transport this
+  Membership Tasks 0.11 register the task types that transport this
   layer's admission documents and are a normative companion.
-- **Supersedes:** versions 0.23 through 0.4 (archived as
+- **Supersedes:** versions 0.24 through 0.4 (archived as
+  `archive/access-layer-0.24-vierundzwanzigstguss.md`,
   `archive/access-layer-0.23-dreiundzwanzigstguss.md`,
   `archive/access-layer-0.22-zweiundzwanzigstguss.md`,
   `archive/access-layer-0.21-einundzwanzigstguss.md`,
@@ -73,39 +77,49 @@ revocable by construction. That difference is why the layers exist.
 
 ## Status of This Document
 
-This is an **Editor's Draft**, the twenty-fourth casting of this
+This is an **Editor's Draft**, the twenty-fifth casting of this
 layer. It is developed
 through the same adversarial convergence process as the Encounter
 Layer, the Delivery Contract, and the Membership Tasks (casting,
 independent adversarial review, full recast — never a patch). The
 fourth casting — the first on the enforcement port — drew 22
-blockers; **round 20, judging the twenty-third casting, found
-zero blocker-level defects and stated the convergence criterion
-of the loop met**, with every named residual (Section 15, the
-TOFU and re-registration classes, the cooperation and darkness
-residuals, the consent-staleness window) confirmed as an honestly
-bounded design limit rather than an open defect. This
-twenty-fourth casting is the polish pass over round 20's
-remaining findings: the duty slot's semantics are exact (one
-slot per requester at each helper; replacement swaps content,
-never the deadline, which starts when the slot fills and is
-discharged within `key-request-interval`); the bootstrap
-guarantee is stated as a chain with its transport link named
-(candidates checkable at log arrival; otherwise an answer owed
-within the interval; delivery latency unbounded and stated); a
-displaced bootstrap candidate's defined effect is the durable
-record of digest and disposition, explicitly not durable
-buffering; and the last stale window and dedupe wordings are
-gone. **Round 21 confirmed it: zero findings — no blocker,
-major, or minor — so this casting stands converged at
-blocker level across two consecutive rounds (20 and 21).** What
-remains open is collected in Section 15 as design boundaries,
-not defects; a member-facing set of product decisions taken
-across the loop awaits the editors' sign-off, and publication to
-the public repository follows that. Known open
-questions are collected in Section 15. Feedback is welcome
-via the issues of the publication repository
-(github.com/real-life-org/rltp-spec).
+blockers; **rounds 20 and 21, judging the twenty-third and
+twenty-fourth castings, found zero blocker-level defects and
+stated the convergence criterion of the loop met**, with every
+named residual (Section 15, the TOFU and re-registration classes,
+the cooperation and darkness residuals, the consent-staleness
+window) confirmed as an honestly bounded design limit rather than
+an open defect.
+
+Every round up to that point judged this layer against a **frozen**
+companion. The round that followed was the first to hold **this
+document and its Membership Tasks companion open at the same time**,
+and it looked for defects **at the seam** — the class the sequential
+process is structurally blind to. It found two that only this
+document can answer, and this casting is the **surgical seam cast**
+that answers exactly those two and touches nothing else: the
+first-materialization gate of Section 10.1 now carries the
+**current-member condition** it always implied but never stated, so
+a subject removed in a later epoch cannot complete a bootstrap on a
+commitment-correct re-welcome (this closes an internal contradiction
+with Section 5.3's eviction rule as much as a seam gap); and every
+operational **slot, window and throttle** this document defines is
+keyed by the **genesis digest** rather than by the group DID, which
+is what Section 3.2 has required of all group state from the start.
+No wire form, no schema, and no other requirement changes.
+
+That confirmation round has since been held. Judging this
+twenty-fifth casting against the Membership Tasks 0.11, with the
+Encounter Layer and the Delivery Contract frozen, it found **no
+defects at any severity** and stated the seam **closed in both
+directions**. This casting is therefore **converged**, and the
+convergence criterion of this loop now holds on both sides of the
+boundary this document shares with its companion. What remains
+open is collected in Section 15 as design boundaries, not defects;
+the member-facing product decisions taken across the loop have the
+editors' sign-off, and publication to the public repository is the
+next step. Feedback is welcome via the issues of the publication
+repository (github.com/real-life-org/rltp-spec).
 
 ## 1. Introduction (informative)
 
@@ -278,6 +292,22 @@ materialized state entitles to it (5.3, 7.1, 10.1).
   a sibling genesis. A founder who mints several geneses under one
   DID has founded several groups; no rule of this document lets
   them merge, and nothing any of them does binds another.
+- **"All group state" includes the operational state, and this
+  document keys it accordingly.** The scoping rule is not about
+  replicated log state alone: every **slot, window and throttle**
+  defined here — the provisional bootstrap candidate and its
+  `provisional-window` (10.1), the key-service duty slot and its
+  deadline (5.3, 10.1), and the service-side presentation rate
+  limit (7.3) — is keyed by **`genesisDigest`**, never by the
+  group DID, and every operative sentence naming such a set says
+  so. Otherwise the isolation this section promises would hold for
+  the log and leak through the operational layer: two sibling
+  geneses sharing a DID, with one invitee or one requester in
+  common, would displace each other's candidates, consume each
+  other's deadlines, and starve each other's rate budgets — one
+  group affecting the liveness of a group it is defined not to
+  bind. The keying is stated here once and referenced where it
+  binds.
 - A newcomer verifies a group by: genesis digest → genesis
   validation → operation DAG → materialized state. There is no
   other bootstrap; the log **is** the genesis chain.
@@ -1207,7 +1237,9 @@ every dedupe key tried — operation, card, epoch — either left a
 multiplier one party controlled or disenfranchised a legitimate
 repeat: a lost card, a displaced delivery). Normatively, as a
 **slot with a fixed deadline**: each helper keeps one slot per
-(group, requester anchor). A valid authenticated request fills
+(`genesisDigest`, requester anchor) — the group's **identity**,
+never its DID, so sibling geneses under one address never share a
+slot (3.2). A valid authenticated request fills
 an empty slot and **starts the deadline**; a request processed
 while the slot is full **replaces its content** — request and
 card, in the helper's local processing order, which is all
@@ -1223,8 +1255,9 @@ rate limit is thereby part of the duty — a floor of one answer
 per interval, as an equation over the slot — never a substitute
 for it. What an abusive
 requester can extract is therefore bounded by rate (one forced
-answer per interval per group), carries no accumulating state
-(one slot per requester), and stays gated by entitlement and
+answer per interval per genesis digest), carries no accumulating
+state (one slot per requester in that group), and stays gated by
+entitlement and
 the signature; what an honest member is guaranteed is a fresh
 answer to their newest request within the interval — whatever
 happened to cards, clones, or earlier deliveries. What
@@ -1285,10 +1318,11 @@ held — knowledge honesty, 7.2 — but "member-only in every mode"
 notice travelling to the removed member is the
 `removal-notice/0.1` task registered by this layer (10.2) —
 never the operation envelope itself (5.3's boundary rule).
-Membership §3.3 case 2 names the duty; its use of
-`access-operation/0.1` as the carrier for a full
-`member.remove` envelope is **superseded by 10.2**, and
-retiring case 2 is a recorded debt for Membership 0.8 (§15).
+Membership's `access-operation/0.1` no longer carries a full
+`member.remove` envelope: as of Membership 0.9 that carrier is
+narrowed to the admitting `member.add` bootstrap, and the removal
+notice is this task (10.2) — the supersession is complete, not
+pending.
 
 ### 5.4 Leave, pending exit, and dissolve
 
@@ -1870,7 +1904,10 @@ Services learn a group's authorization state only through
      a presenter's promise. What is deliberately **not** a
      protocol bound is the number of presentations: that is the
      presenter's own spent effort per exchange, and services
-     SHOULD rate-limit presentations per group and presenter —
+     SHOULD rate-limit presentations per **`genesisDigest`** and
+     presenter — never per group DID, under which a sibling
+     genesis is a different group whose presenters MUST NOT share
+     the budget (3.2) —
      the cost class is the one this obligation already concedes
      to any misbehaving quorum, now priced per exchange instead
      of unpriced.
@@ -2236,14 +2273,11 @@ Welcome material MUST be re-derivable at any later materialized
 position of the same epoch (the key service duty depends on it,
 5.3), MUST carry the current epoch only, and MUST fit the welcome
 plaintext budget (Membership §4). This object is the `material`
-Membership §4 carries opaquely. **Proposed pin (MO-4):** this
-schema plus the per-adapter `keys` registration is proposed as the
-`material` pin; adoption happens in Membership's next casting,
-which also updates its prose that still reflects the withdrawn 0.3
-machinery (an implicit-capability blind no longer exists — the
-implicit capability follows from membership itself). Until then
-the wire shape is compatible (Membership's `material` is opaque)
-and the debt is recorded, not suspended.
+Membership §4 carries. **The MO-4 pin:** this
+schema plus the per-adapter `keys` registration is the `material`
+pin, adopted by Membership 0.9 (its §4 validates the welcome
+`material` against this schema); no implicit-capability blind
+exists — the implicit capability follows from membership itself.
 
 ### 9.6 Adapter #1: `linear/0.1` (normative)
 
@@ -2305,7 +2339,7 @@ This layer requires, and does not define:
 - **Delivery port:** authenticated end-to-end-encrypted delivery
   to derived identities with durable buffering and explicit
   disposition — satisfied by the Delivery Contract 0.17, whose
-  task types for this layer are the Membership Tasks 0.7 plus the
+  task types for this layer are the Membership Tasks 0.11 plus the
   type registered below.
 - **Replication port:** convergent replication of the encrypted
   authority log and documents; deterministic merge; offline
@@ -2392,14 +2426,16 @@ per the Delivery Contract §§3–6.
   its current materialized state (5.3) and, where it holds the
   current keys and the requester is entitled, MUST answer with
   the matching material kind (`re-welcome` or `refresh`, 5.3).
-  The response duty is **the slot of 5.3**: one slot per (group,
-  requester anchor); a request fills an empty slot and starts
+  The response duty is **the slot of 5.3**: one slot per
+  (`genesisDigest`, requester anchor); a request fills an empty
+  slot and starts
   its deadline; a later request replaces the slot's content
   (request and card) and never the deadline; the receiver MUST
   discharge the slot at latest within
   **`key-request-interval` (default PT1H)** of the deadline's
-  start — per group, so one group's throttle never starves
-  another's — and discharge empties the slot. No dedupe key
+  start — per genesis digest, so one group's throttle never
+  starves another's, sibling geneses under one DID included
+  (3.2) — and discharge empties the slot. No dedupe key
   exists: not the operation (admission
   clones must not multiply the duty), not the card (a lost card
   is exactly the legitimate repeat this shape serves — the
@@ -2444,7 +2480,11 @@ per the Delivery Contract §§3–6.
   M1, 17 B4/M5/M6, 18 B2, 19 B1). *Serialization and the
   window*: at
   most **one active
-  provisional candidate per (group, invitee)**, and **the
+  provisional candidate per (`genesisDigest`, invitee)** — the
+  invitee's own invite pin, which they have held since the
+  invite and which no sender can move (3.2, Membership 3.1), so
+  a sibling genesis under the same DID neither displaces this
+  candidate nor consumes its window — and **the
   window belongs to that pair, not to the candidate** — the
   first provisionally valid bootstrap document (welcome or
   re-welcome) opens one `provisional-window`, and a candidate
@@ -2491,21 +2531,46 @@ per the Delivery Contract §§3–6.
   is **unique data under Section 12's boundary and survives
   every wipe**, exactly as removal hygiene preserves unsent
   work (5.3). *How it
-  ends*, one of two ways: the canonicality and commitment
-  checks of this section bind **at first materialization** —
-  the named admission must materialize as canonical with the
-  invitee as subject, and the unsealed content key must match
-  the current epoch's commitment — or the window closes: if
+  ends*, one of two ways. **Either the checks of this section
+  bind at first materialization** — three conditions, each a
+  MUST, and the bootstrap succeeds only if all three hold at
+  that one materialized state:
+  (i) the named admission materializes as **canonical with the
+  invitee as subject**;
+  (ii) the invitee is a **member of that materialized state** —
+  not merely the subject of a historically canonical admission
+  whose membership has since ended by a canonical removal, by a
+  discharged exit, or in the terminal state (5.3, 5.4);
+  (iii) the **unsealed content key matches the current epoch's
+  `contentKeyCommitment`**.
+  Condition (ii) is not a new rule of this layer but this gate
+  finally carrying 5.3's: eviction binds on the canonical
+  removal and "member-only in every mode" (3.1) leaves no
+  bootstrap open to someone the log has already removed. Without
+  it the gate was satisfiable by a subject admitted in epoch N
+  and removed in epoch N+1 — the admission stays canonical for
+  ever, it is history — to whom a malicious remaining member
+  hands a re-welcome whose material is honestly derived, and
+  therefore commitment-correct, for the epoch current after the
+  removal: canonicality and commitment both pass, and a removed
+  member re-enters. Membership Tasks 0.11 §3.3 requires the
+  condition **at this gate**, and this is where it binds; a
+  bootstrap that fails on (ii) fails exactly like a failure on
+  (i) or (iii) — that candidate's provisional state is wiped,
+  the failure is surfaced, and the buffered candidate is checked
+  at once (below). **Or the window closes**: if
   first materialization has not succeeded within
   **`provisional-window`** (a constant of this layer,
   RECOMMENDED default P30D, measured from the **first
-  candidate's adoption for this (group, invitee) pair** —
+  candidate's adoption for this (`genesisDigest`, invitee)
+  pair** (3.2) —
   deliberately not Membership's
   `bootstrap-retention`, which is a *minimum pending-document
   retention*, the opposite duty), the
   attempt has failed. **The provisional phase ends at log
   arrival, whichever way the first materialization goes:** a
-  failed commitment check presupposes the log is present, and
+  failed membership or commitment check presupposes the log is
+  present, and
   from that moment every held candidate — and every candidate
   arriving later — is **immediately** checkable against the
   commitments; window mechanics and buffer order stop mattering.
@@ -2537,10 +2602,11 @@ per the Delivery Contract §§3–6.
   one window, never a false membership, never an unbounded
   hold, never a partial teardown, never lost user data. The
   sender of record is
-  attributable through the delivery chain. (Membership 0.8
-  debt: name this fallback in its §3.3 — where the full
-  boundary-crossing admission cannot fit the carrier, the
-  re-welcome travels instead and case-1 semantics apply — §15.)
+  attributable through the delivery chain. (This fallback is
+  named in Membership §3.3 — where the full boundary-crossing
+  admission cannot fit the carrier, the re-welcome travels
+  instead and case-1 semantics apply; the Membership 0.8-era
+  debt to name it is discharged as of Membership 0.9, §15.)
 
 ### 10.2 `removal-notice/0.1`
 
@@ -2548,10 +2614,10 @@ The task type by which a removed member is told of their
 removal — registered here, like `key-delivery/0.1`, with its
 document profile, dispositions, and acknowledgement rules per
 the Delivery Contract §§3–6, so that a conformant carrier exists
-under the current companions (Membership §3.3 case 2's use of
-`access-operation/0.1` for a full `member.remove` envelope is
-superseded by this type — 5.3's boundary rule; retiring case 2
-is a Membership 0.8 debt, §15). The payload is the compact
+under the current companions (Membership 0.9's
+`access-operation/0.1` no longer carries a full `member.remove`
+envelope — 5.3's boundary rule; the removal notice is this type).
+The payload is the compact
 notice object; its schema ships as
 `schemas/payload-removal-notice.schema.json` with `$id` equal to
 the Trust-Tasks type URI
@@ -2634,6 +2700,25 @@ so the type is dispatchable today, not `unknown-type`:
   `rltp-access-registration/0.24`,
   `rltp-access-removal-notice/0.24`,
   `key-delivery/0.1`).
+- **Wire version and profile version are distinct, and this
+  casting moves only one of them.** A wire version advances when a
+  wire shape changes; the profile version advances with every
+  casting of this document. Profile `rltp-access@0.25` therefore
+  produces and accepts exactly the `…/0.24` wire forms above: 0.25
+  changed a receiver-side gate (10.1) and the keying of local,
+  unshipped state (3.2) — nothing serialized. **This paragraph is
+  the compatibility statement Membership Tasks 0.11 §10 asks for.**
+  That profile pins this layer twice, in prose and through the `v`
+  constants of the Access schemas it transcribes under mobile
+  `$id`s, and states that an Access wire bump would break its
+  fixtures hard and require a Membership recast. No such bump
+  occurs here: the six schemas of Section 14 are byte-unchanged,
+  Membership 0.11's fixtures continue to pass, and its section
+  references into this document hold — 10.1's gate acquired the
+  condition Membership 0.11 §3.3 already required there, so the
+  two documents agree more closely at 0.25 than they did at 0.24.
+  A group pinning a minimum profile version in policy (below) may
+  pin 0.25 to require the current-member gate.
 - Extension is additive: new operations (with class, epoch
   effect, default rule key, closed body profile — 4.5),
   requirement types, actions, proof mechanisms, visibility modes,
@@ -2665,11 +2750,30 @@ so the type is dispatchable today, not `unknown-type`:
   used to police the losers, and with it the merge-time
   revocation of admissions round 14 exposed, is gone at the
   root.
-- **Identity is the digest.** Group state, invitations, views,
+- **Identity is the digest — including the operational state.**
+  Group state, invitations, views,
   and key AADs bind the genesis digest (3.2), so a founder
   equivocating geneses under one DID creates parallel groups, not
   parallel truths about one group; nobody can be moved between
-  them without failing a digest check they themselves hold.
+  them without failing a digest check they themselves hold. The
+  same keying covers every slot, window and throttle this layer
+  defines (3.2, 5.3, 7.3, 10.1), which closes the remaining lever
+  of that equivocation: keyed by the shared DID, one genesis could
+  displace the other's bootstrap candidate, consume its answer
+  deadline, or exhaust its rate budget — an availability attack on
+  a group by a group that binds nothing in it. Keyed by digest,
+  the two are as independent operationally as they are in the log.
+- **A bootstrap is judged against the living state, not the
+  archive.** The first-materialization gate (10.1) requires
+  current membership alongside canonicality and the epoch
+  commitment. An admission is history and stays canonical after
+  the removal that ended it, and material derived honestly at the
+  current position is commitment-correct for anyone; only the
+  membership condition separates a legitimate late bootstrap from
+  a removed member re-entering on a re-welcome minted by a
+  malicious insider. This is 5.3's eviction rule and 3.1's
+  "member-only in every mode" reaching the one gate that had
+  stated its inputs incompletely.
 - **The log is the perimeter, extended through the port.**
   Everything reduces to operation validity and the deterministic
   merge; implementations MUST NOT introduce side channels of
@@ -2887,8 +2991,10 @@ so the type is dispatchable today, not `unknown-type`:
   reference,
   Membership's document schemas, `sealed-envelope.schema.json`,
   and `contact-card.schema.json`.
-- **Profile** `rltp-access@0.24`; normatively references
-  `rltp-membership@0.7` (document shapes, welcome seal, admission
+- **Profile** `rltp-access@0.25`, whose wire forms remain those of
+  `0.24` (Section 11 — no wire shape changed); normatively
+  references
+  `rltp-membership@0.11` (document shapes, welcome seal, admission
   transport) and `rltp-delivery@0.17` (document profile, sealed
   envelope, dispositions — also for `key-delivery/0.1`); where
   encounter rules are used, `rltp-encounter@0.19`.
@@ -2995,7 +3101,9 @@ so the type is dispatchable today, not `unknown-type`:
     explicit `predecessor`;
   - key-delivery: keydist digest+epoch match against the named
     transition; re-welcome recipient = admission subject;
-    commitment check gate; genesis-digest binding; unknown op →
+    the three-condition first-materialization gate (canonicality,
+    **current membership**, commitment — 10.1); genesis-digest
+    binding; unknown op →
     pending mechanics; bootstrap re-welcome self-contained;
     idempotency;
   - port: P1 raw-ingestion equivalence; P2 no observable
@@ -3020,7 +3128,8 @@ so the type is dispatchable today, not `unknown-type`:
     one; views: `m = 0` invalid, signer-intersection rule,
     future-dated `issuedAt` rejected, pending exit still listed
     until discharge; key request: proof + card required, one
-    outstanding rate-served answer per (group, requester),
+    outstanding rate-served answer per (`genesisDigest`,
+    requester),
     unentitled (removed) requester refused at the helper's
     current state; re-welcome
     epoch equalities; last-member leave revived by a concurrent
@@ -3054,8 +3163,8 @@ so the type is dispatchable today, not `unknown-type`:
     in its ancestry (concurrent transition does not carry it);
     duty as one
     outstanding answer (a request after a rotation is simply
-    the newest request and re-earns material); per-group rate
-    limiting; reconciliation
+    the newest request and re-earns material); rate limiting per
+    genesis digest; reconciliation
     state machine (seq, epoch, tip replacement, quorum source)
     stepwise to one tip;
   - *(round-6 additions)* credential merge per issuer (one per
@@ -3070,8 +3179,9 @@ so the type is dispatchable today, not `unknown-type`:
     extend their tip during fail-closed; eviction at every
     membership end (removal / discharge / terminal); epoch-secret
     derivation bytes exact; the duty slot identical in 5.3 and
-    10.1 (one slot per (group, requester), replacement swaps
-    content never the deadline, discharge within the interval);
+    10.1 (one slot per (`genesisDigest`, requester), replacement
+    swaps content never the deadline, discharge within the
+    interval);
   - *(round-7 additions)* pure encounter proof keeps its derived
     `encounter-presentation` label through the merge (never
     falsely `composite`); first-valid per issuer (no
@@ -3284,7 +3394,8 @@ so the type is dispatchable today, not `unknown-type`:
     built-beyond view is rejected (ratchet); bootstrap
     re-welcome: case-1 pre-checks (accept-card seal, invite
     pin, well-formed material), provisional adoption,
-    canonicality + commitment checked at first
+    canonicality + current membership + commitment checked at
+    first
     materialization, failure → provisional state discarded and
     surfaced; notice payload dispatch: schema `$id` = type URI
     `…/trust-tasks/removal-notice/0.1`, document proof absent,
@@ -3381,7 +3492,8 @@ so the type is dispatchable today, not `unknown-type`:
     `key-request-interval`; a displaced candidate is
     acknowledged `unique` and its re-send `duplicate-known`;
     duty in final form: at most one outstanding answer per
-    (group, requester), the newest request replaces an older
+    (`genesisDigest`, requester), the newest request replaces an
+    older
     outstanding one (no queue), discharge at latest within the
     interval; card loss mid-epoch: request with the
     replacement card → MUST answer sealed to it within the
@@ -3404,7 +3516,47 @@ so the type is dispatchable today, not `unknown-type`:
     durable record of digest + disposition, material
     discarded, no durable buffering — retention identical
     across implementations; failed active candidate → buffered
-    one checked immediately, no window mechanics.
+    one checked immediately, no window mechanics;
+  - *(twenty-fifth-casting additions — the joint-seam round)*
+    **current-member gate (B3):** X admitted canonically in
+    epoch N, canonically removed in epoch N+1, then handed a
+    re-welcome naming that admission whose material is honestly
+    derived — and therefore commitment-correct — for the epoch
+    current after the removal → at first materialization the
+    admission is canonical with X as subject and the commitment
+    matches, and the **bootstrap MUST fail** on condition (ii),
+    because X is not a member of that materialized state (10.1;
+    the Access-side judgment of Membership 0.11 §10's
+    removed-subject re-welcome vector — one input, one verdict
+    across both documents); a suite in which canonicality plus
+    commitment alone completes the bootstrap is the regression
+    check. Counter-vectors that MUST still succeed: the same
+    shapes where the removal is **not** in the materialized state
+    the invitee reaches (the bootstrap completes, and the removal
+    takes effect on merge under 5.3's eviction — never a
+    retroactive bootstrap failure), and a **re-admission** after
+    the removal with fresh consent (X is a member again, and the
+    re-welcome for the current epoch verifies). Failure on (ii) is
+    handled exactly like failure on (i) or (iii): that candidate's
+    provisional state wiped, surfaced, buffered candidate checked
+    at once;
+    **digest isolation (B4):** two geneses G₁ and G₂ under **one**
+    group DID (3.2), exercised with one party in common —
+    *candidate slot and window*: the same invitee holding invites
+    into both bootstraps both, each with its own active
+    provisional candidate and its own `provisional-window`;
+    neither candidate displaces the other, and G₁'s window
+    expiring wipes nothing of G₂'s; *key-service slot*: the same
+    requester's authenticated requests into both fill two slots
+    with two independent deadlines, and discharging G₁'s neither
+    empties nor extends G₂'s; *rate limit*: G₁'s
+    `key-request-interval` budget, and a service's presentation
+    rate limit for G₁ (7.3), never throttle G₂; *completed
+    effect*: dispositions and displaced-candidate records are held
+    per digest, so a `duplicate-known` in G₁ never suppresses a
+    first surfacing in G₂. Every one of these keyed by group DID
+    instead is the regression check — the sibling-genesis
+    interference 3.2 forbids.
 - Every normative statement is vector-testable or explicitly
   state-dependent — the state-dependent set is named: signal
   dispositions, remediation and key service duties (helper
@@ -3461,7 +3613,9 @@ so the type is dispatchable today, not `unknown-type`:
   OI-12); until it exists, the bound, the ceiling, and the
   degraded state between them are the honest, enforced limit
   rather than an unstated assumption.
-- *(Cross-document debts, tracked for Membership 0.8: adopt the
+- *(Cross-document debts — **discharged in Membership 0.9**
+  (see that document's §9); retained here as the record of what
+  Access 0.24 owed its companion at casting time: adopt the
   MO-4 material pin and update its §4/welcome-schema prose — 9.5;
   align its "identified by its group DID" terminology and its
   per-group keying — pending stores, evidence authorization —
@@ -3507,7 +3661,7 @@ so the type is dispatchable today, not `unknown-type`:
 profile 2.3, contact card §6, credentials §7, evidence direction
 §4.2) · **RLTP Delivery Contract 0.17** (document profile §3,
 sealed envelope §5, dispositions §6) · **RLTP Membership Tasks
-0.7** (document shapes §3, welcome seal §4, timing §5) · W3C
+0.11** (document shapes §3, welcome seal §4, timing §5) · W3C
 Verifiable Credentials Data Model 2.0 · Keyhive / BeeKEM design
 documents (causal encryption; ePrint 2026/1434) · p2panda-auth
 documentation (resolver model)

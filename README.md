@@ -18,7 +18,7 @@ been exercised at festivals and community gatherings since 2026.
 |---|---|
 | [`spec/encounter-layer.md`](spec/encounter-layer.md) | **RLTP Encounter Layer** — how two people establish, record, and maintain mutual recognition: the one registered ceremony (`encounter-scan`, with a connected path and an offline path and free switching between them), contact cards, challenges, the own-challenge state model, the enactment binding, encounter credentials, edges |
 | [`spec/delivery-contract.md`](spec/delivery-contract.md) | **RLTP Delivery Contract** — how documents travel: private Trust Task types (`encounter-bundle`, `delivery-ack`, `encounter-credential-delivery`), the sealed envelope, staged dispositions, delivery promises |
-| [`spec/membership-tasks.md`](spec/membership-tasks.md) | **RLTP Membership Tasks** — how membership changes travel: invitation, explicit consent (`membership-invite`, `membership-accept`, `membership-evidence`), the generic `access-operation` carrier with the admission chain (provable invitation provenance), and the welcome seal |
+| [`spec/membership-tasks.md`](spec/membership-tasks.md) | **RLTP Membership Tasks** — how membership changes travel: invitation, explicit consent (`membership-invite`, `membership-accept`, `membership-evidence`), the `access-operation` carrier narrowed to the one operation that crosses the replica boundary — the admitting `member.add` delivered to its own subject — with the admission chain (provable invitation provenance), and the welcome seal |
 | [`spec/access-layer.md`](spec/access-layer.md) | **RLTP Access Layer** — how a group holds shared authority over its membership, data, and itself: the authority log (a causally linked DAG whose genesis digest *is* the group's identity), policies as group-defined decision rules, epochs that make revocation real, chained quorum-signed authorization views toward services, and the enforcement port that keeps the replication/key-agreement substrate replaceable |
 | [`schemas/`](schemas/) | Normative JSON Schemas for every wire artifact |
 | [`contexts/`](contexts/) | The pinned RLTP JSON-LD context |
@@ -35,21 +35,30 @@ independent adversarial reviewer, findings are triaged, and the
 document is fully recast — never patched — until a review round
 returns **no blocker-level findings**. All four have reached that
 criterion: Encounter 0.19 · Delivery Contract 0.17 · Membership
-Tasks 0.7 · **Access Layer 0.24**, each confirmed by a final round
+Tasks 0.11 · **Access Layer 0.25**, each confirmed by a final round
 with no findings.
 
-The Access Layer's convergence took twenty-one review rounds
+The Access Layer's convergence took twenty-two review rounds
 (22 blockers in its first ported casting, zero in the last two).
-Notable in its final form: **there are no admins** — privileged
-operations are gated by group-defined policy, and constitutional
-power is structurally person-independent; **the merge never decides
-membership** — every admission canonical at its position is final,
-with a closed exception list; **revocation is honest** — a removal
-carries its key-world transition atomically, and what rotation can
-and cannot guarantee is stated rather than implied; and **the
-substrate is a port** — replication, convergence, and group key
-agreement are requirements on a replaceable adapter, with today's
-deployed linear semantics as the reference adapter.
+Between the last two came a review the sequential process cannot
+perform: a **joint seam round**, with the Access Layer and the
+Membership Tasks open at the same time and looking for defects at
+the boundary between them. Each document answered its own side in
+a new casting, and the confirmation round that followed found no
+blocker-, major-, or minor-level defects in either direction — the
+Access ⇄ Membership seam is closed.
+
+Notable in that layer's final form: **there are no admins** —
+privileged operations are gated by group-defined policy, and
+constitutional power is structurally person-independent; **the
+merge never decides membership** — every admission canonical at
+its position is final, with a closed exception list; **revocation
+is honest** — a removal carries its key-world transition
+atomically, and what rotation can and cannot guarantee is stated
+rather than implied; and **the substrate is a port** —
+replication, convergence, and group key agreement are requirements
+on a replaceable adapter, with today's deployed linear semantics
+as the reference adapter.
 
 The Identity layer (the interim securing profile in Encounter §2.3
 will move there) and the Data layer are in earlier stages and not

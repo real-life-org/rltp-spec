@@ -3,34 +3,48 @@
 **Real Life Trust Protocol — task types: Membership**
 
 - **Status:** Editor's Draft
-- **Version:** 0.7.0-draft (seventh casting)
+- **Version:** 0.11.0-draft (eleventh casting)
 - **Editors:** Anton Tranelis
-- **Date:** 2026-08-11
+- **Date:** 2026-08-12
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
 - **Task-type namespace:** `https://real-life.org/trust-tasks/`
 - **Target Trust Tasks framework version:** 0.4
-- **Conformance profile:** `rltp-membership@0.7` (draft)
+- **Conformance profile:** `rltp-membership@0.11` (draft)
 - **Position:** a task-type registration on top of the **RLTP Delivery
   Contract 0.17** (normative reference), carrying operations of the
-  **RLTP Access Layer** (currently drafted as `access-layer.md` 0.3;
-  the operation envelope of its §3.3 is the payload this
-  specification transports; the `member.add` body members used here
-  are a profile this document defines and the Access layer is
-  expected to adopt).
+  **RLTP Access Layer 0.24** (normative reference): the operation
+  envelope of its §3.3 is the payload this specification transports,
+  and **the Access layer owns every question of authority** —
+  admission validity and canonicality (its §5.3), the `member.add`
+  body profile (its §4.5), materialization and merge outcomes (its
+  §3.5/3.6), key material (its §9.5), and the removal notice (its
+  §10.2). This document owns the travel: which documents exist, what
+  they bind, how they are checked on receipt, and what a receiver
+  does with them.
+- **Supersedes:** version 0.10 and earlier (archived as
+  `archive/membership-tasks-0.10.md` … `-0.1.md`).
 
 ## Abstract
 
 This document registers the task types with which membership changes
 of an RLTP group travel between people: the **invitation** and its
-explicit **acceptance**, and the generic carrier for **access
-operations** — including the welcome material a new member needs and
-the removal notice a removed member is owed.
+explicit **acceptance**, and the carrier that delivers the
+**admitting operation and its welcome** to a new member across the
+replica boundary.
+(The removal notice a removed member is owed travels as the Access
+layer's own compact task, `removal-notice/0.1` — Access §10.2;
+transition-bearing operation envelopes never cross the replica
+boundary at all, Access §5.3.)
 
 The dividing line is the replica boundary: inside a group, the
-authority log replicates as shared state; **tasks carry operations to
-parties who stand outside the replica** — the invitee who is not yet
-a member, the removed member whom the capability gate has just shut
-out. The log is canonical; a task is a feeder, never a second truth.
+authority log replicates as shared state, and **exactly one
+operation crosses the boundary as a task** — the admitting
+`member.add` delivered to its own subject, the invitee who is not
+yet a member and holds no replica to receive it from. The removed
+member, whom the capability gate has just shut out, is owed a
+signed **claim** rather than an operation (Access
+`removal-notice/0.1`, its §10.2). The log is canonical; a task is a
+feeder, never a second truth.
 Authority never comes from a task: every operation carries its own
 signatures, and its validity is judged by the Access layer's
 materialization rules alone — issuance counts, arrival never.
@@ -47,14 +61,53 @@ field.
 ## Status of This Document
 
 This is an **Editor's Draft** with no standing beyond its own
-argument, the seventh casting of this document. It is developed through
-the same adversarial convergence process as the Encounter Layer and
-the Delivery Contract (casting, independent adversarial review, full
-recast — never a patch); the first four rounds each found blockers,
-rounds five and six left a shrinking set of findings, resolved here;
-this casting has not yet completed its own round. The document will change; known open
-questions are collected in Section 9. Feedback is welcome via the
-issues of the publication repository
+argument, the eleventh casting of this document. It is developed
+through the same adversarial convergence process as the Encounter
+Layer and the Delivery Contract (casting, independent adversarial
+review, full recast — never a patch). Rounds 9 and 10 established
+blocker-level convergence against the alignment on Access 0.24.
+This eleventh casting answers a **joint seam review** — the first
+round in which both this document (0.10) and the Access Layer
+(0.24) were open at once, so that seam defects visible only from
+one side could be caught. It corrects three seam mismatches that
+belong to **this document's** side of the boundary and introduces
+no new authority rule:
+
+- the re-welcome (`key-delivery/0.1`, kind `re-welcome`) carries
+  the sealed welcome **without** the admitting operation, so it
+  cannot execute the operation-dependent checks of the embedded
+  case-1 list; §3.3 now separates the **embedded-welcome**
+  pre-adoption checks (operation present) from the **re-welcome**
+  pre-adoption checks (Access §10.1's self-contained set), instead
+  of claiming the re-welcome inherits the full list "and nothing
+  less" (joint review B2);
+- §3.3 and the §7 state machine distinguish a **single candidate's
+  failure** (wipe that candidate, then check the buffered
+  alternate at once — Access §10.1's fallback) from a **window or
+  final failure** (complete wipe), rather than routing every
+  failure straight to a terminal wipe (joint review M1);
+- the Access-0.24 pin is stated as the coupling it is: pinned in
+  prose **and** transitively by the `v` constant of the
+  transcribed schemas, over **mobile** (unversioned) schema
+  `$id`s — so an Access wire-version bump requires a Membership
+  recast or a documented compatibility statement (joint review
+  M2).
+
+Two seam mismatches the joint review found are **Access-side** and
+are recorded here as open coupling items, not silently absorbed:
+the first-materialization gate needs an explicit **current-member**
+condition (Access §10.1, so a removed subject cannot bootstrap on
+a commitment-correct re-welcome — joint review B3), and the
+provisional-candidate and key-service **slots must be keyed by
+`genesisDigest`**, not the group DID, to honour Access §3.2 (joint
+review B4). This document already keys its own state by
+`genesisDigest` (§3.3); it requires, but cannot itself change,
+that Access §10.1/§5.3 do the same. Both await the Access editor.
+The convergence criterion of this loop remains met on this
+document's side; what remains open is collected in Section 9 and
+in the joint-seam triage
+(`design/joint-seam-review-2026-08.md`). Feedback is welcome via
+the issues of the publication repository
 (github.com/real-life-org/rltp-spec).
 
 ## 1. Introduction (informative)
@@ -69,9 +122,11 @@ member never canonically learns of the removal, because the same
 capability gate that enforces it also cuts off the replica that would
 tell them; an invitation hands the full key history to someone who
 never consented to join. This specification is one half of the
-repair: operations travel as first-class, acknowledged task documents
-to exactly the parties the replica cannot reach, and keys travel only
-after consent. The other half — one authority plane, the operation
+repair: consent, the admitting operation, and the keys it commits to
+travel as first-class, acknowledged task documents to exactly the one
+party the replica cannot reach — the invitee — while the removed
+member is owed a compact signed notice of their own (Access §10.2);
+and keys travel only after consent. The other half — one authority plane, the operation
 log, with services fed by chain-proven epoch updates instead of their
 own registries — belongs to the Access layer and its service ports.
 
@@ -105,7 +160,7 @@ sequenceDiagram
     participant L as Group log
     V->>I: membership-invite, carries no keys
     Note over I: human decision
-    I->>V: membership-accept, signed consent, fresh card
+    I->>V: membership-accept, signed consent, own live-keyed card
     Note over I: accepted, waiting for a member to hand over the keys
     V-->>M: membership-evidence, the complete pair relayed
     M->>L: member.add, body encloses invite and accept
@@ -126,11 +181,13 @@ the replica, epoch by epoch — the group's shared world whole
 visibility policy narrows history exactly by omitting lineage
 entries; nothing about history size ever burdens the welcome, and
 nothing can be withheld from a new member that is not equally
-withheld from the replica. The lineage artifact is Access-layer
-property, and this document states the dependency as a
-**requirement, not an option** (MO-6): the full-history default of
-this profile is delivered only where the lineage exists; absent it,
-a bootstrap degrades honestly to current-epoch access. This document
+withheld from the replica. The lineage is Access-layer property
+and, since Access 0.24, a normative fact rather than a dependency
+this document must demand: Access §7.1 requires every transition
+to carry its lineage state explicitly (MO-6 discharged). The
+full-history default of this profile is delivered exactly as far
+as unbroken lineage reaches; across a narrowed or damaged span, a
+bootstrap degrades honestly to current-epoch access. This document
 transports no history either way.
 
 ### 1.4 The three principles inherited
@@ -164,13 +221,19 @@ invite and accept) MUST verify under the key bound to the document
 `issuer` anchor (Encounter 2.3), and the proof's `verificationMethod`
 DID MUST equal that `issuer`.
 
-**Group** — an Access-layer group, identified by its group DID.
+**Group** — an Access-layer group. Its **identity is the genesis
+digest** (Access §3.2 — the multibase multihash over the genesis
+operation's proof-free signature input); the group DID is its
+*address*, never its identity, and implementations key all group
+state — pending stores, evidence authorization, bootstrap
+verification — by genesis digest.
 **Operation** — an Access-layer operation envelope (its §3.3):
 self-addressing (`oid:`), causally referenced (`prev`), individually
 signed (`proof.signatures`). **Materialization** — the Access layer's
 deterministic derivation of group state from the operation DAG; an
-operation is **canonical** when materialization at its causal
-position accepts it. **Replica boundary** — the set of parties
+operation is **canonical** per Access §3.5/§3.6 — judged at its
+causal position, with merge outcomes governed by Access's closed
+exception list. **Replica boundary** — the set of parties
 holding (and entitled to hold) the group's replicated log at a given
 materialized state. **Admission chain** — invite → accept →
 `member.add`, carried in full inside the admitting operation
@@ -184,12 +247,16 @@ their JCS serialization. An oversized document is non-conformant at
 issuance and `failed(validation-failed)` at receipt. The budget
 exists so that complete enclosure (3.3) fits the Delivery Contract's
 envelope bound in every normal construction, and it doubles as the
-log-growth cap per admission. It is **not** a proof of fit: operation
-bodies, signature sets, and the Access-owned `material` are not
-bounded by this profile, so the sender MUST verify the complete
+log-growth cap per admission. It is **not** a proof of fit: even
+with Access §5.3's transported-variant caps on the enclosed proof
+(at most 64 signatures and 16 credentials of at most 2048 bytes
+JCS each), adversarially maximized documents can exhaust the
+budget, so the sender MUST verify the complete
 serialized task against the Contract's plaintext limit before
 sealing (the Contract's stage-1 bound remains the authoritative
-gate), and a welcome plaintext MUST NOT exceed 16 384 bytes in its
+gate; where the admission cannot fit, the re-welcome fallback of
+3.3 travels instead), and a welcome plaintext MUST NOT exceed
+16 384 bytes in its
 JCS serialization either.
 
 **Enclosed cards are key transport, not enactment material:** the
@@ -220,10 +287,14 @@ a non-accepting recipient could hold against the group.
     its `anchor`, and `card.anchor` MUST equal `inviter` — the
     accept is sealed to this card's key-agreement key, so ownership
     is a confidentiality requirement, not bookkeeping;
-  - `genesisDigest` — multibase multihash of the group's genesis
-    operation. This identifies the group's **lineage** (two
-    divergent histories can share a genesis — it is not a state
-    commitment); its role is bootstrap verification (3.3);
+  - `genesisDigest` — **the group's identity** (Access §3.2: the
+    multibase multihash over the genesis operation's proof-free
+    signature input). It pins which group is being offered — an
+    invitee bootstraps against exactly this digest and can never
+    be steered into a sibling genesis (3.3), and materialization
+    rejects an admission whose enclosed invite names a different
+    digest than the group's own (Access §5.3 rule 2). It is a
+    lineage identity, not a state commitment;
   - `validUntil` — RFC3339; bounds the invite's answerable life and
     the inviter's reply-key retention (Section 5), and MUST be ≥ the
     document's `issuedAt`. Stated honestly: the comparison runs
@@ -284,20 +355,42 @@ be sent.
   `failed(validation-failed)`, no acknowledgement.
 - **Defined effect:** durable recording of the consent. The consent
   is input to the group's admission policy (Access §4); the accept
-  itself grants nothing, and **one accept authorizes at most one
-  admission** (3.3).
+  itself grants nothing. An accept is consent to **one
+  membership** — the subject is a member once, however many
+  canonical admissions enclose the accept (concurrent same-subject
+  admissions are idempotent, Access §5.3) — and the accept is
+  **consumed content-bound and never freed**: every canonical
+  admission enclosing it consumes it, and no merge returns it to an
+  unconsumed state (Access §5.3; the earlier castings'
+  "one accept authorizes at most one admission" is withdrawn — it
+  conflated the single membership effect with a single canonical
+  operation, which idempotent admissions make wrong).
 
 ### 3.3 `access-operation/0.1`
 
-The generic carrier: one Access-layer operation, travelling to a
-party outside the replica boundary.
+The carrier for the **one operation that genuinely crosses the
+replica boundary: the admitting `member.add` delivered to its own
+subject**, the bootstrap. Round 8 narrowed this type to exactly
+that: replication owns the inside (MO-1), so members already hold
+operations; a removed member's notice is Access's own
+`removal-notice/0.1` (its §10.2); transition key material travels
+per recipient via `key-delivery/0.1` (Access §10.1); and
+transition-bearing envelopes never leave the replica at all
+(Access §5.3). **A conformant `access-operation/0.1` payload
+therefore carries an admitting `member.add` and its welcome, and
+nothing else** — the schema requires `op = member.add`, a
+`member.add` body, and the welcome (there is no non-admitting
+use). Leave and dissolve notices, if they are ever wanted, need
+their own compact task types (MO-3), not this generic hole.
 
 - `payload`: per `schemas/payload-access-operation.schema.json` —
-  `operation` (the Access §3.3 envelope, validated against
-  `schemas/access-operation-envelope.schema.json`) and OPTIONAL
-  `welcome` (a `rltp-welcome/0.1` welcome seal, Section 4).
-- `threadId`: = the membership thread when the operation is the
-  admitting `member.add`; fresh otherwise.
+  `operation` (the Access §3.3 envelope, an admitting `member.add`,
+  validated against
+  `schemas/access-operation-envelope.schema.json`) and the
+  `welcome` (a `rltp-welcome/0.1` welcome seal, Section 4;
+  REQUIRED — a boundary-crossing admission without keys would
+  strand the subject).
+- `threadId`: = the membership thread (the invite's).
 - `proof`: **absent** — the operation envelope carries its own
   signatures (one carrier).
 - **Outer/inner consistency (MUST, before any effect):**
@@ -307,148 +400,215 @@ party outside the replica boundary.
     before any durable buffering): payload schemas valid; the
     operation's `id` recomputes; every signature in
     `operation.proof` verifies under its signer's anchor;
-  - if `welcome` is present: the operation is an admitting
-    `member.add` (its body per the profile below), the document
+  - the operation is an admitting `member.add` (its body per the
+    profile below), the document
     `recipient` equals `operation.body.subject`, and
     `admission.welcome` equals the digest of the welcome's plaintext
     (Section 4), with the welcome's binding fields matching the
     operation.
   A violation is `failed(validation-failed)` and earns no
   acknowledgement.
-- **The boundary-crossing rule (MUST):** the `access-operation`
-  document that delivers an admitting `member.add` **to its own
-  subject** MUST carry the welcome. A boundary-crossing `member.add`
-  without a welcome is non-conformant at the sender and
-  `failed(validation-failed)` at the receiver.
+- **The admission-only rule (MUST):** the payload's operation MUST
+  be an admitting `member.add` carrying its welcome — this type
+  has no other conformant shape (above; the schema requires it).
+  A payload whose `op` is anything else, or an admitting
+  `member.add` without a welcome, is non-conformant at the sender
+  and `failed(validation-failed)` at the receiver.
+- **Fit and the
+  fallback (Access §5.3):** the sender's mandatory final
+  serialized-size check (Section 2) governs fit; the enclosed
+  operation carries a **transported variant proof** — at most 64
+  signatures and 16 credentials, each credential at most 2048
+  bytes JCS, never a replica's merged proof — and where the
+  complete document still cannot fit the Contract's plaintext
+  limit, **the self-contained re-welcome of Access §10.1 travels
+  instead** (`key-delivery/0.1`, kind `re-welcome`, case-1
+  semantics per Access §10.1's bootstrap rules): the subject
+  bootstraps from it, and the admission evidence reaches them
+  through replication afterwards. No admission is undeliverable.
+  The admission-only rule already excludes every
+  transition-carrying envelope (`member.remove`, `epoch.rotate`,
+  `policy.change`, `visibility.change`, `document.detach`) — none
+  is a `member.add` — and the schema additionally rejects any
+  operation body carrying a `transition`, defence in depth against
+  a future admitting operation that ever grew one. Access §5.3's
+  boundary rule is the reason: a `keyDist` scaled to the retained
+  set fits no carrier budget, and nothing outside the replica is
+  entitled to it.
 - **Declarations (TT §7.3):** side effects: mutating (log merge,
-  bootstrap, removal hygiene); exposure: recipient-only.
-- **The `member.add` body profile (MUST; defined here, expected to
-  be adopted by the Access layer — MO-5):** an admitting
-  `member.add`'s body carries:
-  - `subject` — the admitted anchor;
-  - `admission` — **the full consent evidence**:
-    `{ "invite": <the complete membership-invite document>,
-       "accept": <the complete membership-accept document>,
-       "welcome": <digest of the welcome plaintext, Section 4> }`.
+  bootstrap); exposure: recipient-only.
+- **The `member.add` body (owned by Access §5.3, restated here
+  informatively):** an admitting `member.add`'s body carries
+  `subject` (the admitted anchor) and `admission` — **the full
+  consent evidence**:
+  `{ "invite": <the complete membership-invite document>,
+     "accept": <the complete membership-accept document>,
+     "welcome": <digest of the welcome plaintext, Section 4> }`.
   Enclosing the documents (not digests) is what makes admission
   verifiable without private knowledge: every replica — and every
   member who wants to complete an admission — holds the evidence.
   The documents are validated by their own schemas via the profile
   schema (`schemas/payload-access-operation.schema.json` applies the
-  body profile when `operation.op` = `member.add`).
-- **Materialization requirements for `member.add` (MUST; the
-  consumable-consent rule of this profile):** materialization accepts
-  an admitting `member.add` only if, at its causal position:
-  1. both enclosed documents validate against their schemas and
-     their proofs verify (invite under `invite.inviter`, accept
-     under `accept.subject`, each per Section 2's rule applied to
-     the enclosed document);
-  2. all cross-bindings hold: `accept.ref` = document digest of the
-     enclosed invite; `accept.subject` = `invite.invitee` =
-     `body.subject`; `accept.group` = `invite.group` =
-     `operation.group`; `invite.inviter` = the enclosed invite
-     document's `issuer`; card ownership per 3.1/3.2;
-  3. the time window holds: the accept's `issuedAt` and
-     `proof.created` ≤ `invite.validUntil` + `membership-skew`;
-  4. `invite.inviter` is an authorized inviter at the operation's
-     causal position (per the group's policy);
-  5. **the accept is consumed exactly once, merge-stably**, in two
-     steps. *Causal step:* a candidate whose `prev` closure already
-     contains a rule-passing admission for the same accept digest is
-     **non-canonical outright** — at its own causal position the
-     accept is consumed; a causally later replay can never displace
-     its ancestor, so grinding by re-issuing is dead. *Concurrency
-     step:* among the remaining candidates — mutually concurrent by
-     construction — exactly **one** is canonical: the one whose
-     operation `id` is smallest under **unsigned bytewise comparison
-     of the complete `oid:` string's ASCII bytes** (an exact total
-     order; no locale, no alphabet-value comparison, no decoding).
-     Replicas holding the same DAG select the same winner; a
-     later-*merged* genuinely concurrent admission can displace an
-     earlier-seen one, so implementations MUST treat admission
-     canonicality as revisable until the DAG is stable (N2).
-     Displacement is benign for **membership**: all candidates
-     enclose the identical accept (digest-equal ⇒ JCS-identical) and
-     therefore the identical invite, subject, and group — the
-     displaced invitee IS the canonically admitted member; only the
-     admitting operation differs. **Key handover is
-     arbitration-independent:** the bootstrap effect (case 1) is
-     served by ANY rule-passing candidate's welcome; arbitration
-     selects the canonical admission and never invalidates a
-     delivered welcome — a candidate with unusable `material` harms
-     only handover redundancy, never membership. Residuals, stated:
-     welcomes of adjacent epochs from concurrent admitters are
-     prospective-only exposure, and under a history-narrowing
-     visibility policy the group SHOULD issue an `epoch.rotate` upon
-     merging a displacement (Section 8); and a member fabricating
-     concurrency can steer *whose* operation is canonical — subject,
-     invite, and accept being fixed, that steers attribution of the
-     admitting act among already-authorized members, never
-     authority. Additional document-level
-     checks in rule 2 apply: the enclosed invite document's
-     `recipient` = `invite.invitee`; the enclosed accept document's
-     `recipient` = the enclosed invite document's `issuer`; both
-     documents share the invite's `threadId`; `invite.validUntil` ≥
-     the invite document's `issuedAt`.
-  A `member.add` failing any of these is not canonical, whatever its
-  signatures. *(These rules live here as a profile; the Access layer
-  owns materialization and is expected to adopt them — MO-5.)*
-- **Invitation provenance (derived, never asserted):** who invited a
-  member is read from the enclosed, signed invite of the canonical
-  admission — in the log, verifiable by every member. Applications
-  MUST be able to display provenance from it; no separately asserted
-  "added by" field exists in this profile.
-- **Defined effects, by case:**
-  1. **Bootstrap (boundary-crossing `member.add` + welcome):** this
-     document is **self-contained** — its effect MUST NOT require
-     resolving the operation's `prev` closure. The invitee MUST
-     verify, before any effect: the pre-buffer checks; that
-     `admission.accept`'s document digest equals the digest of **the
-     invitee's own accept** (JCS-canonical identity); that
-     `admission.invite`'s document digest equals the invitee's own
-     `accept.ref` (and is thereby the invitee's own received
-     invite); `body.subject` = own anchor = the enclosed
-     `accept.subject`; `operation.group` = own accept's `group`;
-     `admission.welcome` = digest of the enclosed welcome plaintext,
-     whose binding fields match the operation (Section 4). Then the
-     effect: durably buffer operation and welcome, unseal the
-     welcome, and start the Access bootstrap — fetch the log,
-     **verify the fetched genesis against the OWN invite's
-     `genesisDigest`** (the one the accept bound; a divergent-lineage
-     bootstrap fails here), materialize, and confirm **two things —
-     never that the carrier itself won arbitration**: (a) the
-     carrier operation passes rules 1–4 and the causal-consumption
-     step of rule 5, evaluated at its causal position (the operation
-     plus its `prev` closure, never an unspecified network head);
-     and (b) the materialized DAG contains **a canonical admission
-     for the invitee's own accept digest** — the carrier or a
-     concurrent sibling, indifferent: all candidates admit the same
-     subject, so membership stands and the delivered welcome remains
-     effective either way (rule 5). Bootstrap state is discarded
-     only when NO canonical admission for the own accept exists —
-     the chain itself failed. A counterparty withholding required
-     history can delay confirmation indefinitely; the invitee then
-     remains safely in the bootstrapping state and adopts no
-     authority.
-  2. **Removal notice (`member.remove` whose subject = the
-     `recipient`):** effect = durable buffering plus an immediate
-     merge attempt against the recipient's own replica. **Removal
-     hygiene** (Access §5.3) triggers **only when materialization
-     accepts the removal as a new canonical transition** — never on
-     delivery. A forged operation fails materialization and triggers
-     nothing; a replayed or already-materialized operation is
-     idempotent by operation id and triggers nothing new.
-  3. **Other operations:** durable buffering for log merge.
-- **Dependency (`incomplete(missing)`, Contract 6.2):** this type
-  declares the one dependency `group-state`: an operation whose
-  `prev` closure cannot be resolved against any local state of that
-  group — except case 1, self-contained by definition — is disposed
-  `incomplete(missing: group-state)`. Mechanics as in the second
-  casting, unchanged: pending store keyed by document digest;
-  redelivery idempotent, retention from first receipt, never reset;
-  triggers coalesced and re-evaluations serialized per group;
-  retention ≥ `bootstrap-retention`, discard after, fresh evaluation
-  on later redelivery; quotas MAY, behind the pre-buffer floor.
+  body profile when `operation.op` = `member.add`). **Validity,
+  canonicality, consumption, and every merge question are the
+  Access layer's** (its §5.3 — the profile this document carried
+  provisionally has been adopted there and improved; MO-5
+  discharged): admission is consent-bound with the exact
+  cross-binding, window, and authorization checks this document's
+  earlier castings stated, the genesis-digest binding included;
+  **an accept is consumed by every canonical admission that
+  encloses it, content-bound and merge-finally** — no accept ever
+  frees again; and **concurrent admissions of one subject are
+  idempotent**: the subject is a member through every candidate,
+  none is voided and none is distinguished. The smallest-id
+  arbitration of this document's castings one through seven is
+  **withdrawn** — Access's convergence showed that any rule
+  voiding or distinguishing a candidate hands an
+  envelope-grinding party influence it must not have; nothing of
+  the kind remains, and delivered welcomes are never invalidated
+  by anything.
+- **Invitation provenance (derived, never asserted):** who invited
+  a member is read from the enclosed, signed invites of the
+  subject's canonical admissions — in the log, verifiable by every
+  member. Where concurrency produced several canonical admissions
+  of one subject, each encloses a genuine signed act of invitation
+  and provenance is simply plural — every entry true, attributable,
+  and unforgeable. Applications MUST be able to display provenance
+  from the log; no separately asserted "added by" field exists in
+  this profile.
+- **Defined effect — the bootstrap, and only the bootstrap.** The
+  invitee MUST verify, **before any effect**, the pre-adoption
+  checks its **carrier permits** — and a case-1 bootstrap arrives
+  by one of two carriers that differ in what they carry:
+  - the **embedded welcome** — the `access-operation/0.1` payload
+    of this section, which carries the admitting operation **and**
+    its welcome — permits the **complete** case-1 pre-check set,
+    and the invitee MUST run all of it;
+  - the **re-welcome** — `key-delivery/0.1`, kind `re-welcome`
+    (Access §10.1) — carries the sealed welcome **alone, no
+    operation**, so the operation-dependent members of the set
+    have nothing to run against; its pre-adoption checks are the
+    self-contained subset Access §10.1 names, and no less than
+    that subset.
+
+  The **complete embedded-welcome set**, which is complete because
+  a bootstrapping invitee holds no group state against which
+  anything further could be checked:
+  - the pre-buffer checks (above) *(operation-dependent)*;
+  - `admission.accept`'s document digest equals the digest of **the
+    invitee's own accept** (JCS-canonical identity)
+    *(operation-dependent)*;
+  - `admission.invite`'s document digest equals the invitee's own
+    `accept.ref`, and is thereby the invitee's own received invite —
+    which also pins `genesisDigest` (3.1) *(operation-dependent)*;
+  - `body.subject` = own anchor = the enclosed `accept.subject`;
+    `operation.group` = own accept's `group` *(operation-dependent)*;
+  - `admission.welcome` = digest of the enclosed welcome plaintext,
+    whose binding fields match the operation (Section 4)
+    *(operation-dependent)*;
+  - **the welcome seal opens under the key-agreement private key of
+    the card enclosed in the invitee's own accept** (3.2) — no other
+    locally held key qualifies, however successfully the delivery
+    layer resolved the sealed envelope's recipient key identifier
+    against it (Contract §5): a welcome sealed to a superseded or
+    compromised key of the same person MUST be rejected here, before
+    adoption *(carrier-independent)*;
+  - **the unsealed `material` is well-formed for the named adapter**
+    (Section 4: an `rltp-access-material/0.24` object valid against
+    `schemas/access-material.schema.json`, its `keys` closed by the
+    adapter registration) — a material carrying a field the adapter
+    does not register MUST be rejected here, before adoption, not
+    only at first materialization *(carrier-independent)*.
+
+  The **re-welcome subset** is exactly the carrier-independent
+  members, which is exactly what Access §10.1 lists for its
+  self-contained re-welcome: the welcome seal opens under the
+  invitee's own accept card's key-agreement key; the payload's
+  `group` and `genesisDigest` equal the invitee's own invite pin
+  (3.1); and the unsealed `material` is well-formed for the named
+  adapter. The operation-dependent members have no operation to
+  run against and are **deferred to first materialization**, where
+  Access §10.1 binds canonicality and the epoch commitment against
+  the log. This is not a weaker bootstrap smuggled in: the
+  re-welcome inherits the embedded welcome's own **trust sequence**
+  — provisional adoption, then verification at the log — never a
+  stronger pre-check it cannot perform (Access §10.1). Any failure
+  of the checks a carrier permits is `failed(validation-failed)`,
+  nothing is adopted, and no state is written.
+
+  Passing the checks its carrier permits, the
+  invitee **adopts the welcome provisionally under Access §10.1's
+  lifecycle**, which owns every remaining rule and this document
+  does not restate: replicate scoped by the **invitee's own
+  pinned `genesisDigest`** (verify the fetched genesis against
+  it — a divergent lineage fails there); at first materialization
+  the named admission must be **canonical with the invitee as
+  subject**, the invitee must be a **current member** in the
+  materialized state — not merely the subject of some historical
+  canonical admission (a stale Epoch-7 welcome after a rotation
+  or a removal fails this) — and the unsealed content key must
+  match the current epoch's commitment. **Membership state is the
+  Access layer's** (§5.3, whose eviction on a canonical removal
+  makes a removed subject a non-member); Access §10.1's
+  first-materialization gate is where the current-member condition
+  binds, and this document **requires it there** (joint review B3:
+  Access §10.1's current wording states canonicality and the
+  commitment, not the current-member condition explicitly — a
+  seam item the Access editor owns). One `provisional-window`
+  per (genesisDigest, invitee), at most one buffered alternate.
+  **The wipe distinguishes a candidate from the pair:** a single
+  candidate's failure wipes **that candidate's** provisional state
+  and immediately checks the buffered alternate (Access §10.1's
+  fallback — a failure presupposes the log, so no window mechanics
+  apply to the successor); only when **every held candidate has
+  failed**, or the `provisional-window` expires with no log
+  arrival, is **everything** provisional wiped. Unique data is
+  preserved throughout. This document adds nothing to that
+  lifecycle and weakens no part of it; it only states that the
+  welcome's travel is what makes the bootstrap possible, and that
+  same-subject idempotence (Access §5.3) is why *which*
+  canonical admission the invitee ends up under never matters.
+  The division of labour is exact and has exactly one direction:
+  **the pre-adoption checks above are this document's** (they are
+  checks on a delivered document, which is what this document
+  owns), and Access §10.1's self-contained re-welcome runs the
+  **carrier-independent subset** of them for its own case-1
+  bootstrap; **everything after adoption is Access §10.1's** and
+  is referenced, never restated. There is one receiver checklist
+  per carrier — the full set for the embedded welcome, its
+  carrier-independent subset for the re-welcome — and both
+  converge on the same post-adoption gate.
+- **No other case.** This type carries only the admitting
+     `member.add` (the admission-only rule), so there is no
+     "other operations" effect and no removal case — the removal
+     notice is Access's `removal-notice/0.1` (its §10.2), a
+     surfaced signed claim with no mandatory state effect.
+- **Dependency (`incomplete(missing)`, Contract 6.2):** the
+  bootstrap is **self-contained** — its effect MUST NOT require
+  resolving the operation's `prev` closure against pre-existing
+  local state, because the invitee has none. Two distinct,
+  layered retentions apply and must not be conflated:
+  - **The Delivery-level pending record** of the *document*, when
+    the invitee cannot yet resolve the admission's closure: an
+    `incomplete(missing: group-state)` disposition (Contract 6.2),
+    pending store **keyed by document digest**, retention from
+    first receipt, never reset, ≥ `bootstrap-retention`, discard
+    after, fresh evaluation on later redelivery; triggers
+    coalesced, quotas MAY behind the pre-buffer floor. This holds
+    the wire document.
+  - **The Access-level provisional security state** of the
+    *adopted keys and replica* (Access §10.1): one
+    `provisional-window` per (genesisDigest, invitee), complete
+    wipe on failure or window expiry. This holds the unsealed
+    material.
+  The two are keyed differently on purpose — the document by its
+  own digest (the invitee holds no group state to key by yet),
+  the security state by the invitee's **own pinned
+  `genesisDigest`** (§2), which the invitee has held since its
+  invite, so sibling geneses sharing a group DID (Access §3.2)
+  never collide. Only the invitee's own admitting `member.add`
+  ever reaches either (the admission-only rule); no third party's
+  operation can create a pending entry here.
 - **Idempotency, two levels:** redelivery of the same document is
   `duplicate-known` (byte-identical re-ack); a different document
   carrying the same operation merges idempotently by operation id —
@@ -516,11 +676,17 @@ history opens through the lineage in the replica (1.3).
 - **Plaintext** is a `rltp-welcome/0.1` document
   (`schemas/welcome.schema.json`): `{ "v": "rltp-welcome/0.1",
   "group", "subject", "accept": <document digest of the accept this
-  admission consumes>, "material": { …Access-owned: current epoch
-  keys and the subject's implicit capability… } }`. The binding
+  admission consumes>, "material": <the Access material object> }`.
+  The binding
   fields (`v`, `group`, `subject`, `accept`) are owned by this
   specification and closed; `material` is owned by the Access layer
-  and opaque here (MO-4). *(The welcome binds the accept, not the
+  and **pinned** (MO-4 discharged): it is the
+  `rltp-access-material/0.24` object of Access §9.5, validated
+  against `schemas/access-material.schema.json` — the current
+  epoch's key material per the adapter registration, current epoch
+  only, re-derivable, within this section's plaintext budget.
+  (No implicit-capability blind exists: the implicit capability
+  follows from membership itself, Access §6.) *(The welcome binds the accept, not the
   operation id: the operation's id covers `admission.welcome`, so a
   welcome pointing back at the id would be a hash fixed point and
   unconstructible. One carrier, one direction: the operation commits
@@ -562,13 +728,19 @@ by `membership-skew`; clock tolerance never rejects.
 
 ## 6. What is deliberately absent
 
-- **No member-update signal type.** The operations themselves travel
-  as tasks; the canonical truth remains the materialized log.
+- **No member-update signal type.** Inside the replica, operations
+  travel by replication and nothing travels as a task (MO-1);
+  outside it, exactly one carrier exists — the admitting
+  `member.add` to its own subject (3.3). Leave and dissolve are
+  **not** `access-operation` payloads: the schema rejects them, and
+  if they are ever wanted they need their own compact notice types
+  (MO-3), as removal already has (Access `removal-notice/0.1`). The
+  canonical truth remains the materialized log.
 - **No membership-level acknowledgement.** Arrival is the ack's
   whole meaning; group state is read from the log.
-- **No service frames.** Services learn authority from chain-proven
-  epoch updates (Access §10), never from their own registries, and
-  never via trust tasks.
+- **No service frames.** Services learn authority from chained,
+  quorum-signed authorization views (Access §7.3), never from their
+  own registries, and never via trust tasks.
 - **No history transport.** The welcome carries one epoch; history
   is the replica's lineage (1.3). Fit is enforced by the sender's
   final size gate (Section 2), never assumed.
@@ -577,10 +749,19 @@ by `membership-skew`; clock tolerance never rejects.
 
 **Invitee:** `invited (human decision pending) → accepted — waiting
 for a group member to come online and hand over the keys → welcome
-arrived → bootstrapping (fetch log, verify genesis against own
-invite, materialize incl. own admission) → member` — the waiting
-state MUST be user-visible as such; decline or expiry ends the
-thread with local state only.
+arrived → bootstrapping (provisional under Access §10.1: fetch log
+scoped by the own pinned genesis digest, materialize, check the own
+admission against the current state) → member` — the waiting state
+MUST be user-visible as such; decline or expiry ends the thread with
+local state only. The bootstrapping state is **provisional and
+time-bounded**: it ends in `member` only on current membership with
+a current-epoch commitment match. A **single candidate's** failure
+wipes that candidate and checks the buffered alternate at once
+(Access §10.1's fallback); only when **every held candidate has
+failed**, or the `provisional-window` expires with no log arrival,
+is the bootstrap wiped completely. The diagram below
+depicts §3.3 and Access §10.1; where it and they could be read
+apart, they govern.
 
 ```mermaid
 stateDiagram-v2
@@ -593,10 +774,13 @@ stateDiagram-v2
         member to come online and
         hand over the keys
     end note
-    welcomeArrived --> bootstrapping: chain verified, welcome unsealed
-    bootstrapping --> member: canonical admission for own accept materialized
-    bootstrapping --> [*]: no canonical admission (chain failed) — state discarded
-    bootstrapping --> bootstrapping: history withheld — safe, no authority adopted
+    welcomeArrived --> bootstrapping: all case-1 pre-checks pass, incl. seal opens under own accept card and material well-formed for the adapter — adopted PROVISIONALLY, one window per genesisDigest+invitee
+    welcomeArrived --> [*]: any pre-check fails — nothing adopted, no state written
+    bootstrapping --> member: own admission canonical AND invitee a CURRENT member AND unsealed content key matches the CURRENT epoch commitment
+    bootstrapping --> bootstrapping: single candidate fails (stale epoch after rotation/removal) — wipe THAT candidate, check the buffered alternate at once (Access 10.1 fallback)
+    bootstrapping --> bootstrapping: log not yet resolvable — waiting INSIDE the window, at most one buffered alternate
+    bootstrapping --> wiped: every held candidate has failed — OR the provisional-window expires with no log arrival
+    wiped --> [*]: provisional keys and replica wiped completely, unique data preserved
 ```
 
 **Admitting member (any authorized member):** `admission evidence at
@@ -606,8 +790,11 @@ with welcome → done`. The evidence reaches non-inviter members via
 authorized member can admit" operationally true rather than merely
 possible.
 
-**Removed member:** `remove-op arrives → merge attempt against own
-replica → canonical? → hygiene` — a non-canonical op changes nothing.
+**Removed member:** `removal-notice arrives (Access §10.2) →
+surfaced as a signed claim → verification attempt (replication) →
+hygiene only on the member's own canonical application of the
+removal` — the notice itself changes no state; a forged notice is a
+surfaced, attributable lie with no mechanical effect.
 
 ## 8. Security Considerations
 
@@ -618,26 +805,45 @@ replica → canonical? → hygiene` — a non-canonical op changes nothing.
 - **Consent is verifiable by everyone who must judge it:** the
   admitting operation encloses the signed invite and accept, so
   materialization verifies the chain itself — a malicious authorized
-  member cannot make a consentless admission canonical, and the
-  consumable rule caps one admission per accept.
+  member cannot make a consentless admission canonical, and
+  consumption is content-bound and merge-final (every canonical
+  admission consumes the accept it encloses; no accept ever frees
+  again — Access §5.3).
 - **Keys travel only after consent,** sealed to an
   ownership-verified key from the accept, digest-committed by the
   admitting operation. A person who never accepts never holds group
   material; a substituted card breaks a mandatory check at receipt,
-  admission, and materialization alike.
+  admission, and materialization alike. **The consented key is the
+  only key:** the bootstrap check set (3.3) requires the seal to
+  open under the key-agreement key of the card the invitee enclosed
+  in their own accept, so a welcome sealed to a superseded or
+  compromised key of the same person is rejected before adoption —
+  the delivery layer's willingness to resolve a recipient key
+  identifier is a routing fact, never a consent fact. For the same
+  reason the unsealed material must be well-formed for the named
+  adapter before adoption: an unregistered field in key material is
+  refused while the state it would touch is still empty.
 - **History is as revocable as the replica:** the welcome cannot
   leak more than the current epoch; everything older is governed by
   the lineage in the log and the visibility policy.
-- **The removal notice is honest but not privileged:** hygiene fires
-  only on a canonically materialized removal.
-- **Rotation on displacement:** upon merging a displacement of a
-  concurrent admission (3.3 rule 5), the group SHOULD issue an
-  `epoch.rotate` where a history-narrowing visibility policy is in
-  force — the adjacent-epoch exposure of the displaced welcome is
-  prospective-only, and the rotation closes it forward.
-- **Provenance without assertion:** the signed invite in the
-  canonical admission is the answer to "who invited"; there is no
-  assertable field to forge.
+- **The removal notice is a claim, never a lever:** it travels as
+  Access's `removal-notice/0.1` (§10.2), is surfaced and verified,
+  and has no mandatory state effect — hygiene binds only to the
+  member's own canonical application of the removal. Any stronger
+  effect would make every member signature a policy-free denial
+  lever; the removal's enforcement never needed the notice (atomic
+  rotation and replica eviction carry it — Access §5.3, §7.1).
+- **Concurrency voids nothing:** same-subject admissions are
+  idempotent (Access §5.3) — no displacement exists, no candidate
+  is distinguished, delivered welcomes stay valid under every
+  merge. Welcomes sealed by concurrent admitters of adjacent
+  epochs are prospective-only exposure; the re-welcome duty of
+  Access §3.6 covers any key gap the merge leaves.
+- **Provenance without assertion:** the signed invites enclosed in
+  the subject's canonical admissions answer "who invited"; where
+  concurrency made provenance plural, every entry is a genuine
+  signed act — there is no assertable field to forge and no
+  arbitration to steer.
 - **The permanence cost of enclosure, stated in full:** for every
   admitted member, the log permanently replicates the complete
   invite and accept — sender and recipient anchors, thread and
@@ -655,23 +861,54 @@ replica → canonical? → hygiene` — a non-canonical op changes nothing.
 - **MO-1 Fan-out inside the boundary.** Whether operations SHOULD
   additionally travel as tasks to members whose replicas lag. This
   casting says: replication owns the inside.
-- **MO-2 Policy-proof transport.** Richer admission policies (Z9)
-  need more inputs than one accept.
-- **MO-3 Leave and dissolve notices.**
-- **MO-4 The `material` schema** is Access-layer property; pinned
-  once the Access layer converges.
-- **MO-5 Upstreaming the `member.add` body profile** (`subject`,
-  `admission`, the materialization rules 1–5, the consumable-accept
-  rule) into the Access layer's next casting.
-- **MO-6 The epoch-key lineage** (1.3) is Access-layer property;
-  this document depends on its existence for the full-history
-  default and pins nothing about its form.
+- **MO-2 Policy-proof transport.** Richer admission policies need
+  more inputs than one accept. Partially resolved by Access §5.3's
+  transported variant proof (up to 64 signatures and 16 encounter
+  credentials travel inside the enclosed admission, under the
+  aggregate cost bound of Access §4.4); what remains open is
+  transport for policy inputs beyond the admission case.
+- **MO-3 Leave and dissolve notices.** The removal case is
+  resolved (Access `removal-notice/0.1`, §10.2); whether leave and
+  dissolve deserve analogous compact notices remains open.
+- **MO-4/MO-5/MO-6 — discharged in Access 0.24.** The `material`
+  schema is pinned (Section 4; Access §9.5); the `member.add` body
+  profile and all materialization rules are Access §5.3's, with
+  the same-accept consumption strengthened to content-bound
+  merge-finality and the smallest-id arbitration withdrawn in
+  favor of idempotent same-subject admissions; the epoch-key
+  lineage is a normative Access fact (§7.1). This document
+  references, and no longer carries, all three.
 
 ## 10. Conformance
 
-- **Profile** `rltp-membership@0.7`; normatively references
-  `rltp-delivery@0.17`; profiles the Access operation envelope and
-  `member.add` body as stated.
+- **Profile** `rltp-membership@0.11`; normatively references
+  `rltp-delivery@0.17` and `rltp-access@0.24` (envelope §3.3,
+  admission §5.3, material §9.5, key-delivery §10.1,
+  removal-notice §10.2, views §7.3).
+- **The Access-0.24 coupling, stated explicitly (not hidden).**
+  This profile pins Access **0.24** two ways at once: in prose
+  (the reference above, and the `rltp-access-material/0.24` pin of
+  §4) **and** transitively, through the `v` constant of the
+  transcribed Access schemas —
+  `access-operation-envelope.schema.json` asserts
+  `v = rltp-access/0.24` and `access-material.schema.json` the
+  `rltp-access-material/0.24` form. Those schemas' `$id`s are
+  **unversioned** (mobile): the resource, not a version, is what
+  `payload-access-operation.schema.json` and `welcome.schema.json`
+  `$ref`. This coupling is therefore **graceful but brittle by
+  design**, and it breaks cleanly, not silently, at an Access wire
+  bump: a release that replaces the transcribed Access schemas
+  under the same `$id` with a `rltp-access/0.25` form makes the
+  `v` constant reject 0.24 envelopes — a **hard, visible** failure
+  against this profile's fixtures, never a quiet acceptance of
+  0.25 semantics. An Access wire-version bump therefore **requires
+  a Membership recast** (this document re-cast against the new
+  Access) **or a documented compatibility statement**; an offline
+  registry MUST be able to hold several Access schema versions at
+  once (a versioned `$id` or a versioned subpath is the mechanism,
+  an Access-side decision). No section number cited against Access
+  0.24 in this document may be read against a later Access without
+  such a recast (joint review M2).
 - **Normative schemas (shipped, offline closure):**
   `schemas/payload-membership-invite.schema.json` ·
   `schemas/payload-membership-accept.schema.json` ·
@@ -682,12 +919,16 @@ replica → canonical? → hygiene` — a non-canonical op changes nothing.
 - **Vector plan:** *(round-1 set)* invite proof/issuer/recipient
   binding vectors · accept issuer/subject/ref/group vectors ·
   transplantation rejected · consumable accept: one accept, two
-  adds → second non-canonical · welcome digest and binding-field
+  concurrent adds → **both canonical, one membership, accept
+  consumed once and never freed** (Access §5.3; the withdrawn
+  "second non-canonical" is a regression check) · welcome digest
+  and binding-field
   vectors · welcome next to non-admitting op rejected · issuer
   neither author nor signer rejected · pre-buffer rejections touch
-  no storage · unknown-group op → incomplete, re-evaluation, ack on
+  no storage · bootstrap re-welcome for an unresolved own
+  admission → provisional per Access §10.1, re-evaluation, ack on
   completion · pending idempotency and retention vectors ·
-  duplicate-known re-ack · removal: forged / replayed / genuine ·
+  duplicate-known re-ack ·
   *(round-2 additions)* valid authorized operation with invented
   admission digests → materialization rejects (documents cannot be
   invented: they must enclose and verify) · own accept but
@@ -702,8 +943,17 @@ replica → canonical? → hygiene` — a non-canonical op changes nothing.
   `validUntil + membership-skew` → rejected; backdated pair inside
   the window → accepted and honestly documented as human-gated ·
   bootstrap: divergent lineage (fetched genesis ≠ own invite's
-  digest) → bootstrap fails, state discarded · bootstrap
-  self-contained: never `incomplete` · welcome size: plaintext over
+  digest) → bootstrap fails, provisional state wiped · bootstrap
+  at first materialization requires **current membership and
+  current-epoch commitment match**, not merely a historical
+  canonical admission — a stale Epoch-7 welcome after a rotation
+  or removal → bootstrap fails and wipes (§3.3; enforced at Access
+  §10.1's first-materialization gate); window
+  expiry with no resolution → wipe · admission-only rule: a
+  payload whose `op` ≠ `member.add`, or a `member.add` without a
+  welcome, → schema-rejected and `failed(validation-failed)` (no
+  generic `incomplete` pending for third-party operations exists)
+  · welcome size: plaintext over
   16 384 bytes JCS non-conformant (no continuation
   mechanism exists) · provenance read from the canonical admission
   equals the enclosed invite's signed inviter · *(round-3
@@ -711,9 +961,11 @@ replica → canonical? → hygiene` — a non-canonical op changes nothing.
   digest, never the operation id — a construction attempt with a
   back-pointer is impossible and the schema rejects the field ·
   concurrent consumption: two concurrent admissions enclosing the
-  same accept on divergent branches → after merge exactly one
-  canonical (smallest operation id), on every replica identically;
-  admission canonicality revisable until DAG-stable · size budget:
+  same accept on divergent branches → after merge **both are
+  canonical** (same-subject admissions are idempotent, Access
+  §5.3), the accept is consumed once and forever, membership and
+  provenance identical on every replica, nothing distinguished ·
+  size budget:
   invite or accept over 16 384 bytes JCS → non-conformant at
   issuance, `failed(validation-failed)` at receipt; the sender's
   final serialized-size check is the fit gate, never assumption ·
@@ -729,26 +981,102 @@ replica → canonical? → hygiene` — a non-canonical op changes nothing.
   ORIGINAL document (not enclosed) → `failed(wrong-recipient)` per
   the Contract, as intended · lineage absent → bootstrap degrades to
   current-epoch access, honestly surfaced, nothing else breaks ·
-  *(round-4 additions)* oid ordering: candidates whose ids differ
-  only in `-` vs `A` prefix rank by unsigned ASCII bytes,
-  identically on every replica · displacement: same-subject argument
-  holds (winner and displaced admit the same subject); under a
-  narrowing policy a displacement merge triggers the SHOULD-rotate ·
+  *(round-4 additions)*
   size: sender-side final serialized check enforced; a schema-valid
   construction exceeding the Contract limit is rejected at the
   sender and, if sent anyway, at Contract stage 1 · welcome
   plaintext over 16 384 bytes JCS → non-conformant · *(round-5
   additions)* causal replay of an already-consumed accept →
-  non-canonical outright (never enters arbitration); grinding by
-  re-issuance dead · genuinely concurrent displacement → membership
-  unchanged (same subject), delivered welcome stays valid,
-  SHOULD-rotate fires under narrowing policy · evidence to a
+  non-canonical outright; grinding by
+  re-issuance dead · evidence to a
   non-member: receiver with state → `failed(validation-failed)`;
   receiver without state → `incomplete(missing: group-state)`,
   resolved on state arrival · repeated evidence wrappers for one
   accept → one surfacing, no-op effects, each wrapper acknowledged ·
   evidence check set is pair-internal: a validator referencing
-  operation fields fails the suite.
+  operation fields fails the suite ·
+  *(eighth-casting additions — the Access-0.24 alignment)*
+  no-transition rule: a payload whose operation body contains a
+  `transition` (`member.remove`, `epoch.rotate`, `policy.change`,
+  `visibility.change`, `document.detach`) → schema-rejected and
+  `failed(validation-failed)`; a removal notice presented as an
+  `access-operation` payload → non-conformant (it travels as
+  `removal-notice/0.1`, Access §10.2) · transported variant caps:
+  an enclosed admission proof with more than 64 signatures or 16
+  credentials → schema-rejected; a credential above 2048 bytes JCS
+  → non-conformant at the sender (Access §5.3) · re-welcome
+  fallback: an admission whose complete serialized task exceeds
+  the Contract's plaintext limit → non-conformant to send; the
+  subject bootstraps via `key-delivery/0.1` kind `re-welcome`
+  under Access §10.1's case-1 semantics, and the suite exercises
+  that path end to end · genesis-digest binding: an enclosed
+  invite whose `genesisDigest` differs from the group's genesis
+  digest → non-canonical at materialization (Access §5.3 rule 2)
+  and the invitee's bootstrap rejects the divergent lineage
+  either way · concurrent same-subject admissions with
+  **different** accepts → both canonical, both accepts consumed
+  (content-bound, no accept frees again), provenance plural and
+  every entry attributable · welcome material: validates against
+  `access-material.schema.json` (`rltp-access-material/0.24`);
+  a keydist-form object in a welcome → schema-rejected ·
+  withdrawn-rule regression: a validator implementing the
+  retired smallest-id arbitration rejects an admission that
+  Access §5.3 accepts → fails the suite (the two specifications
+  agree, by construction, on every admission verdict).
+  *(tenth-casting additions)*
+  **case-1 seal key:** a welcome whose seal opens under a
+  superseded or compromised key-agreement key of the invitee — not
+  the key of the card enclosed in the invitee's own accept — →
+  `failed(validation-failed)` **before** provisional adoption, even
+  where the delivery layer resolved the sealed envelope's recipient
+  key identifier against that key; nothing is written ·
+  **case-1 material well-formedness:** an unsealed
+  `rltp-access-material/0.24` whose `contentKey` is valid but which
+  carries a field the named adapter does not register → rejected
+  before provisional adoption, not merely at first
+  materialization · **one checklist per carrier:** an embedded-welcome
+  receiver that applies a strictly weaker set than §3.3's full
+  case-1 list fails the suite; a **re-welcome** receiver (no
+  operation present) that either demands an operation-dependent
+  check it cannot run **or** applies less than Access §10.1's
+  self-contained subset (seal opens under own accept card, payload
+  `group`/`genesisDigest` = own invite pin, material well-formed)
+  fails the suite — the two carriers share the full/subset split of
+  §3.3, not an identical list · **bounded bootstrap
+  (informative-vs-normative regression):**
+  a stale Epoch-7 welcome after rotation or removal, whose
+  admission is still a historically canonical operation, → wipe,
+  never `member`; and a bootstrap that never resolves its log →
+  wipe at `provisional-window` expiry, never an unbounded wait (the
+  §7 state machine must agree with §3.3 on both) ·
+  **carrier scope:** `member.leave` or `group.dissolve` packaged as
+  an `access-operation/0.1` payload → schema-rejected and
+  `failed(validation-failed)`; no prose of this document may be
+  read as permitting it · **profile-version closure:** the
+  conformance profile string in the header, in this section, and in
+  every profile-bearing normative schema title are identical (the
+  Access-owned envelope transcription carries the Access version
+  instead, by design).
+  *(eleventh-casting additions — the joint-seam round)*
+  **candidate vs pair wipe (M1):** with an active commitment-wrong
+  candidate A and an honest buffered candidate B, A's failure wipes
+  A alone and B is checked at once → bootstrap succeeds; a suite in
+  which A's failure terminally wipes the whole bootstrap (B never
+  checked) fails the regression — candidate failure and
+  window/final failure are distinct transitions (§3.3, §7; Access
+  §10.1) · **removed-subject re-welcome (B3 seam — Access-side):** a
+  subject admitted at epoch 7 and removed at epoch 8, handed a
+  commitment-correct re-welcome for the current epoch, → bootstrap
+  MUST NOT reach `member`, because the invitee is not a current
+  member in the materialized state (§3.3; the enforcing gate is
+  Access §10.1, whose 0.24 wording must carry the current-member
+  condition — recorded as an Access-side seam item) ·
+  **Access-pin brittleness (M2):** replacing the transcribed Access
+  schema under its mobile `$id` with a `rltp-access/0.25` `v`
+  constant makes a 0.24 envelope fail this profile's fixtures
+  (hard, visible break — never a silent 0.25 acceptance); the pin
+  is enforced by the `v` constant, and an Access wire bump requires
+  a Membership recast or a documented compatibility statement.
 - Every normative statement is vector-testable or explicitly marked
   state-dependent.
 
@@ -757,6 +1085,7 @@ replica → canonical? → hygiene` — a non-canonical op changes nothing.
 [RFC2119] · [RFC8174] BCP 14 · [RFC8785] JCS · [TT] ToIP DTGWG Trust
 Tasks framework 0.4 · **RLTP Delivery Contract 0.17** (normative) ·
 **RLTP Encounter Layer 0.19** (securing profile 2.3, principles 1.3,
-contact card §6) · RLTP Access Layer draft 0.3 (operation envelope
-§3.3, welcome material §5.3, policy §4, visibility §8, service ports
-§10).
+contact card §6) · **RLTP Access Layer 0.24** (normative: operation
+envelope §3.3, group identity §3.2, admission and key service duty
+§5.3, material §9.5, `key-delivery/0.1` §10.1, `removal-notice/0.1`
+§10.2, authorization views §7.3, epoch-key lineage §7.1).
