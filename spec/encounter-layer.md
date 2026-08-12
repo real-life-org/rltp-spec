@@ -3,11 +3,18 @@
 **Real Life Trust Protocol — Layer 2: Encounter**
 
 - **Status:** Editor's Draft
-- **Version:** 0.19.0-draft (nineteenth casting)
+- **Version:** 0.22.0-draft (twenty-second casting)
 - **Editors:** Anton Tranelis
-- **Date:** 2026-08-10
+- **Date:** 2026-08-12
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
-- **Conformance profile:** `rltp-encounter@0.19` (draft)
+- **Conformance profile:** `rltp-encounter@0.22` (draft). The **wire
+  versions of every artifact stay at `0.19`**: this casting sharpens
+  the wording of the comparison rule introduced by 0.21 and
+  strengthens one conformance vector; it changes no wire shape and no
+  verdict (Section 12).
+- **Supersedes:** version 0.21 (archived as
+  `archive/encounter-layer-0.21.md`), and castings 0.1 through 0.20
+  archived alongside it.
 - **Supersedes on adoption:** `02-wot-trust/001-encounter credentials.md` and
   `002-verifikation.md` (wot-spec v0.1, German); see Appendix B.
 
@@ -42,13 +49,40 @@ argument. It is developed through an adversarial convergence process:
 every casting is reviewed in full by an independent adversarial
 reviewer, findings are triaged, and the document is recast — never
 patched — until a casting is judged blocker-free and compatibly
-implementable. The current casting is the nineteenth; its review
-round returned no findings. The transmission leg is specified by
-normative reference to the **RLTP Delivery Contract 0.17**, which
-converged alongside. The document will keep changing as
-implementation experience accumulates; known open questions are
-collected in Section 16. Feedback is welcome via the issues of the
-publication repository (github.com/real-life-org/rltp-spec).
+implementable. The companion documents have met that criterion — the
+**RLTP Delivery Contract 0.17**, which specifies the transmission leg
+by normative reference, and above this layer the **RLTP Membership
+Tasks 0.11** and the **RLTP Access Layer 0.25**.
+
+This twenty-second casting has been read by that process and is
+**converged**. Two consecutive rounds returned no blocker-level
+finding, the second none at major level either; the single editorial
+point it did return — a sentence in Section 13 that contradicted both
+the proof in Section 2.3 and a vector in Section 15 — has been
+corrected in place, which is the only kind of change a converged
+casting takes.
+
+The loop this casting closes began as a debt the Access Layer had
+recorded against this document: the size cap that layer enforces when
+it accepts a credential was not guaranteed where the credential is
+made. Discharging it turned out to require more than the debt note
+described — it named two unbounded fields and there were four — and
+review then found something the debt had merely hidden: fractional
+seconds were semantically undefined, so two conforming implementations
+could reach different verdicts on identical input at an aging latch, a
+future gate, or an issuance window. Whole-second normalization is now
+a rule of this document rather than an assumption about it.
+
+**No wire form changed.** The artifacts of 0.19 stand unaltered
+beneath this casting, which narrows the values they may carry and
+fixes the granularity at which they are compared; the wire strings
+therefore remain at 0.19 and Section 12 states what a 0.19 receiver
+may decide differently, and by how little.
+
+The document will keep changing as implementation experience
+accumulates; known open questions are collected in Section 16.
+Feedback is welcome via the issues of the publication repository
+(github.com/real-life-org/rltp-spec).
 
 ## 1. Introduction (informative)
 
@@ -106,11 +140,20 @@ Three further principles govern this family:
   data, never of when it arrived. A ceremony MAY include a synchronous
   leg **inside** the enactment (5.8); real-time checks on that leg
   bound the enactment itself and do not touch this principle.
-- **Clock tolerance never rejects.** Every time comparison widens its
-  interval by `skew-tolerance` in the direction favorable to
-  acceptance; timestamps slightly in the local future — the normal
-  case among real devices — MUST NOT cause rejection within the
-  tolerance (Section 9).
+- **Clock tolerance never rejects, and the clock's resolution never
+  decides.** Every time comparison widens its interval by
+  `skew-tolerance` in the direction favorable to acceptance;
+  timestamps slightly in the local future — the normal case among real
+  devices — MUST NOT cause rejection within the tolerance (Section 9).
+  And every comparison of this layer is performed on whole seconds
+  (2.3), so no
+  verdict of this document depends on how finely the verifier's clock
+  or the producer's serializer happens to tick. The two halves of this
+  principle do not pull against each other. Because every parameter of
+  Section 9 is a whole number of seconds, truncating both operands can
+  only ever **add** accepted borderline cases and never withdraw one
+  (the proof is in 2.3, *How*): the granularity rule cannot turn a
+  tolerance that never rejects into one that does.
 - **Every mechanism names its user action.** The user actions of this
   layer are exactly two: exchange cards (by scanning, one way or both
   ways), confirm recognition.
@@ -207,6 +250,19 @@ this document is self-contained by requiring, normatively:
   [DI-EDDSA]: canonicalization JCS [RFC8785], hash SHA-256, signature
   Ed25519, `verificationMethod` = the anchor's `did:key` verification
   method. No RDF processing is required or permitted.
+- **The proof value is bounded by the signature it carries.** An
+  Ed25519 signature is exactly 64 bytes [RFC8032], and `proofValue` is
+  its multibase base58btc encoding: the character `z` followed by 64
+  to 88 base58 characters — **65 to 89 characters, and nothing
+  else.** Both ends are properties of the encoding, not chosen
+  numbers. The upper end holds because 58⁸⁷ ≤ 2⁵¹² − 1 < 58⁸⁸, so the
+  largest 64-byte value needs 88 digits and no 64-byte value needs
+  89. The lower end holds because base58btc renders each leading zero
+  byte as exactly one `1` character, so the shortest encoding of 64
+  bytes is the 64 characters of the all-zero string. A string outside
+  this interval is not the encoding of a 64-byte value and therefore
+  cannot be an Ed25519 signature; **rejecting it at the format check
+  discards no signature that could ever have verified.**
 - **Digest values are multibase-encoded multihashes** over
   JCS-canonicalized JSON, aligned with W3C VCDM `digestMultibase` and
   CID 1.0: the SHA-256 digest is wrapped in a multihash header
@@ -217,9 +273,99 @@ this document is self-contained by requiring, normatively:
   parse. *(One verifier thereby serves RLTP and DTGWG artifacts
   alike.)*
 - All timestamps are [RFC3339] date-times in UTC with `Z`, seconds
-  `00`–`59` (leap seconds excluded). Schemas enforce syntax by
-  pattern; implementations MUST additionally reject calendar-invalid
-  dates when parsing.
+  `00`–`59` (leap seconds excluded), carrying **at most three
+  fractional-second digits** — at most 24 characters. Schemas enforce
+  syntax by pattern; implementations MUST additionally reject
+  calendar-invalid dates when parsing.
+- **Every time comparison of this layer is performed at whole-second
+  granularity.** This is the rule, and it is normative, because
+  without it the sentence that follows from it would be a hope about
+  implementations rather than a property of the protocol.
+
+  **Where.** Before **every Encounter comparison — every comparison
+  this document requires, and every comparison a companion document
+  delegates to this one** — **each operand is normalized**: every
+  timestamp read from an artifact (`validFrom`, `proof.created`, a
+  card's `challenge.issuedAt`), every timestamp read from local state
+  (a record's or a held value's `t_ch`), and **the locally read
+  `now`**. Interval endpoints are then computed from normalized
+  operands by adding the parameters of Section 9, which are themselves
+  whole seconds or coarser. No Encounter comparison takes an
+  unnormalized operand on either side, and a comparison whose two
+  sides were normalized differently is non-conformant.
+
+  **How far this reaches — and where it stops.** It reaches every
+  comparison of the record gate, the challenge resolution, the aging
+  latch and the issuance window, wherever they are performed: when the
+  Delivery Contract's staged evaluation resolves a challenge or
+  evaluates the issuance window, it is performing *this* document's
+  comparisons and performs them under this rule. It does **not** reach
+  a companion's own time windows. Where a companion defines its own
+  parameter and its own interval — the Membership Tasks' invite
+  validity under `membership-skew`, the Access Layer's service views,
+  duty slots, provisional window and retention bounds — those
+  endpoints are not computed from Section 9 and those comparisons are
+  not this document's to govern. This rule states the granularity of
+  Encounter time, not of RLTP time.
+
+  **How.** Normalization is **truncation toward the past**: the
+  fractional part is discarded, never rounded. Three reasons, in
+  order. It is a purely **lexical** operation on the wire form —
+  delete the `.` and every character between it and the `Z`, leaving
+  the whole-second form `YYYY-MM-DDThh:mm:ssZ` — so it needs no
+  arithmetic and no agreement on a rounding mode. It is **the same
+  operation this document already requires of an over-precise
+  producer** (Appendix A), so producer truncation and verifier
+  normalization compose to one instant, where rounding would have a
+  verifier read a value no truncating producer ever wrote. And on
+  whole-second values — the form producers SHOULD emit — it is the
+  **identity**, so the canonical case pays nothing.
+
+  **Why truncating cannot narrow acceptance.** Truncating `now`
+  downward could in principle have tightened the side of a gate that
+  compares against `now` plus a tolerance — and a rule that made a
+  clock tolerance reject would contradict 1.3. It does not, and this
+  is provable rather than merely intended: for a whole-second offset
+  `S`, `t ≤ now + S` implies `⌊t⌋ ≤ ⌊now⌋ + S`, since `⌊t⌋ ≤ t` and
+  `⌊now + S⌋ = ⌊now⌋ + S`. The same holds for every other inclusive
+  bound of this document, each of whose offsets is whole-second
+  (Section 9). **Truncation can therefore accept borderline cases an
+  exact comparison would have refused, but it can never refuse one an
+  exact comparison accepted.** The principle "clock tolerance never
+  rejects" survives this rule as a theorem, not as a hope.
+  *(Round-half-up would also have been deterministic, monotone and
+  compatible with whole-second offsets; truncation is preferred
+  because it is the operation already imposed on the producing side,
+  not because rounding would have been unsound.)*
+
+  **What it is not.** Normalization governs **comparison only**. The
+  bytes that are canonicalized, hashed, signed, verified, and digested
+  are always the bytes of the artifact as it stands; an implementation
+  that normalizes before JCS breaks every proof it touches.
+
+  **What follows.** Every time parameter of this layer is
+  second-granular or coarser (Section 9), so with this rule **no
+  verdict of this document — record gate, resolution, aging latch,
+  issuance window — can differ on the fraction**, and two conforming
+  implementations reach the same verdict on the same input whatever
+  the resolution of their clocks. That is what the aging latch (5.3)
+  needs to be the deterministic, monotone thing it claims to be.
+  Producers SHOULD nonetheless emit **whole seconds**, now for a
+  narrower reason: it is the canonical form in which one instant has
+  exactly one serialization and hence exactly one digest.
+- **The precision bound is byte economy, nothing more.** Because the
+  fraction cannot move a verdict, the choice of three digits is no
+  longer a semantic decision but purely an interoperability one: an
+  unbounded fraction would be an unbounded field in an artifact whose
+  size is capped (7.5), so *some* bound is required. It is drawn at
+  three digits rather than at zero because millisecond precision is
+  what the common ISO-8601 serializers emit unaided, so the bound
+  costs a conforming producer nothing it was not already doing; it is
+  not drawn at nine, which would also be bounded, because the extra
+  twelve bytes buy precision no rule of this document reads. A
+  producer spending more precision than the protocol reads MUST
+  truncate (Appendix A) — the same truncation the comparison rule
+  performs.
 - **Contexts are pinned by value, not processed.** A credential's
   `@context` is exactly
   `["https://www.w3.org/ns/credentials/v2",
@@ -371,7 +517,10 @@ resolution algorithm** below:
   enactment awaiting its record), held together with its issuance
   time `t_ch`, not superseded by a record, and not aged out by the
   party's own clock: `now ≤ t_ch + challenge-max-age +
-  skew-tolerance`. **Retention is mandatory:** a party MUST retain
+  skew-tolerance`, **with `now` and `t_ch` normalized to whole
+  seconds per 2.3 before the parameters are added**, so the age bound
+  falls on the same second in every implementation.
+  **Retention is mandatory:** a party MUST retain
   every issued value with its issuance time until it becomes
   recorded or ages past the bound — rotation changes which value is
   *displayed*, never the retention of previously issued values, so
@@ -407,7 +556,12 @@ freshly recorded value whose open entry has not yet been discarded
 resolves `recorded`). The one write is the aging latch:
 **every resolution — provisional or authoritative — that finds a
 held value past the age bound MUST mark it `aged` before returning
-`unknown`.** The mark is atomic per value and **monotone**
+`unknown`.** "Past the age bound" is the normalized comparison of
+the `open` definition above: the latch fires on a whole-second
+boundary, so **two implementations observing the same state at the
+same instant latch together**, and no verdict of this model differs
+on a fraction of a second. The mark is atomic per value and
+**monotone**
 (set-only): concurrent, unserialized writers can only ever agree,
 so the latch needs no lock for its safety, and an aged value never
 resolves `open` again — whatever the clock later says. A
@@ -477,7 +631,8 @@ resolution terms (5.3).** A record MUST be created only for an own
 challenge that **resolves `open`** — the expiry side is structural
 (an aged value is no longer open) — and whose issuance time passes
 the explicit **future check**, `t_ch ≤ now + skew-tolerance` by the
-creating party's own clock; a value failing it is refused with the
+creating party's own clock, **both operands normalized to whole
+seconds per 2.3**; a value failing it is refused with the
 named outcome **`gate-future`**, on every leg. The scanner applies
 this at scan time (trivially fresh); the receiver at receipt of the
 sent card — whichever carrier brought it (5.8). **Record creation is
@@ -527,7 +682,11 @@ the local anchor, an implementation MUST evaluate, in order:
    `[t_ch − skew-tolerance,
      t_ch + challenge-max-age + issuance-window + skew-tolerance]`,
    **and** `proof.created ≥ validFrom − skew-tolerance`; else reject
-   `ERR_STALE_ISSUANCE`. Endpoints are inclusive; skew always widens.
+   `ERR_STALE_ISSUANCE`. **All four values — `validFrom`,
+   `proof.created`, `t_ch`, and hence both endpoints — are normalized
+   to whole seconds per 2.3 before either comparison**, so a
+   millisecond on either side of an inclusive endpoint is not a
+   discriminator. Endpoints are inclusive; skew always widens.
 7. **Binding.** The enactment binding recomputes from the record per
    5.4; else reject `ERR_BINDING`.
 8. **Uniqueness.** No credential has been accepted for this record and
@@ -688,6 +847,24 @@ carries neither); and a `DataIntegrityProof`
 per 2.3 verifying under the anchor. It MAY carry a display name and
 delivery hints.
 
+**Every field of a card is bounded too**, by the shared rules of 2.3
+for its proof and its timestamp and by the card's own maxima (200
+characters of display name, at most eight delivery hints of 512
+characters each). A card therefore has a finite largest JCS
+serialization: **26 683 bytes** at the adversarial escaping maximum of
+its free text (C0 control characters, six bytes each), **5203 bytes**
+when that text is **unescaped** one-byte ASCII — the qualifier
+matters, because a quote or a backslash is one-byte ASCII and still
+costs two bytes under JCS (7.5). No layer of this stack places an *acceptance* cap on a
+card, so unlike the credential (7.5) the card needs no source
+guarantee: where a card travels inside another document, fit is that
+document's **sender duty**, never a theorem. The bound is what makes
+the duty dischargeable — and it keeps the `encounter-bundle` payload,
+a maximal card plus a maximal credential, under 28 KiB and so inside
+the Delivery Contract's 65 536-byte plaintext bound by construction.
+The generosity of the card bound against the document maxima above
+this layer is recorded as OI-6.
+
 A card with an **unknown version** MUST NOT enter an enactment.
 Degradation is always toward less assurance. The name in a card is
 **self-declared**; recipients bind their own local name to the anchor
@@ -726,14 +903,19 @@ happens through a new format version, never through extra fields.
 | `validFrom` | datetime | 1 | issuance time (SHOULD equal enactment time) |
 | `credentialSubject.id` | anchor | 1 | the recognized party |
 | `credentialSubject.format` | string | 1 | `rltp-encounter-credential/0.19` |
-| `credentialSubject.ceremony` | string | 1 | registered ceremony id and version |
+| `credentialSubject.ceremony` | string | 1 | registered ceremony id and version; at most 56 characters (7.5) |
 | `credentialSubject.challenge` | string | 1 | the subject's challenge |
 | `credentialSubject.enactmentBinding` | multibase | 1 | per 5.4 |
 | `credentialSubject.channel` | string | 0..1 | informative |
-| `proof` | object | 1 | `DataIntegrityProof`, `eddsa-jcs-2022`; `created` participates in 5.6 step 6 |
+| `proof` | object | 1 | `DataIntegrityProof`, `eddsa-jcs-2022`; `created` participates in 5.6 step 6; every member bounded (7.5) |
 
 The credential MUST NOT carry the counterparty's challenge — enforced
 structurally by the closed root and closed subject.
+
+**Every property above has an upper bound**, and the closed root
+admits no others. The two facts together are what make the size of an
+encounter credential a property of the artifact rather than a hope
+about its producer; the guarantee that follows is 7.5.
 
 ### 7.3 Immutability
 
@@ -755,6 +937,99 @@ issuer. Delivery acknowledgements signal arrival (Delivery Contract
 4.2), MUST NOT be presented as acceptance, and carry no statement
 about the receiver's decision. Implementations MUST NOT present the
 relation as disclosable only by the subject.
+
+### 7.5 Bounded size, guaranteed at the source
+
+The Access Layer accepts a **transported** encounter credential only
+if its JCS serialization is at most **2048 bytes** (its 5.3, where a
+transported variant proof carries at most 16 of them). That is an
+*acceptance* cap: it tells a receiver what to reject, and it told a
+producer nothing. This casting turns it into a property of the
+artifact, so that **no conforming producer can build a credential that
+cap would have to reject.**
+
+The guarantee is **structural, not a duty**: it follows from the
+format alone, because every property of an encounter credential has an
+upper bound. Four had none before casting 0.20 — `proofValue`,
+`validFrom`, `proof.created` (through the shared timestamp definition)
+and `credentialSubject.ceremony` — and any single one of them was
+enough to defeat the cap.
+
+| Property | Bound | Where the bound comes from |
+|---|---|---|
+| `@context` | two pinned constants | 2.3 |
+| `type` | exactly two members, both fixed | 7.1 |
+| `issuer`, `credentialSubject.id` | 56 characters | `did:key` over Ed25519 (2.3) |
+| `validFrom`, `proof.created` | 24 characters | RFC3339 UTC, ≤ 3 fractional digits (2.3) |
+| `credentialSubject.format` | one constant | 7.2 |
+| `credentialSubject.ceremony` | 56 characters | ≤ 48 label characters, ≤ 3 digits per version part (19 in the one registered ceremony, 5.1) |
+| `credentialSubject.challenge` | 88 characters | 5.3 |
+| `credentialSubject.enactmentBinding` | 49 characters | multibase multihash over SHA-256 (2.3); a correct one occupies 47 |
+| `credentialSubject.channel` | 64 characters | 5.7 |
+| `proof.type`, `proof.cryptosuite`, `proof.proofPurpose` | constants | 2.3 |
+| `proof.verificationMethod` | 105 characters | `did:key` verification method (2.3) |
+| `proof.proofValue` | 65–89 characters | Ed25519 signature, base58btc (2.3) |
+
+**The arithmetic, in bytes.** A JSON string's byte length is not its
+character length, and the cap is in bytes: under JCS [RFC8785] a C0
+control character costs six bytes (`\u00xx`), a non-BMP code point
+four, a three-byte BMP code point three, and a quote or backslash two
+— **so even one-byte ASCII is not always one byte on the wire.** A
+bounded *character* count therefore buys at most a **six-fold** byte
+count. Only `channel` is free text; every other property above is
+confined to an alphabet that escapes to one byte per character.
+Measured over the whole escaping range, at 64 `channel` characters:
+
+| `channel` alphabet | bytes per character | schema maximum | valid maximum |
+|---|---|---|---|
+| unescaped one-byte ASCII | 1 | 1068 | 1029 |
+| quote or backslash | 2 | 1132 | 1093 |
+| three-byte BMP code point | 3 | 1196 | 1157 |
+| non-BMP code point | 4 | 1260 | 1221 |
+| C0 control character | 6 | **1388** | **1349** |
+
+**The two columns are two different claims, and only one of them is a
+credential.**
+
+- The **schema maximum, 1388 bytes**, takes every property at the
+  bound its *schema* admits — a 56-character `ceremony`, a
+  49-character `enactmentBinding`. It is a size construction, **not a
+  valid credential**: a 56-character ceremony identifier names no
+  ceremony this profile registers and is rejected at 5.6 step 1, and
+  49 characters cannot hold the prescribed multihash (below). It is
+  nevertheless the number the guarantee rests on, because the cap is
+  argued against the *format*: no document the schema admits can
+  exceed it, so nothing this document can emit — valid or not —
+  reaches 2048.
+- The **valid maximum, 1349 bytes**, takes every property at the bound
+  a *credential that passes 5.6* can reach: `ceremony` is
+  `encounter-scan@0.19`, 19 characters, because that is the one
+  ceremony this version registers (5.1); and `enactmentBinding` is 47
+  characters, because a SHA-256 multihash is `0x12 0x20` plus 32
+  bytes, whose base58btc rendering is always exactly 46 characters
+  (the fixed prefix pins it) and whose base64url rendering is 46 by
+  construction — 47 with the multibase header either way. The
+  base58btc figure is **derived and measured**: the derivation is the
+  fixed two-byte prefix, and a sweep over the digest range (200 000
+  random digests together with the all-zero and all-`0xff` extremes)
+  produced 47 characters in every case and no other length. The
+  schema's 49 is syntactic slack that no correct multihash occupies.
+
+Both numbers are **measured**, not estimated, and both are below 2048
+with margin. **A producer therefore needs no size check to stay inside
+the cap**, and a receiver enforcing the cap never rejects a conforming
+credential.
+
+The bounds are enforced where every other format rule of this document
+is enforced: the schema check of 5.6 step 1, failing as `ERR_VERSION`.
+
+*Honestly bounded.* This is a guarantee about **conforming**
+credentials, and it does not license a receiver to skip the cap. The
+sender of a transported credential need not be its issuer, and a
+receiver validates what arrived rather than trusting who sent it; the
+Access Layer therefore keeps enforcing at acceptance, and what this
+section removes is not that check but the possibility that the check
+and the format could contradict each other.
 
 ## 8. What a Third Party Can Verify
 
@@ -788,6 +1063,17 @@ parameter and never a conformance condition. All
 intervals are closed. Retention: enactment records for the life of the
 relation.
 
+**Every parameter in this table is a whole number of seconds or
+coarser, and every comparison that uses one is performed on
+whole-second operands (2.3).** The two facts are one design
+decision: a gate whose parameters are minutes has no use for a
+sub-second operand, and admitting one would only let the verifier's
+clock resolution decide a verdict. Sub-second parameters are
+therefore not merely absent from this table — a future ceremony
+registration MUST NOT introduce one without first replacing the
+comparison rule of 2.3, because under that rule a sub-second
+parameter would be silently truncated away.
+
 ## 10. Paths and Shared Contexts (informative)
 
 Relations weaker than an encounter are **computed, not asserted**: *A
@@ -812,6 +1098,65 @@ Enactments MUST be possible without any service (the offline path, 5.8).
 
 - Every wire artifact carries an explicit format version — cards,
   credentials (`credentialSubject.format`), tasks (their Type URIs).
+- **Wire version and profile version are distinct, and this casting
+  moves only one of them.** A wire version advances when a wire
+  *shape* changes; the profile version advances with every casting of
+  this document. Profile `rltp-encounter@0.22` therefore
+  produces and accepts exactly the `…/0.19` wire forms — `rltp-card/0.19`,
+  `rltp-encounter-credential/0.19`, and the ceremony
+  `encounter-scan@0.19` — because none of 0.20, 0.21 and 0.22 adds a
+  property, removes one, renames one or retypes one: 0.20 **narrowed
+  the admitted value range of four existing fields inside an unchanged
+  shape** (7.5), 0.21 adds a **comparison rule** (2.3) that touches
+  no serialized byte at all, and 0.22 changes neither an artifact nor
+  a verdict — it corrects the wording of that rule and strengthens one
+  vector. **This
+  paragraph is the compatibility statement the companion documents
+  rely on:** the Delivery Contract 0.17 names the ceremony
+  `encounter-scan@0.19` and the Access Layer 0.25 pins
+  `rltp-encounter@0.19` where encounter rules are used; both hold
+  unchanged, and no schema and no fixture of either companion moves.
+  The comparison rule of 2.3 governs those companions' **encounter-time
+  comparisons** and only those — the Delivery Contract's staged
+  evaluation resolves challenges and evaluates the issuance window
+  under this layer's rules, and it does so with this layer's
+  normalization, while a companion's own windows (Membership's
+  `membership-skew`, the Access Layer's service, duty-slot,
+  provisional and retention bounds) remain governed by the document
+  that defines them (2.3). Either way nothing they serialize changes,
+  so the pins hold.
+- **What the narrowing costs, in both directions.** A 0.19 receiver
+  accepts **every** artifact a 0.22 producer emits, because producers
+  from 0.20 onward emit a strict subset. In the other direction a 0.22
+  receiver rejects a 0.19 artifact in exactly two cases. A
+  `proofValue` outside the length of an Ed25519 signature is the
+  harmless one — it could never have verified (2.3), so the format
+  check merely fails earlier than the signature check. A timestamp
+  spending more than three fractional digits is the real one: such an
+  artifact **could** have verified, and this is a narrow but genuine
+  break, stated rather than glossed. A wire bump would not repair it
+  but widen it: version handling in this layer is exact match (5.6
+  step 1, Section 6), so bumping would make a 0.22 receiver reject
+  *every* 0.19 artifact instead of the few that spend a precision the
+  protocol never read. The bound is therefore drawn where the common
+  serializers already stop, and Appendix A records the migration.
+- **What the comparison rule costs, stated with the same honesty.**
+  It changes no artifact, but it does change *verdicts*: a 0.19
+  receiver compared full instants, a receiver from 0.21 onward
+  compares whole
+  seconds. Where the two disagree is exactly bounded — only for values
+  lying within one second of an interval endpoint, since truncation
+  moves an operand by less than a second while every gate is already
+  widened by `skew-tolerance` of PT5M. No conforming artifact is
+  rejected that a 0.19 receiver accepted for a reason other than
+  a sub-second position at a boundary, and none is accepted that
+  0.19 rejected for any other reason. The disagreement is in fact
+  one-sided at the tolerated bounds: truncation only ever widens
+  acceptance there (2.3, *Why truncating cannot narrow acceptance*).
+  This is not a wire break and
+  needs no wire bump: it is the removal of an indeterminacy 0.19 and
+  0.20 both had, in which two 0.19 receivers could already disagree
+  with each other on the same input.
 - New ceremonies, channels and card fields register new identifiers;
   existing ones are never re-interpreted. Ceremony registrations pin
   time parameters. Credential root and subject are closed; extension
@@ -850,8 +1195,21 @@ Enactments MUST be possible without any service (the offline path, 5.8).
   never participated holds no record for the bound challenge.
 - **Challenge entropy is load-bearing.** ≥128 bits; UUID v4 is
   non-conformant (Appendix A).
-- **Time gates are layered consistently.** Skew always widens;
-  parameters are ceremony-pinned.
+- **Time gates are layered consistently, and their granularity is
+  pinned.** Skew always widens; parameters are ceremony-pinned; and
+  every comparison **of this layer** — wherever it is performed,
+  including inside a companion that delegates it here — runs on
+  whole-second operands (2.3), so a verifier
+  cannot be steered to a different verdict by a fraction of a second
+  chosen by whoever wrote the timestamp. Without that rule the aging
+  latch would be deterministic only per implementation, which is not
+  deterministic at all. The granularity rule moves no whole-second
+  boundary. Measured against an exact-instant comparison it can widen
+  acceptance by less than one second, at a boundary `skew-tolerance`
+  has already widened by minutes — and it can never narrow it, which
+  is a theorem rather than a hope (2.3). No fraction chosen by
+  whoever wrote a timestamp buys more than that one second, because
+  the fraction is discarded before it is ever compared.
 
 ## 14. Privacy Considerations
 
@@ -885,8 +1243,9 @@ Enactments MUST be possible without any service (the offline path, 5.8).
 
 ## 15. Conformance
 
-- **Profile** `rltp-encounter@0.19`; includes the interim securing
-  profile (2.3) until `rltp-identity` is cast; **normatively
+- **Profile** `rltp-encounter@0.22`, whose wire forms remain those of
+  `0.19` (Section 12 — no wire shape changed); includes the interim
+  securing profile (2.3) until `rltp-identity` is cast; **normatively
   references `rltp-delivery@0.17`** for the one-scan transmission.
 - **Classes:** *participant* · *verifier*.
 - **Normative schemas (shipped):**
@@ -940,7 +1299,79 @@ Enactments MUST be possible without any service (the offline path, 5.8).
   optical leg never produces `duplicate-known` · aged-out challenge
   at the optical leg → `gate-expired` → fresh enactment, one edge ·
   switching in both directions before and after `ack-wait` — same
-  outcomes.
+  outcomes · *(twentieth-casting additions — the source-cap round)*
+  **at the schema maximum:** a document with every bounded field at
+  the bound its schema admits — 56-character ceremony identifier,
+  88-character challenge, 49-character binding, 64-character
+  `channel`, 24-character `validFrom` and `proof.created`,
+  89-character `proofValue` — serializes to **1388 bytes** with
+  `channel` in C0 control characters and **1068 bytes** with `channel`
+  in unescaped one-byte ASCII. **This vector is a size construction,
+  not a valid credential:** it MUST be rejected at 5.6 step 1 for its
+  unregistered ceremony, and its 49-character binding decodes to no
+  SHA-256 multihash. It is the vector that carries the 2048-byte
+  argument, because the guarantee is about what the *format* admits ·
+  **at the valid maximum:** the largest credential that passes all of
+  5.6 — ceremony `encounter-scan@0.19` (19 characters), 47-character
+  binding, everything else at its bound — serializes to **1349 bytes**
+  (**1029** with `channel` in unescaped one-byte ASCII) and is
+  **accepted**; together with the previous vector this shows the
+  Access 5.3 acceptance cap met **at the source**, with no size check
+  performed anywhere · **the escaping range:** the same 64-character
+  `channel` in quotes/backslashes, three-byte BMP code points and
+  non-BMP code points measures 1132 / 1196 / 1260 bytes at the schema
+  maximum, confirming the C0 case is the maximum over *all* alphabets
+  and not merely over the one tested · **over the bound, field by
+  field, each `ERR_VERSION` at
+  5.6 step 1:** `proofValue` of 90 characters; `proofValue` of 64
+  characters (below the shortest encoding of 64 bytes, so not a
+  signature); `proof.created` or `validFrom` with four or more
+  fractional digits; a ceremony label of 49 characters or a version
+  part of four digits · **the regression
+  check is a construction, not an assertion:** with any one of the
+  four new bounds removed, a schema-valid credential above 2048 bytes
+  is constructible; each such construction MUST fail the format check
+  while the bound stands · **card bounds:** a card at every maximum is
+  valid and serializes to 26 683 bytes (5203 with unescaped one-byte
+  free text), and the `encounter-bundle` payload built from a maximal
+  card and a maximal credential stays under 28 KiB, inside the Delivery
+  Contract's 65 536-byte plaintext bound ·
+  *(twenty-first-casting additions — whole-second comparison, 2.3)*
+  **the fraction cannot move a verdict, tested at the boundaries where
+  it otherwise would:** *(a)* **aging latch** — `t_ch` =
+  `12:00:00.100`, `challenge-max-age + skew-tolerance` placing the
+  bound at `12:10:00`, `now` = `12:10:00.500`: normalized both sides,
+  the value resolves **`open`** and no latch is written; the
+  unnormalized comparison would return `unknown` and latch. *(b)* **no
+  latch was created, and a backward clock proves it** — the same input
+  replayed after the decision of *(a)*, with a clock that has moved
+  back to `12:09:59.999`: still **`open`**, because nothing was
+  latched; the fraction never created a latch that monotonicity would
+  then have made permanent. *(c)* **future gate**
+  — `t_ch` = `12:05:00.900`, `now` = `12:00:00.500`, `skew-tolerance`
+  PT5M: normalized, `12:05:00 ≤ 12:05:00` passes; unnormalized,
+  `gate-future`. *(d)* **issuance window** — a `validFrom` of
+  `…:00.001` one millisecond past the inclusive upper endpoint
+  `…:00.000`: **accepted**; unnormalized, `ERR_STALE_ISSUANCE`. Each
+  vector is run at whole seconds, one and three fractional digits and
+  MUST yield the identical verdict · **normalization is not
+  canonicalization:** a credential whose `proof.created` carries a
+  non-zero fraction verifies **on its own bytes**; an implementation
+  that truncates before JCS produces `ERR_SIG` and is non-conformant ·
+  *(twenty-second-casting addition — latch monotonicity tested on a
+  latch that exists)* **the aging latch, once set, survives a
+  backward clock**, in three steps on one held value with the bound
+  again at `12:10:00`: *(1)* at `now` = `12:10:00.400` the value
+  resolves **`open`** and **no latch is written** — the normalized
+  bound has not been passed; *(2)* one second later, at `now` =
+  `12:10:01.000`, the same value resolves **`unknown`** and the latch
+  **is written**; *(3)* with the clock moved back before the bound, to
+  `12:09:59.000`, the value MUST still resolve **`unknown`** — the
+  latch is read, not recomputed. Step *(3)* is the vector's point: an
+  implementation that derives the aged state from the clock at every
+  resolution passes *(1)* and *(2)* and returns `open` here, and is
+  non-conformant (5.3). Where *(a)* and *(b)* show that a fraction
+  creates no latch, this shows that a set latch is never withdrawn.
 - Every normative statement is vector-testable or explicitly marked
   state-dependent.
 
@@ -959,6 +1390,36 @@ Enactments MUST be possible without any service (the offline path, 5.8).
   the merge rule: edges are one per pair, but repeated-encounter
   *semantics* (renewal) remain undefined.
 - **OI-5 Card format alignment.**
+- **OI-6 Card size against the document maxima above this layer.**
+  Every field of a card is bounded (Section 6), but generously: once a
+  card's free text uses escaped or multi-byte characters its maximum
+  (26 683 bytes; 5203 in **unescaped** one-byte ASCII, and already
+  9499 if that text is quotes or backslashes) exceeds the 16 384-byte
+  document maximum the Membership Tasks place on an invite and an
+  accept, both of which carry a card. Nothing here is unsound — those
+  documents make fit a sender duty, and a sender can always emit a
+  smaller card — but a source-side card bound below that maximum would
+  turn that duty into a theorem, as 7.5 does for the credential.
+
+  **Why leaving it open is defensible, not merely convenient.** This
+  is not the same error class as the credential debt 0.20 discharged.
+  There, an *acceptance* cap existed with no corresponding source
+  bound, so a conforming producer could build what a conforming
+  receiver had to reject. Here the Membership Tasks declare an invite
+  or accept over 16 384 bytes **non-conformant at issuance** and
+  require the issuer's final whole-document size check, so the
+  oversized document is never conformant on either side; and a contact
+  card is a valid artifact outside Membership entirely, where no
+  16 384-byte limit applies to it at all. Membership already
+  RECOMMENDS minimal cards without `deliveryHints`. A tighter card
+  bound would be a genuine compositional gain, but it is not needed to
+  make any current claim true.
+
+  It is therefore not taken in this casting for two reasons, both
+  honest rather than technical: it would narrow a field users see and
+  fill (delivery hints), which is a product decision and not this
+  document's to make alone; and it would move arithmetic inside a
+  converged companion.
 
 ## Appendix A (informative): bindings to the current implementation
 
@@ -970,6 +1431,9 @@ Enactments MUST be possible without any service (the offline path, 5.8).
 | Ack | `attestation-receipt` | Delivery Contract `delivery-ack`: arrival semantics, **proof-carrying** |
 | Encounter credential | `WotVerification` VC-JWS | RLTP `EncounterCredential`, embedded `eddsa-jcs-2022`, closed root, pinned contexts |
 | Acceptance gate | Trust 002 gate | 5.6 with named errors, `proof.created` windowed |
+| Timestamp precision | `toISOString()`, three fractional digits | conformant unchanged (2.3); a producer emitting more MUST truncate, and SHOULD emit whole seconds |
+| Timestamp comparison | full-instant `Date` comparison | **normalize to whole seconds first** (2.3) — the same truncation, now on the reading side too: delete the `.` and everything between it and the `Z`, on **both** operands, before comparing, and never before hashing. The rule covers this layer's comparisons wherever they run; a companion's own windows keep their own rules |
+| Proof value | base58btc Ed25519 signature | unchanged on the wire; now bounded to 65–89 characters (2.3), which no verifying signature can leave |
 
 ## Appendix B (informative): relation to prior specifications
 
@@ -999,7 +1463,8 @@ open upstream item (O12).
 
 ## References
 
-[RFC2119] · [RFC8174] BCP 14 · [RFC3339] · [RFC8785] JCS · [DI-EDDSA]
+[RFC2119] · [RFC8174] BCP 14 · [RFC3339] · [RFC8032] EdDSA
+(Ed25519 signature length, 2.3) · [RFC8785] JCS · [DI-EDDSA]
 W3C Data Integrity EdDSA Cryptosuites v1.0 · W3C Verifiable
 Credentials Data Model 2.0 · DTG Credential Specification (ToIP DTGWG,
 draft) · ToIP DTGWG Trust Ceremonies ADR 0001 and design note

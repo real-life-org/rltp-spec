@@ -34,7 +34,7 @@ adversarial convergence process: each casting is reviewed by an
 independent adversarial reviewer, findings are triaged, and the
 document is fully recast — never patched — until a review round
 returns **no blocker-level findings**. All four have reached that
-criterion: Encounter 0.19 · Delivery Contract 0.17 · Membership
+criterion: **Encounter 0.22** · Delivery Contract 0.17 · Membership
 Tasks 0.11 · **Access Layer 0.25**, each confirmed by a final round
 with no findings.
 
@@ -47,6 +47,25 @@ the boundary between them. Each document answered its own side in
 a new casting, and the confirmation round that followed found no
 blocker-, major-, or minor-level defects in either direction — the
 Access ⇄ Membership seam is closed.
+
+The Encounter Layer's last three castings discharged a debt the
+Access Layer had recorded against it: the size cap Access enforces
+when it accepts an encounter credential was checked there, but not
+guaranteed where the credential is made. Discharging it took more
+than the debt note described — the note named two unbounded fields
+and there were four — and review then found what the debt had only
+hidden: fractional seconds were semantically undefined, so two
+conforming implementations could reach different verdicts on
+identical input at an aging latch, a future gate, or an issuance
+window. Whole-second comparison is now a rule of that document
+rather than an assumption about it.
+
+None of that changed a wire form, which is why the Encounter Layer
+is at casting 0.22 while its artifacts still carry 0.19: these
+castings narrow which values an artifact may hold and fix the
+granularity at which it is compared, so a 0.19 artifact is still a
+0.22 artifact. The document states what a 0.19 receiver may decide
+differently, and by how little.
 
 Notable in that layer's final form: **there are no admins** —
 privileged operations are gated by group-defined policy, and

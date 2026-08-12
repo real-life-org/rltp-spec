@@ -27,7 +27,7 @@
           "created": "2026-08-10T12:00:00Z",
           "verificationMethod": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh#z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
           "proofPurpose": "assertionMethod",
-          "proofValue": "z3FXQjecWJKTXvHiLcYQkAAAA"
+          "proofValue": "z3FXQjecWJKTXvHiLcYQkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
         }
       }
     },
@@ -47,7 +47,7 @@
           "created": "2026-08-10T12:00:00Z",
           "verificationMethod": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh#z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
           "proofPurpose": "assertionMethod",
-          "proofValue": "z3FXQjecWJKTXvHiLcYQkAAAA"
+          "proofValue": "z3FXQjecWJKTXvHiLcYQkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
         }
       }
     },
