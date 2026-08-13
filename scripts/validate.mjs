@@ -12,7 +12,7 @@
 // not evidence of anything."
 
 import { readFileSync, readdirSync } from 'node:fs'
-import { join, dirname } from 'node:path'
+import { join, dirname, basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createPrivateKey, createPublicKey, diffieHellman, hkdfSync, createCipheriv, createHash } from 'node:crypto'
 import Ajv2020 from 'ajv/dist/2020.js'
@@ -102,6 +102,82 @@ for (const c of fx.cases) {
   if (c.delete) for (const ptr of [].concat(c.delete)) delPointer(doc, ptr)
   if (validate(doc)) err(`fixture MUST fail but passes: ${c.name}`)
   else ok(`fixture fails as required: ${c.name}`)
+}
+
+// ── 5. Spec examples agree with the schemas they illustrate ──────────────
+// Both this project and the ToIP DTGWG registry independently found the same
+// failure: "prose is not machine-checked, so an example can contradict its own
+// schema." The specifications elide for readability (`{ …operation-specific… }`),
+// so most examples are illustrations rather than documents. Two depths follow
+// from that, and both are real:
+//
+//   · a complete example is validated against its schema, as a document;
+//   · an elided example still has field NAMES, and a name the schema does not
+//     define anywhere is drift — the class this check exists to catch.
+//
+// An example is matched to its schema by the wire version it carries. Examples
+// without one are fragments (a policy object, a `keys` member) and are reported
+// as unmatched rather than silently skipped.
+const specFiles = readdirSync(join(ROOT, 'spec')).filter((f) => f.endsWith('.md'))
+
+// Every property name the schema defines, following $refs through the bundle.
+const byId = Object.fromEntries(schemaFiles.map((f) => [parsed[f].$id, parsed[f]]))
+const propNames = (schema, seen = new Set()) => {
+  const out = new Set()
+  const walk = (node) => {
+    if (Array.isArray(node)) return node.forEach(walk)
+    if (!node || typeof node !== 'object') return
+    for (const [k, v] of Object.entries(node)) {
+      if (k === 'properties' && v && typeof v === 'object') Object.keys(v).forEach((p) => out.add(p))
+      if (k === '$ref' && typeof v === 'string') {
+        const id = v.split('#')[0]
+        if (id && byId[id] && !seen.has(id)) { seen.add(id); propNames(byId[id], seen).forEach((p) => out.add(p)) }
+      }
+      walk(v)
+    }
+  }
+  walk(schema)
+  return out
+}
+const schemaForWire = (wire) => schemaFiles
+  .map((f) => parsed[f])
+  .find((s) => s?.properties?.v?.const === wire || s?.properties?.v?.enum?.includes(wire))
+
+for (const f of specFiles) {
+  const text = readFileSync(join(ROOT, 'spec', f), 'utf8')
+  const blocks = [...text.matchAll(/^```json\n([\s\S]*?)^```/gm)]
+  for (const [i, m] of blocks.entries()) {
+    const body = m[1]
+    const line = text.slice(0, m.index).split('\n').length
+    const label = `spec/${f}:${line} (example ${i + 1})`
+    const wire = body.match(/"v"\s*:\s*"([^"]+)"/)?.[1]
+    if (!wire) { ok(`${label}: fragment without a wire version — not schema-matched`); continue }
+
+    const schema = schemaForWire(wire)
+    if (!schema) { err(`${label}: carries "${wire}", which no shipped schema declares`); continue }
+    const validate = validators[schema.$id]
+
+    // The corpus elides with "…" — inside a value as much as in place of a
+    // block. Its presence, not parseability, is what marks an illustration:
+    // `"did:key:z6Mk…group"` parses fine and is still not a document.
+    const elided = body.includes('…')
+    let doc = null
+    if (!elided) { try { doc = JSON.parse(body) } catch { /* malformed */ } }
+
+    if (doc) {
+      if (!validate(doc)) err(`${label}: complete example does not satisfy ${basename(schema.$id)}: ${ajv.errorsText(validate.errors)}`)
+      else ok(`${label}: complete example satisfies ${basename(schema.$id)}`)
+    } else if (!elided) {
+      err(`${label}: carries a wire version but is neither valid JSON nor marked as elided`)
+    } else {
+      const used = new Set([...body.matchAll(/"([A-Za-z][A-Za-z0-9_-]*)"\s*:/g)].map((x) => x[1]))
+      const unknown = [...used].filter((p) => !propNames(schema).has(p))
+      const missing = (schema.required ?? []).filter((p) => !used.has(p))
+      if (unknown.length) err(`${label}: names field(s) ${basename(schema.$id)} does not define: ${unknown.join(', ')}`)
+      else if (missing.length) err(`${label}: omits field(s) ${basename(schema.$id)} requires: ${missing.join(', ')}`)
+      else ok(`${label}: elided example — fields all defined, all required fields shown`)
+    }
+  }
 }
 
 console.log(errors ? `\n${errors} error(s).` : '\nAll publication checks passed.')
