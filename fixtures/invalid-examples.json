@@ -81,6 +81,181 @@
           "meaning": "received"
         }
       }
+    },
+    "access-genesis": {
+      "schema": "https://real-life.org/rltp/v1/schemas/access-operation-envelope.schema.json",
+      "document": {
+        "v": "rltp-access/0.24",
+        "op": "group.genesis",
+        "group": "did:key:z6Mkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+        "epoch": 0,
+        "policyVersion": 1,
+        "prev": [],
+        "body": {
+          "members": [
+            "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh"
+          ],
+          "card": {
+            "version": "rltp-card/0.19",
+            "anchor": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+            "keyAgreement": "z6LShhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+            "challenge": {
+              "value": "AAAAAAAAAAAAAAAAAAAAAA",
+              "issuedAt": "2026-08-10T12:00:00Z"
+            },
+            "proof": {
+              "type": "DataIntegrityProof",
+              "cryptosuite": "eddsa-jcs-2022",
+              "created": "2026-08-10T12:00:00Z",
+              "verificationMethod": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh#z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+              "proofPurpose": "assertionMethod",
+              "proofValue": "z3FXQjecWJKTXvHiLcYQkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            }
+          },
+          "policy": {
+            "policyVersion": 1,
+            "rules": {}
+          },
+          "visibility": "private",
+          "adapter": "linear/0.1",
+          "contentKeyCommitment": "uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+          "serviceIdentity": "did:key:z6Mkssssssssssssssssssssssssssssssssssssssssssss"
+        },
+        "id": "oid:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "author": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+        "proof": {
+          "mechanism": "signature-set",
+          "signatures": [
+            {
+              "signer": "did:key:z6Mkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+              "sig": "z11111111111111111111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "signer": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+              "sig": "z22222222222222222222222222222222222222222222222222222222222222222222222222222222"
+            }
+          ]
+        }
+      }
+    },
+    "access-remove": {
+      "schema": "https://real-life.org/rltp/v1/schemas/access-operation-envelope.schema.json",
+      "document": {
+        "v": "rltp-access/0.24",
+        "op": "member.remove",
+        "group": "did:key:z6Mkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+        "epoch": 7,
+        "policyVersion": 3,
+        "prev": [
+          "oid:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        ],
+        "body": {
+          "subject": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+          "transition": {
+            "newEpoch": 8,
+            "contentKeyCommitment": "uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "keyDist": [
+              {
+                "recipient": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+                "envelope": "uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+              }
+            ],
+            "lineage": {
+              "opens": 7,
+              "ct": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            }
+          }
+        },
+        "id": "oid:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "author": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+        "proof": {
+          "mechanism": "signature-set",
+          "signatures": [
+            {
+              "signer": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+              "sig": "z11111111111111111111111111111111111111111111111111111111111111111111111111111111"
+            }
+          ]
+        }
+      }
+    },
+    "access-remove-unknown-envelope-field": {
+      "schema": "https://real-life.org/rltp/v1/schemas/access-operation-envelope.schema.json",
+      "document": {
+        "v": "rltp-access/0.24",
+        "op": "member.remove",
+        "group": "did:key:z6Mkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+        "epoch": 7,
+        "policyVersion": 3,
+        "prev": [
+          "oid:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        ],
+        "body": {
+          "subject": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+          "transition": {
+            "newEpoch": 8,
+            "contentKeyCommitment": "uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+            "keyDist": [
+              {
+                "recipient": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+                "envelope": "uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+              }
+            ],
+            "lineage": {
+              "opens": 7,
+              "ct": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+            }
+          }
+        },
+        "id": "oid:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "author": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+        "someFutureExtension": "ignored per 3.3",
+        "proof": {
+          "mechanism": "signature-set",
+          "signatures": [
+            {
+              "signer": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+              "sig": "z11111111111111111111111111111111111111111111111111111111111111111111111111111111"
+            }
+          ]
+        }
+      }
+    },
+    "access-view": {
+      "schema": "https://real-life.org/rltp/v1/schemas/authorization-view.schema.json",
+      "document": {
+        "v": "rltp-access-view/0.24",
+        "type": "authorization-view",
+        "group": "did:key:z6Mkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+        "genesisDigest": "uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "seq": 12,
+        "epoch": 8,
+        "identities": [
+          "did:key:z6Mkssssssssssssssssssssssssssssssssssssssssssss"
+        ],
+        "m": 1,
+        "terminal": false,
+        "prevView": "uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "issuedAt": "2026-08-12T12:00:00Z",
+        "validUntil": "2026-08-12T18:00:00Z",
+        "sigs": [
+          {
+            "signer": "did:key:z6Mkssssssssssssssssssssssssssssssssssssssssssss",
+            "sig": "z11111111111111111111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ]
+      }
+    },
+    "access-material": {
+      "schema": "https://real-life.org/rltp/v1/schemas/access-material.schema.json",
+      "document": {
+        "v": "rltp-access-material/0.24",
+        "adapter": "linear/0.1",
+        "epoch": 7,
+        "keys": {
+          "contentKey": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        }
+      }
     }
   },
   "cases": [
@@ -264,6 +439,142 @@
       "set": {
         "/sentTo": "did:key:z6Mkjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
         "/boundTo": "zukurz"
+      }
+    },
+    {
+      "name": "genesis: a group is founded by exactly one person, never by a list",
+      "base": "access-genesis",
+      "set": {
+        "/body/members/1": "did:key:z6Mkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk"
+      }
+    },
+    {
+      "name": "genesis: the founder's contact card is required — keys must have somewhere to be sealed",
+      "base": "access-genesis",
+      "delete": [
+        "/body/card"
+      ]
+    },
+    {
+      "name": "genesis: epoch is 0 by definition",
+      "base": "access-genesis",
+      "set": {
+        "/epoch": 1
+      }
+    },
+    {
+      "name": "genesis: the root operation has no ancestors",
+      "base": "access-genesis",
+      "set": {
+        "/prev/0": "oid:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    {
+      "name": "genesis: the adapter that produced epoch 0 must be named",
+      "base": "access-genesis",
+      "delete": [
+        "/body/adapter"
+      ]
+    },
+    {
+      "name": "envelope: unknown fields inside a closed body profile are rejected (only the envelope root is open)",
+      "base": "access-remove",
+      "set": {
+        "/body/legacyBlindCommitment": "uAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    {
+      "name": "envelope: a proof without signatures proves nothing",
+      "base": "access-remove",
+      "delete": [
+        "/proof/signatures"
+      ]
+    },
+    {
+      "name": "transition: lineage and historyNarrow are alternatives — declaring both hides which one governs",
+      "base": "access-remove",
+      "set": {
+        "/body/transition/historyNarrow": true
+      }
+    },
+    {
+      "name": "transition: a transition must state its history disposition — lineage, narrowing, or an adapter form",
+      "base": "access-remove",
+      "delete": [
+        "/body/transition/lineage"
+      ]
+    },
+    {
+      "name": "transition: a ciphertext too short to hold key, nonce and tag is not one",
+      "base": "access-remove",
+      "set": {
+        "/body/transition/lineage/ct": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    {
+      "name": "transition: keyDist entries are closed — no room for an unbound extra field",
+      "base": "access-remove",
+      "set": {
+        "/body/transition/keyDist/0/note": "for Bob"
+      }
+    },
+    {
+      "name": "view: a quorum of zero would authenticate nothing",
+      "base": "access-view",
+      "set": {
+        "/m": 0
+      }
+    },
+    {
+      "name": "view: only the seq-0 view may have no predecessor",
+      "base": "access-view",
+      "set": {
+        "/prevView": null
+      }
+    },
+    {
+      "name": "view: the seq-0 view must have no predecessor",
+      "base": "access-view",
+      "set": {
+        "/seq": 0
+      }
+    },
+    {
+      "name": "view: an empty identity set authorizes nobody and cannot carry a quorum",
+      "base": "access-view",
+      "delete": [
+        "/identities/0"
+      ]
+    },
+    {
+      "name": "view: the same signature twice is one signature",
+      "base": "access-view",
+      "set": {
+        "/sigs/1": {
+          "signer": "did:key:z6Mkssssssssssssssssssssssssssssssssssssssssssss",
+          "sig": "z11111111111111111111111111111111111111111111111111111111111111111111111111111111"
+        }
+      }
+    },
+    {
+      "name": "material: the adapter that owns the key shape must be named",
+      "base": "access-material",
+      "delete": [
+        "/adapter"
+      ]
+    },
+    {
+      "name": "material: linear/0.1 carries exactly the content key — everything else is derived, never transported",
+      "base": "access-material",
+      "set": {
+        "/keys/epochSecret": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    },
+    {
+      "name": "material: a content key that is not 32 bytes is not a content key",
+      "base": "access-material",
+      "set": {
+        "/keys/contentKey": "AAAA"
       }
     }
   ]
