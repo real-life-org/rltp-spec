@@ -12,6 +12,34 @@ protocol grew out of the deployed
 [Web of Trust app](https://web-of-trust.de/), whose ceremony flows have
 been exercised at festivals and community gatherings since 2026.
 
+## Try it in your browser
+
+Three views of the same protocol, no installation, everything running
+locally in your tab — real Ed25519/X25519/AES-GCM, no mocked crypto:
+
+- **[The app](https://rltp.real-life.org/simulator/network.html)** — the
+  same app on three devices side by side: verify someone by QR (with the
+  automatic offline two-way-scan fallback), introduce two contacts
+  through a third person who is never needed again afterwards, give
+  trust as a separate deliberate act, found groups and join them with
+  candidacy and vouching. The wire panel shows every sealed envelope
+  and the stage at which it was accepted — and lets you inject faults.
+- **[The ceremony](https://rltp.real-life.org/simulator/index.html)** —
+  one encounter under the microscope: two devices, one delivery
+  channel, nine receive stages per envelope, clock skew and fault
+  injection, and every artifact each device stores.
+- **[The graph](https://rltp.real-life.org/simulator/graph.html)** — the
+  same world seen from above: who can *prove* what about whom, told as
+  eight chapters, switchable between the omniscient view and what any
+  single person can actually see.
+
+Everything a person sees in the app is a function of what their own
+device holds. No identifier is correlatable across relationships:
+every encounter mints fresh pairwise anchors, and a blinded continuity
+probe re-recognizes an existing relationship afterwards — so meeting
+the same person twice produces one contact, not two, without any
+stable identifier travelling.
+
 ## What is in this repository
 
 | Path | Content |
@@ -35,64 +63,35 @@ been exercised at festivals and community gatherings since 2026.
 
 ## Status
 
-All documents are **Editor's Drafts**, developed through an
-adversarial convergence process: each casting is reviewed by an
-independent adversarial reviewer, findings are triaged, and the
-document is fully recast — never patched — until the convergence
-criterion (consecutive review rounds without blocker-level
-findings) is met. Current converged state: **Encounter 0.28** ·
-**Identity 0.12** · **Access Layer 0.52** · **Delivery Contract
-0.22** · **Membership Tasks 0.16** · **Replication Contract 0.26**
-· Network Visibility 0.15 · Personhood Predicates 0.12
-(Succession 0.2 is parked). The Access Layer and the Replication
-Contract converged jointly on 2026-08-26 after twenty-five
-adversarial rounds, followed by editorial castings and the
-receipt cut, each adversarially confirmed.
+All documents are **Editor's Drafts**. They converge through an
+adversarial process: each casting is reviewed by an independent
+adversarial reviewer, every finding is triaged and answered, and the
+document is fully **recast — never patched**. A layer counts as
+converged when consecutive review rounds produce no blocker-level
+findings.
 
-The Access Layer's convergence took twenty-two review rounds
-(22 blockers in its first ported casting, zero in the last two).
-Between the last two came a review the sequential process cannot
-perform: a **joint seam round**, with the Access Layer and the
-Membership Tasks open at the same time and looking for defects at
-the boundary between them. Each document answered its own side in
-a new casting, and the confirmation round that followed found no
-blocker-, major-, or minor-level defects in either direction — the
-Access ⇄ Membership seam is closed.
+**Converged:** Encounter 0.28 · Identity 0.12 · Access Layer 0.52 ·
+Delivery Contract 0.22 · Membership Tasks 0.16 · Replication Contract
+0.26 · Network Visibility 0.15 · Personhood Predicates 0.12.
+Succession 0.2 is parked; the Data layer is not published here yet.
 
-The Encounter Layer's last three castings discharged a debt the
-Access Layer had recorded against it: the size cap Access enforces
-when it accepts an encounter credential was checked there, but not
-guaranteed where the credential is made. Discharging it took more
-than the debt note described — the note named two unbounded fields
-and there were four — and review then found what the debt had only
-hidden: fractional seconds were semantically undefined, so two
-conforming implementations could reach different verdicts on
-identical input at an aging latch, a future gate, or an issuance
-window. Whole-second comparison is now a rule of that document
-rather than an assumption about it.
+Two things are worth knowing about how this state was reached. The
+Access Layer and the Replication Contract converged **jointly**, which
+required a review the sequential process cannot perform: a *seam
+round*, with both documents open at once, looking for defects at the
+boundary between them. And every normative statement is meant to be
+vector-testable — the [`conformance/`](conformance/) runner recomputes
+every cryptographic claim of the shipped vectors, and negatives must
+fail at their declared stage.
 
-None of that changed a wire form, which is why the Encounter Layer
-is at casting 0.22 while its artifacts still carry 0.19: these
-castings narrow which values an artifact may hold and fix the
-granularity at which it is compared, so a 0.19 artifact is still a
-0.22 artifact. The document states what a 0.19 receiver may decide
-differently, and by how little.
-
-Notable in that layer's final form: **there are no admins** —
-privileged operations are gated by group-defined policy, and
-constitutional power is structurally person-independent; **the
-merge never decides membership** — every admission canonical at
-its position is final, with a closed exception list; **revocation
-is honest** — a removal carries its key-world transition
-atomically, and what rotation can and cannot guarantee is stated
-rather than implied; and **the substrate is a port** —
-replication, convergence, and group key agreement are requirements
-on a replaceable adapter, with today's deployed linear semantics
-as the reference adapter.
-
-The Identity layer (the interim securing profile in Encounter §2.3
-will move there) and the Data layer are in earlier stages and not
-yet published here.
+What the Access Layer settled on, in its own words: **there are no
+admins** (privileged operations are gated by group-defined policy);
+**the merge never decides membership** (every admission canonical at
+its position is final); **revocation is honest** (a removal carries
+its key-world transition atomically, and what rotation cannot
+guarantee is stated rather than implied); and **the substrate is a
+port** (replication and group key agreement are requirements on a
+replaceable adapter).
 
 ## Alignment with the ToIP DTGWG
 
