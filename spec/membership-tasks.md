@@ -3,16 +3,19 @@
 **Real Life Trust Protocol — task types: Membership**
 
 - **Status:** Editor's Draft
-- **Version:** 0.11.0-draft (eleventh casting)
+- **Version:** 0.16.0-draft (sixteenth casting)
 - **Editors:** Anton Tranelis
-- **Date:** 2026-08-12
+- **Date:** 2026-08-24
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
 - **Task-type namespace:** `https://real-life.org/trust-tasks/`
 - **Target Trust Tasks framework version:** 0.4
-- **Conformance profile:** `rltp-membership@0.11` (draft)
+- **Conformance profile:** `rltp-membership@0.16` (draft)
 - **Position:** a task-type registration on top of the **RLTP Delivery
-  Contract 0.17** (normative reference), carrying operations of the
-  **RLTP Access Layer 0.24** (normative reference): the operation
+  Contract 0.21** (normative reference; its §4.4 registry carries
+  these types), carrying operations of the
+  **RLTP Access Layer 0.30** (normative reference; its wire forms
+  remain `0.24`, so the transcribed schemas of this document stand
+  byte-identically): the operation
   envelope of its §3.3 is the payload this specification transports,
   and **the Access layer owns every question of authority** —
   admission validity and canonicality (its §5.3), the `member.add`
@@ -21,7 +24,12 @@
   §10.2). This document owns the travel: which documents exist, what
   they bind, how they are checked on receipt, and what a receiver
   does with them.
-- **Supersedes:** version 0.10 and earlier (archived as
+- **Supersedes:** version 0.15 and earlier (archived as
+  `archive/membership-tasks-0.15.md`,
+  `archive/membership-tasks-0.14.md`,
+  `archive/membership-tasks-0.13.md`,
+  `archive/membership-tasks-0.12.md`,
+  `archive/membership-tasks-0.11.md`,
   `archive/membership-tasks-0.10.md` … `-0.1.md`).
 
 ## Abstract
@@ -61,53 +69,68 @@ field.
 ## Status of This Document
 
 This is an **Editor's Draft** with no standing beyond its own
-argument, the eleventh casting of this document. It is developed
-through the same adversarial convergence process as the Encounter
-Layer and the Delivery Contract (casting, independent adversarial
-review, full recast — never a patch). Rounds 9 and 10 established
-blocker-level convergence against the alignment on Access 0.24.
-This eleventh casting answers a **joint seam review** — the first
-round in which both this document (0.10) and the Access Layer
-(0.24) were open at once, so that seam defects visible only from
-one side could be caught. It corrects three seam mismatches that
-belong to **this document's** side of the boundary and introduces
-no new authority rule:
+argument, the sixteenth casting of this document. It is developed
+through the same adversarial convergence process as its companions
+(casting, independent adversarial review, full recast — never a
+patch). The tenth and eleventh castings closed the joint seam with
+Access 0.24/0.25 on both sides.
 
-- the re-welcome (`key-delivery/0.1`, kind `re-welcome`) carries
-  the sealed welcome **without** the admitting operation, so it
-  cannot execute the operation-dependent checks of the embedded
-  case-1 list; §3.3 now separates the **embedded-welcome**
-  pre-adoption checks (operation present) from the **re-welcome**
-  pre-adoption checks (Access §10.1's self-contained set), instead
-  of claiming the re-welcome inherits the full list "and nothing
-  less" (joint review B2);
-- §3.3 and the §7 state machine distinguish a **single candidate's
-  failure** (wipe that candidate, then check the buffered
-  alternate at once — Access §10.1's fallback) from a **window or
-  final failure** (complete wipe), rather than routing every
-  failure straight to a terminal wipe (joint review M1);
-- the Access-0.24 pin is stated as the coupling it is: pinned in
-  prose **and** transitively by the `v` constant of the
-  transcribed schemas, over **mobile** (unversioned) schema
-  `$id`s — so an Access wire-version bump requires a Membership
-  recast or a documented compatibility statement (joint review
-  M2).
+The twelfth through fifteenth castings are this document's half of the **M-DID
+loop** (`design/mdid-loop-zerlegung-2026-08.md`,
+`design/mdid-guss-plan-2026-08.md`), recast against **Access
+0.26**: every anchor of this document's flow — `invite.inviter`,
+`invite.invitee`, `accept.subject`, the enclosed cards' anchors,
+and thereby `member.add`'s `body.subject` — is a **member anchor**
+(Access §5.1: the per-group context anchor; DTGWG: M-DID), never a
+cross-group coordinate. Three consequences are this casting's
+substance: the **prelude** — the inviter cannot derive the
+invitee's member anchor, so the invitee's app supplies it over the
+existing relationship channel before the formal invite (3.1), an
+application exchange like the human decision itself, stated
+honestly rather than hidden; the enclosed **cards are member-anchor
+cards** and MUST carry no `deliveryHints` (Section 2 — the log's
+permanence now prices in group-scoped identifiers only); and the
+**candidacy** of the vouched admission path SHOULD be
+surfaced into the group space as Layer-4 content (3.4 — Access
+§5.3 owns the flow's authority rules; this document owns only the
+travel and the surfacing duty). The transcribed Access schemas
+stand byte-identically (wire `0.24` unchanged — the coupling of
+Section 10 holds without a break); the Access section references
+of this document now cite Access 0.26. This casting begins a
+fresh convergence loop; the eleventh casting's seam-closure
+applies to it, not to this draft.
 
-Two seam mismatches the joint review found are **Access-side** and
-are recorded here as open coupling items, not silently absorbed:
-the first-materialization gate needs an explicit **current-member**
-condition (Access §10.1, so a removed subject cannot bootstrap on
-a commitment-correct re-welcome — joint review B3), and the
-provisional-candidate and key-service **slots must be keyed by
-`genesisDigest`**, not the group DID, to honour Access §3.2 (joint
-review B4). This document already keys its own state by
-`genesisDigest` (§3.3); it requires, but cannot itself change,
-that Access §10.1/§5.3 do the same. Both await the Access editor.
-The convergence criterion of this loop remains met on this
-document's side; what remains open is collected in Section 9 and
-in the joint-seam triage
-(`design/joint-seam-review-2026-08.md`). Feedback is welcome via
-the issues of the publication repository
+The thirteenth casting answers the loop's joint round 1
+(`design/mdid-joint-review1-2026-08.md`): the **prelude is closed
+at its consumer** — the invitee MUST verify, on invite receipt,
+that `invite.invitee` equals its own derivation from
+`invite.genesisDigest`, so no substitution or mis-binding
+survives to an accept (M6); and the **candidacy becomes explicit
+consent** — the accept (type bumped to `membership-accept/0.2`)
+carries a signed `candidacy` boolean, the pre-admission surfacing
+of 3.4 is gated on it, and the candidacy content has a stated
+lifecycle with the honest one-way-door sentence (M10 — the
+opt-in exists precisely because group-space publication cannot be
+recalled). Companion pins moved with the joint castings (now Delivery 0.21 and Access 0.29; the archived 0.13 stood on 0.19/0.27). The
+fourteenth casting answers joint round 2: the candidacy lifecycle
+names only **observable** triggers — completed admission and
+invite expiry — and states that a group's refusal is deliberately
+NOT an observable event (refusal privacy: no artifact announces
+"we decided against"), so earlier removal stays at the surfacing
+member's discretion; and the normative references pin the joint
+castings consistently (M4/M5). The **sixteenth casting is the DTG
+adoption cast** (`design/dtg-credential-adoption-2026-08.md`): the
+invitation becomes **`membership-invite/0.2`, a conformant DTG
+InvitationCredential** — issuer = the inviting member's anchor,
+`credentialSubject.id` = the invitee's member anchor, `validUntil`
+native, `taskContext` = the membership thread (the WD01 binding,
+adopted), and every RLTP field (`group`, `genesisDigest`, `card`)
+a WD01-legal additional subject property. The invite's proof is
+the VC's own DataIntegrityProof (one carrier — the document-level
+task proof falls away for the invite; the accept keeps its task
+proof). Every consumer check maps one-to-one onto the new paths;
+nothing weakens.
+Feedback is welcome via the issues of the publication repository
 (github.com/real-life-org/rltp-spec).
 
 ## 1. Introduction (informative)
@@ -132,10 +155,19 @@ own registries — belongs to the Access layer and its service ports.
 
 ### 1.2 The flow at a glance
 
+0. The **prelude** (application-level, over the existing
+   relationship channel): the inviter asks, the invitee's app
+   derives the invitee's **member anchor** for the offered group
+   from the genesis digest (Access §5.1, Identity §6's
+   `group/<digest>` context) and answers with it — the inviter
+   cannot derive another person's context anchor, so the formal
+   invite can name it only after this exchange.
 1. A member sends an **invite** — no key material, but the inviter's
-   contact card (so the answer has a key to travel under) and the
-   group's genesis digest (so the invitee can later verify the
-   bootstrap against what was offered).
+   contact card at the inviter's own member anchor (so the answer
+   has a key to travel under) and the group's genesis digest (so
+   the invitee can later verify the bootstrap against what was
+   offered). It names the invitee's member anchor from the
+   prelude.
 2. The invitee decides, humanly, and sends an **accept**: signed by
    themselves, bound to that exact invite, carrying their own
    contact card (so the welcome has a key to travel under).
@@ -213,13 +245,28 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
 "OPTIONAL" are to be interpreted as described in BCP 14 [RFC2119]
 [RFC8174] when, and only when, they appear in all capitals.
 
-The **interim securing profile** of Encounter 2.3 applies. The
+The **interim securing profile** of Encounter 2.3 (Encounter 0.28)
+applies. The
 **document profile, sealed envelope, staged dispositions, and
 acknowledgement rules** of the Delivery Contract (Sections 3–6) apply
 to every type registered here. **Task proofs of this document** (on
-invite and accept) MUST verify under the key bound to the document
+the accept) MUST verify under the key bound to the document
 `issuer` anchor (Encounter 2.3), and the proof's `verificationMethod`
-DID MUST equal that `issuer`.
+DID MUST equal that `issuer`; **the invite carries its authenticity
+inside** — its payload is a DTG InvitationCredential whose
+DataIntegrityProof verifies under its `issuer` (one carrier; the
+invite document itself carries no proof, like the operation carrier
+of 3.3). Stated honestly, that carrier covers `payload.invite` and
+nothing else: the invite document's own `id`, `issuedAt`, and
+`ceremony` are unauthenticated transport metadata and MUST carry no
+authority at any consumer (a present `ceremony.enactment` MUST
+still recompute per Delivery §3 — a validity gate that can reject
+the document, never a source of authority). **The invitation's identity — for
+consent, consumption, and idempotency — is the digest of the
+complete credential** (the multibase multihash over the JCS of
+`payload.invite` including its proof), never the enclosing
+document's digest: a mutated wrapper around the same credential is
+the same invitation, and every alias collapses onto it.
 
 **Group** — an Access-layer group. Its **identity is the genesis
 digest** (Access §3.2 — the multibase multihash over the genesis
@@ -261,54 +308,84 @@ JCS serialization either.
 
 **Enclosed cards are key transport, not enactment material:** the
 contact cards inside invite and accept follow Encounter §6's
-displayed form — their proof MUST verify under their `anchor`, and
+displayed form — their proof MUST verify under their `anchor`,
+which is the party's **member anchor** (Access §5.1), and
 they MUST carry neither `sentTo` nor `boundTo` and no challenge
-obligation applies (they enter no enactment). No freshness is claimed
+obligation applies (they enter no enactment). They MUST carry no
+`deliveryHints` (hardened from the earlier SHOULD): the log
+replicates every enclosed card forever, and a member-anchor card
+carries a group-scoped identity and a seal key — never routing
+material. No freshness is claimed
 or needed — a seal needs a *live* key, not a fresh one; creating the
 card for this thread is RECOMMENDED, required is only the retention
 of Section 5.
 
 ## 3. Registered Task Types
 
-### 3.1 `membership-invite/0.1`
+### 3.1 `membership-invite/0.2`
 
 The invitation: one member proposes membership to a person outside
 the group. **It carries no key material and no operation** — nothing
 a non-accepting recipient could hold against the group.
 
 - `payload`: per `schemas/payload-membership-invite.schema.json` —
-  `invite` object with:
-  - `group` — the group DID;
-  - `inviter` — anchor; MUST equal the document `issuer`;
-  - `invitee` — anchor; MUST equal the document `recipient`. Signed
-    into the invite so that consent cannot be transplanted: only
-    this person's accept answers this invite;
-  - `card` — the inviter's contact card. Its proof MUST verify under
-    its `anchor`, and `card.anchor` MUST equal `inviter` — the
-    accept is sealed to this card's key-agreement key, so ownership
-    is a confidentiality requirement, not bookkeeping;
-  - `genesisDigest` — **the group's identity** (Access §3.2: the
-    multibase multihash over the genesis operation's proof-free
-    signature input). It pins which group is being offered — an
-    invitee bootstraps against exactly this digest and can never
-    be steered into a sibling genesis (3.3), and materialization
-    rejects an admission whose enclosed invite names a different
-    digest than the group's own (Access §5.3 rule 2). It is a
-    lineage identity, not a state commitment;
-  - `validUntil` — RFC3339; bounds the invite's answerable life and
-    the inviter's reply-key retention (Section 5), and MUST be ≥ the
-    document's `issuedAt`. Stated honestly: the comparison runs
-    against issuance times the issuer controls — it is an
-    honest-clock bound and a retention anchor, not a cryptographic
-    freshness proof; the effective gate on stale consent is the
-    human admission decision (3.3);
-  - optional display fields (`name`, `note`, bounded).
-- `threadId`: fresh — opens the membership thread.
-- `proof`: **REQUIRED**, verifying under `issuer` (Section 2).
+  `invite`, a **conformant DTG InvitationCredential** (WD01):
+  - `@context` — the three pinned contexts (W3C v2, DTG v1, RLTP
+    v1), in order; `type` — `VerifiableCredential`,
+    `DTGCredential`, `InvitationCredential`, `MembershipInvite`
+    (the RLTP hint beside the concrete subtype, the WD01 PHC
+    pattern);
+  - `issuer` — the inviter's **member anchor** (Access §5.1); MUST
+    equal the document `issuer`;
+  - `credentialSubject.id` — the invitee's **member anchor**,
+    obtained in the prelude (1.2); MUST equal the document
+    `recipient`. Signed into the credential so that consent cannot
+    be transplanted: only this person's accept answers this
+    invite — the transplant gate is unchanged, because the accept
+    must be signed by exactly this anchor. **The invitee MUST
+    verify, on receipt and before any accept, that it equals its
+    own derivation from this invite's `genesisDigest`** (Access
+    §5.1 — including its canonical-`u` re-encoding of the digest
+    before the `group/<digest>` label, so a `z`-carried digest
+    derives the same anchor; a mismatch is
+    `failed(validation-failed)`, never
+    answered) — the check that makes the prelude's answer, however
+    it travelled, irrelevant to soundness;
+  - `credentialSubject.group` — the group DID (the address);
+  - `credentialSubject.genesisDigest` — **the group's identity**
+    (Access §3.2: the multibase multihash over the genesis
+    operation's proof-free signature input). It pins which group
+    is being offered — an invitee bootstraps against exactly this
+    digest (3.3), and materialization rejects an admission whose
+    enclosed invite names a different digest than the group's own
+    (Access §5.3 rule 2);
+  - `credentialSubject.card` — the inviter's contact card
+    (`rltp-card/0.25` displayed form). Its proof MUST verify under
+    its `anchor`, and `card.anchor` MUST equal the invite's
+    `issuer` — the accept is sealed to this card's key-agreement
+    key, so ownership is a confidentiality requirement;
+  - `validFrom` — issuance time; `validUntil` — the **WD01-native
+    window**: bounds the invite's answerable life and the
+    inviter's reply-key retention (Section 5), MUST be ≥
+    `validFrom`. An honest-clock bound, not a freshness proof; the
+    effective gate on stale consent is the human admission
+    decision (3.3). WD01's single-use guidance is met more
+    strongly by accept consumption (Access §5.3);
+  - `taskContext` — this membership thread's `threadId` (the WD01
+    trust-task binding, adopted);
+  - optional display fields inside `credentialSubject` (`name`,
+    `note`, bounded);
+  - `proof` — DataIntegrityProof `eddsa-jcs-2022` under `issuer`,
+    incl. the mandatory proof-`@context` copy (Encounter 2.3).
+- `threadId`: fresh — opens the membership thread; equals the
+  invite's `taskContext`.
+- `proof` (document level): **absent** — the enclosed credential is
+  the one carrier (Section 2).
 - **Declarations (TT §7.3):** side effects: durable buffering and
   surfacing to the human only; exposure: recipient-only while
-  travelling; on admission the invite becomes part of the group's
-  log (3.3) and is thereby visible to the group — invitation is not
+  travelling; on a consented candidacy (3.4) or on admission the
+  invite becomes visible to the group — as surfaced content or as
+  part of the log (3.3) — invitation is not
   anonymous, by design (provenance, 3.3).
 - **Key obligation:** the inviter MUST retain the key-agreement
   private key of `card` at least until `validUntil` plus the longest
@@ -318,7 +395,7 @@ a non-accepting recipient could hold against the group.
   recipient's decision. Accepting or ignoring is a human act; the
   acknowledgement says arrival, never inclination.
 
-### 3.2 `membership-accept/0.1`
+### 3.2 `membership-accept/0.2`
 
 The explicit acceptance — the consent artifact. **Membership is
 entered only through it:** a `member.add` admitting a subject across
@@ -328,27 +405,44 @@ be sent.
 
 - `payload`: per `schemas/payload-membership-accept.schema.json` —
   `accept` object with:
-  - `group` — MUST equal the referenced invite's `group`;
-  - `subject` — anchor; MUST equal the document `issuer` (consent is
-    signed by the person consenting) **and** MUST equal the
-    referenced invite's `invitee` (consent cannot be transplanted);
-  - `ref` — the document digest of the invite being accepted
-    (content-bound: this accept answers exactly that invitation);
+  - `group` — MUST equal the referenced invite's
+    `credentialSubject.group`;
+  - `subject` — the invitee's **member anchor** (Access §5.1); MUST
+    equal the document `issuer` (consent is signed by the person
+    consenting, under the group-scoped anchor they will act as)
+    **and** MUST equal the referenced invite's
+    `credentialSubject.id` (consent cannot be transplanted);
+  - `ref` — the **credential digest** of the invite being accepted:
+    the multibase multihash over the JCS of the complete invite
+    credential (`payload.invite` including its proof; digest
+    equality over decoded multihash bytes, Encounter 2.3).
+    Content-bound
+    to the signed invitation itself, not to its delivery wrapper —
+    a re-wrapped invite is the same invitation (Section 2), so this
+    accept answers it exactly once;
   - `card` — the subject's contact card. Its proof MUST verify under
     its `anchor`, and `card.anchor` MUST equal `subject` — the
     welcome is sealed to this card's key-agreement key; a foreign
     card here would redirect the group's keys, so ownership
     verification is mandatory at every consumer (receipt AND
-    admission AND materialization, 3.3).
+    admission AND materialization, 3.3);
+  - `candidacy` — boolean, REQUIRED (the 0.2 type bump): the
+    subject's explicit, **signed** consent (`true`) or refusal
+    (`false`) to the pre-admission candidacy surfacing of 3.4.
+    `false` means the silent evidence relay only — nothing about
+    the pending admission becomes visible to the group before the
+    admission itself.
 - `threadId`: = the invite's `threadId`.
 - `proof`: **REQUIRED**, verifying under `issuer` (Section 2).
 - `recipient`: the invite's `issuer`. Other members receive the
   accept inside the admitting operation (3.3), not by fan-out.
 - **Consistency (MUST, on receipt, before any effect):** proof
   verifies under `issuer`; `issuer` = `accept.subject`; `ref`
-  matches a `membership-invite` this recipient actually sent on this
-  thread; `accept.subject` = that invite's `invitee`; `accept.group`
-  = that invite's `group`; `accept.card` verifies and its anchor
+  matches the credential digest of a `membership-invite` this
+  recipient actually sent on this
+  thread; `accept.subject` = that invite's `credentialSubject.id`;
+  `accept.group`
+  = that invite's `credentialSubject.group`; `accept.card` verifies and its anchor
   equals `subject`; the accept's `issuedAt` **and** its
   `proof.created` are ≤ the invite's `validUntil` +
   `membership-skew` (Section 5). Any failure →
@@ -498,8 +592,11 @@ their own compact task types (MO-3), not this generic hole.
   - `admission.accept`'s document digest equals the digest of **the
     invitee's own accept** (JCS-canonical identity)
     *(operation-dependent)*;
-  - `admission.invite`'s document digest equals the invitee's own
-    `accept.ref`, and is thereby the invitee's own received invite —
+  - the **credential digest** of `admission.invite` — the multibase
+    multihash over the JCS of its `payload.invite` including its
+    proof (Section 2) — equals the invitee's own
+    `accept.ref`, and the enclosed invite is thereby the invitee's
+    own received invitation, whatever wrapper carried it —
     which also pins `genesisDigest` (3.1) *(operation-dependent)*;
   - `body.subject` = own anchor = the enclosed `accept.subject`;
     `operation.group` = own accept's `group` *(operation-dependent)*;
@@ -551,10 +648,10 @@ their own compact task types (MO-3), not this generic hole.
   Access layer's** (§5.3, whose eviction on a canonical removal
   makes a removed subject a non-member); Access §10.1's
   first-materialization gate is where the current-member condition
-  binds, and this document **requires it there** (joint review B3:
-  Access §10.1's current wording states canonicality and the
-  commitment, not the current-member condition explicitly — a
-  seam item the Access editor owns). One `provisional-window`
+  binds, and this document **requires it there** — a seam item
+  since **discharged**: Access carries the current-member
+  condition explicitly at that gate (its 0.25 seam cast). One
+  `provisional-window`
   per (genesisDigest, invitee), at most one buffered alternate.
   **The wipe distinguishes a candidate from the pair:** a single
   candidate's failure wipes **that candidate's** provisional state
@@ -627,28 +724,41 @@ later travel inside the admitting operation.
 
 - `payload`: per `schemas/payload-membership-evidence.schema.json` —
   `evidence` object enclosing the COMPLETE `invite` and `accept`
-  documents (proofs required; same shapes as `admission` in 3.3).
+  documents (the accept with its document proof, the invite carrying
+  its credential's proof — the one-carrier rule of Section 2; same
+  shapes as `admission` in 3.3).
 - `threadId`: = the membership thread (the invite's).
 - `proof`: **absent** — the enclosed documents carry their own
   proofs; the relayer adds no authority and needs no signature (the
   same one-carrier reasoning as `access-operation`).
 - **Consistency (MUST, before any effect — the pair-internal check
-  set, enumerated):** both enclosed documents validate against their
-  schemas and their proofs verify (invite under `invite.inviter`,
+  set, enumerated).** *Path convention, here and in Access §5.3:
+  in these checks `invite` names the enclosed invite **credential**
+  — the `payload.invite` of the enclosed invite document — and the
+  enclosing delivery document is always named explicitly ("the
+  enclosed invite document"); `accept` names the enclosed accept
+  document's payload object.* Both enclosed documents validate
+  against their
+  schemas and their proofs verify (the invite credential's
+  DataIntegrityProof under its `issuer`,
   accept under `accept.subject`, per Section 2 applied to enclosed
-  documents); `accept.ref` = document digest of the enclosed invite;
-  `accept.subject` = `invite.invitee`; `accept.group` =
-  `invite.group`; the enclosed invite document's `recipient` =
-  `invite.invitee` and the enclosed accept document's `recipient` =
-  the enclosed invite document's `issuer`; both share the invite's
-  `threadId`; `invite.validUntil` ≥ the invite document's `issuedAt`
-  and the accept's `issuedAt` and `proof.created` ≤ `validUntil` +
+  documents); `accept.ref` = the credential digest of the enclosed
+  invite (Section 2);
+  `accept.subject` = `invite.credentialSubject.id`; `accept.group` =
+  `invite.credentialSubject.group`; the enclosed invite document's
+  `recipient` =
+  `invite.credentialSubject.id` and the enclosed accept document's `recipient` =
+  the enclosed invite document's `issuer`; both enclosed documents
+  share the enclosed invite document's `threadId` (= the invite's
+  `taskContext`); `invite.validUntil` ≥ the invite's `validFrom`
+  and the enclosed accept document's `issuedAt` and its
+  `proof.created` ≤ `invite.validUntil` +
   `membership-skew`; card ownership per 3.1/3.2. *(No equality of
   this list references an operation — evidence has none.)* Any
   failure → `failed(validation-failed)`, no acknowledgement.
 - **Recipient authorization (MUST):** the sender addresses evidence
   only to a party it believes authorized to admit in
-  `invite.group`; the receiver verifies **its own** authorization
+  `invite.credentialSubject.group`; the receiver verifies **its own** authorization
   against its group state before the effect. A receiver holding no
   state for that group does not fail — the type declares the same
   `group-state` dependency as 3.3: the document is
@@ -659,6 +769,29 @@ later travel inside the admitting operation.
   `failed(validation-failed)`.
 - **Declarations (TT §7.3):** side effects: durable buffering and
   surfacing only; exposure: recipient-only.
+- **Candidacy surfacing (SHOULD, consent-gated):** a member
+  holding a verified pair whose accept carries `candidacy: true`
+  SHOULD surface the **candidacy** — the consent pair and the
+  candidate's display profile at its member anchor — into the
+  group space as Layer-4 content, so that members can act on it
+  themselves where the group's policy wants vouching (Access
+  §5.3: vouch over an existing relationship channel, meet first,
+  or introduce the candidate further — authority remains solely
+  the materialized `member.add`; the candidacy is visibility,
+  never a lever). An accept with `candidacy: false` MUST NOT be
+  surfaced — evidence relay only. **Lifecycle, observable
+  triggers only:** on completed admission and on the invite's
+  expiry (`validUntil`), the surfacing member SHOULD remove the
+  candidacy content; a group's **refusal is deliberately not an
+  observable event** — no artifact announces "we decided
+  against" (refusal privacy, exactly as at the introduction act,
+  Visibility §8.4) — so removal before expiry stays at the
+  surfacing member's discretion; and the one-way
+  door is stated honestly — group-space content is replicated and
+  its removal is best-effort, which is exactly why the surfacing
+  is opt-in by a signed field: an unsuccessful candidacy under
+  `candidacy: true` may remain visible to the group as a
+  historical fact.
 - **Defined effect, semantically idempotent:** durable buffering of
   the verified pair as admission evidence, keyed by **the enclosed
   accept's document digest** — surfacing to the member's admission
@@ -848,13 +981,21 @@ surfaced, attributable lie with no mechanical effect.
   admitted member, the log permanently replicates the complete
   invite and accept — sender and recipient anchors, thread and
   document identifiers, issuance and proof timestamps, both contact
-  cards including key identifiers and any `deliveryHints`, display
-  fields, and both proofs. Invitation is not anonymous, by design;
-  correlation across these fields is group-internal but permanent.
-  The size budget (Section 2) caps growth at ≤ 32 KiB of evidence
-  per admission; issuers SHOULD keep membership cards minimal — in
-  particular, `deliveryHints` SHOULD be absent from cards enclosed
-  in membership documents.
+  cards including key identifiers, display fields, and both
+  proofs. Invitation is not anonymous, by design; correlation
+  across these fields is group-internal but permanent — and since
+  this casting it correlates **group-scoped identifiers only**:
+  every enclosed anchor is a member anchor, `deliveryHints` are
+  forbidden on enclosed cards (Section 2), and the coordinate that
+  would join a person across groups appears nowhere (Access §13 —
+  the M5 surface closed at its root). The size budget (Section 2)
+  caps growth at ≤ 32 KiB of evidence per admission; issuers keep
+  membership cards minimal by rule, not by advice.
+- **The prelude adds no transplant surface:** the invitee's member
+  anchor travels to the inviter over their authenticated
+  relationship channel; a forged prelude answer could only name an
+  anchor whose accept the forger cannot sign — the accept's
+  signature under `invitee` remains the gate, exactly as before.
 
 ## 9. Open Issues
 
@@ -863,8 +1004,8 @@ surfaced, attributable lie with no mechanical effect.
   casting says: replication owns the inside.
 - **MO-2 Policy-proof transport.** Richer admission policies need
   more inputs than one accept. Partially resolved by Access §5.3's
-  transported variant proof (up to 64 signatures and 16 encounter
-  credentials travel inside the enclosed admission, under the
+  transported variant proof (up to 64 signatures and 16 vouches
+  travel inside the enclosed admission, under the
   aggregate cost bound of Access §4.4); what remains open is
   transport for policy inputs beyond the admission case.
 - **MO-3 Leave and dissolve notices.** The removal case is
@@ -881,15 +1022,16 @@ surfaced, attributable lie with no mechanical effect.
 
 ## 10. Conformance
 
-- **Profile** `rltp-membership@0.11`; normatively references
-  `rltp-delivery@0.17` and `rltp-access@0.24` (envelope §3.3,
-  admission §5.3, material §9.5, key-delivery §10.1,
+- **Profile** `rltp-membership@0.16`; normatively references
+  `rltp-delivery@0.21` and `rltp-access@0.30` — whose wire forms
+  remain `0.24` — (envelope §3.3, member identity §5.1, admission
+  and candidacy §5.3, material §9.5, key-delivery §10.1,
   removal-notice §10.2, views §7.3).
-- **The Access-0.24 coupling, stated explicitly (not hidden).**
-  This profile pins Access **0.24** two ways at once: in prose
-  (the reference above, and the `rltp-access-material/0.24` pin of
-  §4) **and** transitively, through the `v` constant of the
-  transcribed Access schemas —
+- **The Access coupling, stated explicitly (not hidden).**
+  This profile pins Access **0.30 (wire 0.24)** two ways at once:
+  in prose (the reference above, and the
+  `rltp-access-material/0.24` pin of §4) **and** transitively,
+  through the `v` constant of the transcribed Access schemas —
   `access-operation-envelope.schema.json` asserts
   `v = rltp-access/0.24` and `access-material.schema.json` the
   `rltp-access-material/0.24` form. Those schemas' `$id`s are
@@ -898,10 +1040,12 @@ surfaced, attributable lie with no mechanical effect.
   `$ref`. This coupling is therefore **graceful but brittle by
   design**, and it breaks cleanly, not silently, at an Access wire
   bump: a release that replaces the transcribed Access schemas
-  under the same `$id` with a `rltp-access/0.25` form makes the
-  `v` constant reject 0.24 envelopes — a **hard, visible** failure
-  against this profile's fixtures, never a quiet acceptance of
-  0.25 semantics. An Access wire-version bump therefore **requires
+  under the same `$id` with a later-versioned `v` constant makes
+  that constant reject 0.24 envelopes — a **hard, visible**
+  failure against this profile's fixtures, never a quiet
+  acceptance of later semantics (Access 0.26 kept the wire at
+  0.24, so this casting carries the transcriptions
+  byte-identically). An Access wire-version bump therefore **requires
   a Membership recast** (this document re-cast against the new
   Access) **or a documented compatibility statement**; an offline
   registry MUST be able to hold several Access schema versions at
@@ -970,14 +1114,32 @@ surfaced, attributable lie with no mechanical effect.
   issuance, `failed(validation-failed)` at receipt; the sender's
   final serialized-size check is the fit gate, never assumption ·
   enclosed
-  document without proof → schema-rejected · welcome beside a
+  accept without its document proof → schema-rejected · enclosed
+  invite WITH a document-level proof → schema-rejected (the
+  one-carrier rule of Section 2) · welcome beside a
   non-`member.add` operation → schema-rejected · document-level
-  materialization checks: enclosed invite recipient ≠ invitee,
+  materialization checks: enclosed invite document's recipient ≠
+  invitee,
   enclosed accept recipient ≠ invite issuer, thread mismatch,
-  `validUntil` < invite `issuedAt` → each non-canonical · evidence
+  `validUntil` < invite `validFrom` → each non-canonical · two
+  admissions enclosing byte-different wrappers around the same
+  invite credential → one invitation, one consumption (Section 2)
+  · a valid invite whose `genesisDigest` arrives `z`-encoded →
+  the same member-anchor derivation as its `u` rendering (Access
+  §5.1 canonical-`u` re-encoding; shipped in
+  `vectors/dtg-credentials.json` together with the VIC/vouch@2
+  positives and negatives) · evidence
   relay (3.4): relayed pair validates as historical evidence and a
   member admitting from it produces a canonical admission; a
-  tampered enclosed document fails its proof → rejected; a re-sealed
+  tampered enclosed accept fails its document proof and a tampered
+  invite credential fails its DataIntegrityProof → rejected; a
+  mutated authority-free wrapper field of the invite document
+  (`id`, `issuedAt`) changes no verdict — same
+  credential, same invitation (Section 2); a present
+  `ceremony.enactment` that no longer recomputes →
+  `failed(validation-failed)` (Delivery §3 — a validity gate, not
+  authority; a separate case, not a wrapper-freedom claim) · a
+  re-sealed
   ORIGINAL document (not enclosed) → `failed(wrong-recipient)` per
   the Contract, as intended · lineage absent → bootstrap degrades to
   current-epoch access, honestly surfaced, nothing else breaks ·
@@ -1069,23 +1231,41 @@ surfaced, attributable lie with no mechanical effect.
   commitment-correct re-welcome for the current epoch, → bootstrap
   MUST NOT reach `member`, because the invitee is not a current
   member in the materialized state (§3.3; the enforcing gate is
-  Access §10.1, whose 0.24 wording must carry the current-member
-  condition — recorded as an Access-side seam item) ·
+  Access §10.1, which since its 0.25 seam cast carries the
+  current-member condition explicitly — the seam item is
+  discharged) ·
   **Access-pin brittleness (M2):** replacing the transcribed Access
-  schema under its mobile `$id` with a `rltp-access/0.25` `v`
+  schema under its mobile `$id` with a later-versioned `v`
   constant makes a 0.24 envelope fail this profile's fixtures
-  (hard, visible break — never a silent 0.25 acceptance); the pin
+  (hard, visible break — never a silent later acceptance); the pin
   is enforced by the `v` constant, and an Access wire bump requires
-  a Membership recast or a documented compatibility statement.
+  a Membership recast or a documented compatibility statement ·
+  *(twelfth-casting additions — the M-DID recast)*
+  **member-anchor closure:** an invite or accept whose `inviter`,
+  `invitee`, or `subject` anchor is demonstrably used outside this
+  group (the scoping vector of Access §14) → nonconformant at
+  issuance; an enclosed card whose anchor differs from the
+  document's member anchor → rejected at receipt, admission, and
+  materialization (unchanged rule, new class) · **deliveryHints
+  ban:** an enclosed card carrying `deliveryHints` →
+  `failed(validation-failed)` at receipt and non-canonical at
+  materialization · **prelude transplant:** an accept signed by an
+  anchor other than the invite's `invitee` → rejected (the
+  existing gate, exercised against a forged prelude) · **candidacy
+  is not authority:** a `member.add` citing only surfaced
+  candidacy content without enclosed consent → non-canonical
+  (Access §5.3).
 - Every normative statement is vector-testable or explicitly marked
   state-dependent.
 
 ## References
 
 [RFC2119] · [RFC8174] BCP 14 · [RFC8785] JCS · [TT] ToIP DTGWG Trust
-Tasks framework 0.4 · **RLTP Delivery Contract 0.17** (normative) ·
-**RLTP Encounter Layer 0.19** (securing profile 2.3, principles 1.3,
-contact card §6) · **RLTP Access Layer 0.24** (normative: operation
-envelope §3.3, group identity §3.2, admission and key service duty
-§5.3, material §9.5, `key-delivery/0.1` §10.1, `removal-notice/0.1`
-§10.2, authorization views §7.3, epoch-key lineage §7.1).
+Tasks framework 0.4 · **RLTP Delivery Contract 0.21** (normative; §4.4 registry) ·
+**RLTP Encounter Layer 0.28**, wire 0.25 (securing profile 2.3,
+principles 1.3, contact card §6) · **RLTP Access Layer 0.30**, wire
+0.24 (normative: operation envelope §3.3, group identity §3.2,
+member identity §5.1, admission, candidacy and key service duty
+§5.3, member-mapping §5.5, material §9.5, `key-delivery/0.1`
+§10.1, `removal-notice/0.1` §10.2, authorization views §7.3,
+epoch-key lineage §7.1).

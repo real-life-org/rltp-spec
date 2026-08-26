@@ -3,18 +3,38 @@
 **Real Life Trust Protocol — Layer 2: Encounter**
 
 - **Status:** Editor's Draft
-- **Version:** 0.22.0-draft (twenty-second casting)
+- **Version:** 0.28.0-draft (twenty-eighth casting: the **DTG
+  adoption cast** — the encounter credential becomes a conformant
+  **DTG RelationshipCredential** per the DTGWG Core Credentials
+  WD01 (`design/dtg-credential-adoption-2026-08.md`): the DTG
+  context joins the pinned `@context`, the type array carries the
+  full DTG hierarchy with `EncounterCredential` as the concrete
+  hint (the WD01 PHC pattern), and every RLTP-specific field is a
+  WD01-legal additional subject property. History: the 0.27
+  surgical cast added the W3C proof-`@context` copy; 0.26 closed
+  joint round 3.)
 - **Editors:** Anton Tranelis
-- **Date:** 2026-08-12
+- **Date:** 2026-08-23
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
-- **Conformance profile:** `rltp-encounter@0.22` (draft). The **wire
-  versions of every artifact stay at `0.19`**: this casting sharpens
-  the wording of the comparison rule introduced by 0.21 and
-  strengthens one conformance vector; it changes no wire shape and no
-  verdict (Section 12).
-- **Supersedes:** version 0.21 (archived as
-  `archive/encounter-layer-0.21.md`), and castings 0.1 through 0.20
-  archived alongside it.
+- **Conformance profile:** `rltp-encounter@0.28` (draft). **This
+  casting is a deliberate wire break:** all wire versions advance to
+  `0.25` (`rltp-card/0.25`, `rltp-encounter-credential/0.25`,
+  ceremony `encounter-scan@0.25`) — the DTG adoption changes the
+  credential's `@context` and `type` bytes, and the family moves
+  together, exactly as at the 0.24 pair break. No deployed
+  implementation of any
+  prior RLTP Encounter casting exists; the wot-spec v0.1 generation
+  is a separate lineage with its own migration path (Identity §10).
+  The M-DID-loop companions consume this wire after their own
+  conversion commits (this repository converts them in the same
+  move).
+- **Supersedes:** version 0.27 (archived as
+  `archive/encounter-layer-0.27.md`), versions 0.25–0.22 (archived as
+  `archive/encounter-layer-0.25.md`, `archive/encounter-layer-0.24.md`,
+  `archive/encounter-layer-0.23.md`, `archive/encounter-layer-0.22.md`),
+  and castings 0.1 through 0.21 archived alongside them. (0.26 lives
+  in the 0.27 archive's history; the 0.26→0.27 surgical delta is its
+  header.)
 - **Supersedes on adoption:** `02-wot-trust/001-encounter credentials.md` and
   `002-verifikation.md` (wot-spec v0.1, German); see Appendix B.
 
@@ -50,34 +70,24 @@ every casting is reviewed in full by an independent adversarial
 reviewer, findings are triaged, and the document is recast — never
 patched — until a casting is judged blocker-free and compatibly
 implementable. The companion documents have met that criterion — the
-**RLTP Delivery Contract 0.17**, which specifies the transmission leg
-by normative reference, and above this layer the **RLTP Membership
-Tasks 0.11** and the **RLTP Access Layer 0.25**.
+**RLTP Delivery Contract** (0.21), which specifies the transmission
+leg by normative reference, and above this layer the **RLTP
+Membership Tasks** (0.16) and the **RLTP Access Layer** (0.30).
 
-This twenty-second casting has been read by that process and is
-**converged**. Two consecutive rounds returned no blocker-level
-finding, the second none at major level either; the single editorial
-point it did return — a sentence in Section 13 that contradicted both
-the proof in Section 2.3 and a vector in Section 15 — has been
-corrected in place, which is the only kind of change a converged
-casting takes.
-
-The loop this casting closes began as a debt the Access Layer had
-recorded against this document: the size cap that layer enforces when
-it accepts a credential was not guaranteed where the credential is
-made. Discharging it turned out to require more than the debt note
-described — it named two unbounded fields and there were four — and
-review then found something the debt had merely hidden: fractional
-seconds were semantically undefined, so two conforming implementations
-could reach different verdicts on identical input at an aging latch, a
-future gate, or an issuance window. Whole-second normalization is now
-a rule of this document rather than an assumption about it.
-
-**No wire form changed.** The artifacts of 0.19 stand unaltered
-beneath this casting, which narrows the values they may carry and
-fixes the granularity at which they are compared; the wire strings
-therefore remain at 0.19 and Section 12 states what a 0.19 receiver
-may decide differently, and by how little.
+This twenty-eighth casting is the **DTG adoption cast** (wire 0.25):
+the encounter credential is dual-typed as a DTGWG WD01
+RelationshipCredential under three pinned contexts, on the author's
+convergence directive
+(`design/dtg-credential-adoption-2026-08.md`). The pair block that
+produced fresh-always enactment (castings 0.23–0.26) and the
+surgical W3C proof-`@context` repair (0.27) precede it; their
+history lives in the archived castings and the design journal. The
+**DTG conversion loop converged** — two consecutive blocker-free
+adversarial rounds
+(`design/dtg-conversion-review9-2026-08.md` and
+`…review10-…`) over this document, Access 0.30, Membership 0.16,
+the schemas, contexts, and vectors. **This remains a deliberate
+wire break with no deployed predecessor.**
 
 The document will keep changing as implementation experience
 accumulates; known open questions are collected in Section 16.
@@ -172,8 +182,14 @@ capitals, as shown here.
 
 Permanent identifiers are `https://real-life.org/rltp/v1#<Fragment>`.
 
-**Anchor** — the stable Layer-1 identifier of a person. In this
-casting, a `did:key` (2.3).
+**Anchor** — a Layer-1 identifier of a person (Identity 0.12). In
+this casting, a `did:key` (2.3). **The enacting anchor of a
+ceremony is a freshly derived pair anchor** (Identity §6.1 `pair/`
+context) — fresh at every enactment, re-encounters included (4.4);
+relationship continuity is the visibility layer's post-ceremony
+act. The stable self anchor never
+appears on the ceremony wire; its disclosure is the visibility
+layer's per-recipient act.
 
 **Contact card** — a person's signed self-description carrying the
 verification material needed to recognize and reach them, and — when
@@ -227,10 +243,14 @@ Referenced: **Credential** (W3C VC 2.0, RLTP-owned type per 7.1),
 **Delivery port /
 RLTP Delivery Contract** *(services)*.
 
-### 2.3 Interim securing profile
+### 2.3 Securing profile (bound to Identity 0.12)
 
-The Layer-1 (Identity) specification is not yet cast. Until it is,
-this document is self-contained by requiring, normatively:
+The Layer-1 specification is cast: **RLTP Identity 0.12** defines
+derivation, the label registry (including the `pair/` contexts this
+casting enacts under), anchor form, and the anchor–key binding rule
+this section applies. The requirements below restate the consumed
+surface normatively — where they and Identity 0.11 disagree,
+Identity governs:
 
 - An **anchor** is a **`did:key`** DID whose method-specific
   identifier encodes an Ed25519 public key: `z6Mk` plus exactly 44
@@ -238,7 +258,7 @@ this document is self-contained by requiring, normatively:
   resolution, registry, or directory is involved at any point.
 - **The key-to-anchor binding rule:** signatures under an anchor MUST
   verify under key material bound to that anchor by the Layer-1
-  profile's binding rule — in this interim profile, containment.
+  binding rule (Identity §8.4) — for `did:key`, containment.
   An artifact naming anchor X but verifying only under unbound
   material is invalid, whatever it carries.
 - **Keys are verified decoded, not just pattern-matched:** on parsing,
@@ -249,7 +269,14 @@ this document is self-contained by requiring, normatively:
   **`DataIntegrityProof`** with cryptosuite **`eddsa-jcs-2022`**
   [DI-EDDSA]: canonicalization JCS [RFC8785], hash SHA-256, signature
   Ed25519, `verificationMethod` = the anchor's `did:key` verification
-  method. No RDF processing is required or permitted.
+  method. No RDF processing is required or permitted. **The W3C
+  procedure is followed exactly**, including its `@context` rule:
+  creation copies a present document `@context` into the proof
+  configuration **and the returned proof**, and verification
+  reconstructs the configuration from the embedded proof alone —
+  so a credential's proof carries the pinned context array
+  (REQUIRED there; the schemas enforce it), while a card, which
+  has no `@context`, carries none.
 - **The proof value is bounded by the signature it carries.** An
   Ed25519 signature is exactly 64 bytes [RFC8032], and `proofValue` is
   its multibase base58btc encoding: the character `z` followed by 64
@@ -271,7 +298,16 @@ this document is self-contained by requiring, normatively:
   header); verifiers MUST accept both CID 1.0 headers (`u` and `z`)
   and MUST verify the decoded multihash algorithm and length at
   parse. *(One verifier thereby serves RLTP and DTGWG artifacts
-  alike.)*
+  alike.)* **Digest equality — every digest equality this profile
+  or a companion requires — is defined over the validated,
+  DECODED multihash bytes**, never over the encoded strings:
+  equivalently, canonicalize both operands to `u` solely for the
+  comparison. A `u` and a `z` rendering of the same multihash are
+  the same digest at every consumer. This governs comparison ONLY —
+  signed JSON is never rewritten before JCS or proof verification;
+  the bytes hashed and signed are always the artifact's own
+  (the same comparison-versus-bytes separation as the timestamp
+  rule below).
 - All timestamps are [RFC3339] date-times in UTC with `Z`, seconds
   `00`–`59` (leap seconds excluded), carrying **at most three
   fractional-second digits** — at most 24 characters. Schemas enforce
@@ -369,7 +405,10 @@ this document is self-contained by requiring, normatively:
 - **Contexts are pinned by value, not processed.** A credential's
   `@context` is exactly
   `["https://www.w3.org/ns/credentials/v2",
-  "https://real-life.org/rltp/v1"]`, in order, with no additions;
+  "https://firstperson.network/credentials/dtg/v1",
+  "https://real-life.org/rltp/v1"]`, in order, with no additions —
+  the DTG context is REQUIRED by the WD01 base structure this
+  casting adopts, and it is pinned like the other two;
   term meaning comes from this specification and the published RLTP
   context document (`contexts/rltp-v1.jsonld`, a normative
   deliverable), never from JSON-LD processing at runtime. This is
@@ -446,9 +485,52 @@ this assumption.
 
 This casting requires `did:key` anchors (2.3). A counterparty using
 any conforming client is verifiable offline, from the card alone.
-Interoperating with other DID methods is a Layer-1 concern; until the
-Identity layer is cast, claims of method-agnosticism would be
-unbacked, and this document makes none.
+Interoperating with other DID methods is a Layer-1 concern (Identity
+§8.3, the waist rule); this document makes no method-agnosticism
+claim of its own.
+
+### 4.4 The enacting anchor: fresh always (normative)
+
+This section applies to **cards used in an enactment** and to
+encounter credentials; card uses defined by other layers
+(Membership's and Access's S-DID-bound founder, invite, accept and
+key-request cards) are governed by those layers and their frozen
+schemas (Section 12).
+
+The anchor a party enacts under — card `anchor`, credential
+`issuer`, credential `credentialSubject.id` — MUST be a **freshly
+derived pair context** (Identity §6.1: fresh 32-byte nonce,
+recorded in the label register **before** the card is displayed or
+sent; a lost enactment must not orphan the label). This holds for
+**every** enactment — first contact and re-encounter alike. A party
+therefore never needs to know who will scan before displaying: the
+displayed anchor is always new, discloses nothing, and cannot leak
+an existing relationship to a wrong scanner.
+
+**Continuity is established after the ceremony, not inside it.**
+Whether this enactment is a re-encounter of an existing
+relationship is resolved over the fresh enactment channel by the
+visibility layer's **continuity probe and continuity mapping**
+(`rltp-visibility` §6a): only a counterpart that actually holds the
+prior relationship can match the probe; on a match, the new pair
+tuple is chained to the relationship and the prior tuple is
+deactivated. One relationship, one active tuple, a chained history
+of enactments. The edge rule of 2.2 reads per tuple; **evidence
+accumulates on the relationship through its chain**, which is a
+local, per-holder notion — deliberately invisible to third parties
+(Section 8).
+
+A party MUST NOT enact under its self anchor, a group anchor, a
+persona anchor, or **any previously used pair anchor**. A received
+artifact naming such an anchor is not detectably invalid — the
+receiver cannot distinguish anchor classes, which is the point —
+but issuing it is nonconformant.
+
+What a pair anchor *means* beyond this ceremony is the visibility
+layer's contract. Re-recognition after data loss follows Identity
+§9.3: relationships are re-created, not recovered — a party that
+cannot answer the continuity probe *is*, protocol-wise, a new
+relationship.
 
 ## 5. Ceremonies and Enactments
 
@@ -457,7 +539,7 @@ unbacked, and this document makes none.
 A **ceremony** is a registered, versioned definition, and the
 registration **pins the ceremony's time parameters** (Section 9).
 Ceremonies are an open set. This version registers **one** ceremony,
-`encounter-scan@0.19` (5.8), whose connected and offline paths carry
+`encounter-scan@0.25` (5.8), whose connected and offline paths carry
 the same enactment material on different legs. Two conforming parties evaluating
 the same credential under the same registered ceremony reach the same
 verdict; there is no deployment-local parameter variation.
@@ -663,7 +745,7 @@ On receiving a credential claiming to be an encounter credential about
 the local anchor, an implementation MUST evaluate, in order:
 
 1. **Format.** The document validates against
-   `schemas/encounter-credential.schema.json`; its
+   `schemas/encounter-credential-0.25.schema.json`; its
    `credentialSubject.format`, ceremony, and ceremony version are
    known; timestamps parse calendar-valid; keys decode per 2.3; else
    reject `ERR_VERSION`.
@@ -709,7 +791,7 @@ envelope, authenticity from the signed material inside.)*
 
 ### 5.8 The registered ceremony of this version
 
-**`encounter-scan@0.19`** — the one ceremony of this casting. It has a
+**`encounter-scan@0.25`** — the one ceremony of this casting. It has a
 **connected path** and an **offline path**, which carry the same
 enactment material on different legs: the connected path delivers the
 **bundle** (card + credential) through the Delivery service; the
@@ -834,7 +916,7 @@ outcome.
 A contact card is a person's **self-description** — explicitly **not a
 credential**.
 
-A card MUST validate against `schemas/contact-card.schema.json` and
+A card MUST validate against `schemas/contact-card-0.25.schema.json` and
 carries: a **format version**; the **anchor**; a **key-agreement key**
 (Multikey, decoded-verified, 2.3); a **challenge** with its **issuance
 time**, whenever the card is used in an enactment; **`sentTo`** — the
@@ -875,19 +957,29 @@ Degradation is always toward less assurance. The name in a card is
 ### 7.1 Form
 
 A W3C Verifiable Credential 2.0 secured per 2.3, of type
-`VerifiableCredential`, **`EncounterCredential`** — an RLTP-owned type
-defined by the pinned RLTP context. It deliberately carries **no DTG
-type**: the DTG `WitnessCredential` is defined as a third party's
-attestation, while an encounter credential is a **participant's**
-recognition, and stamping the type without meeting the DTG base
-structure would be paper conformance (see Appendix C for the upstream
-path). Statements that are not encounters are outside this
-specification.
+`VerifiableCredential`, `DTGCredential`, **`RelationshipCredential`**,
+`EncounterCredential` — a conformant **DTG RelationshipCredential**
+(DTGWG Core Credentials WD01) with `EncounterCredential` as the
+concrete RLTP hint type (the WD01 PHC pattern: a non-authoritative
+addition beside the one concrete subtype). The earlier castings
+deliberately carried no DTG type because the only candidate then was
+the third-party `WitnessCredential`, and stamping a type without
+meeting the base structure would have been paper conformance; WD01's
+`RelationshipCredential` is a **participant's** credential — two per
+edge, one each direction, under mandatorily fresh R-DIDs — which is
+this credential exactly, and this casting MEETS the base structure
+(DTG context, type hierarchy, subject `id`; every RLTP field a legal
+additional subject property). Our fresh-always rule satisfies WD01's
+R-DID-uniqueness requirement strictly (fresh per enactment, not
+merely per counterparty). What stays deliberately ours, stated for
+verifiers: no `validUntil`, no `credentialStatus` — WD01 marks both
+optional, and their absence is this layer's immutability (7.3).
+Statements that are not encounters are outside this specification.
 
 ### 7.2 Data model
 
 The normative wire format is
-`schemas/encounter-credential.schema.json`. **The document root is
+`schemas/encounter-credential-0.25.schema.json`. **The document root is
 closed:** exactly the properties below, no others. In particular,
 `validUntil`, `credentialStatus`, and any validity-controlling VC
 property are **absent by construction** — encounter credentials are
@@ -897,15 +989,16 @@ happens through a new format version, never through extra fields.
 
 | Property | Type | Card. | Content |
 |---|---|---|---|
-| `@context` | array | 1 | exactly the two pinned contexts, in order (2.3) |
-| `type` | array | 1 | exactly `VerifiableCredential`, `EncounterCredential` |
+| `@context` | array | 1 | exactly the three pinned contexts, in order (2.3) |
+| `type` | array | 1 | exactly `VerifiableCredential`, `DTGCredential`, `RelationshipCredential`, `EncounterCredential` (order-insensitive per schema, four members) |
 | `issuer` | anchor | 1 | the recognizing party |
 | `validFrom` | datetime | 1 | issuance time (SHOULD equal enactment time) |
 | `credentialSubject.id` | anchor | 1 | the recognized party |
-| `credentialSubject.format` | string | 1 | `rltp-encounter-credential/0.19` |
+| `credentialSubject.format` | string | 1 | `rltp-encounter-credential/0.25` |
 | `credentialSubject.ceremony` | string | 1 | registered ceremony id and version; at most 56 characters (7.5) |
 | `credentialSubject.challenge` | string | 1 | the subject's challenge |
 | `credentialSubject.enactmentBinding` | multibase | 1 | per 5.4 |
+| `credentialSubject.commitment` | object | 0..1 | **pre-wired, semantically unassigned** (Status item 2): `{ "suite": <registry id, `[a-z0-9-]+@[0-9]+`, ≤ 32 chars>, "value": <`z` + 1–96 base58btc chars> }`. The **suite registry starts empty, and while it is empty, producers MUST NOT emit the member** — a pre-registration artifact would otherwise retroactively acquire meaning the day its suite string registers, the exact re-interpretation §12 forbids. The first legal producer arrives with the first registration (naming scheme, group, validation). Verifiers MUST accept-and-ignore the member in this casting (its bytes participate in the proof like every member, its content carries no verdict) |
 | `credentialSubject.channel` | string | 0..1 | informative |
 | `proof` | object | 1 | `DataIntegrityProof`, `eddsa-jcs-2022`; `created` participates in 5.6 step 6; every member bounded (7.5) |
 
@@ -957,8 +1050,8 @@ enough to defeat the cap.
 
 | Property | Bound | Where the bound comes from |
 |---|---|---|
-| `@context` | two pinned constants | 2.3 |
-| `type` | exactly two members, both fixed | 7.1 |
+| `@context` | three pinned constants | 2.3 |
+| `type` | exactly four members, all fixed | 7.1 |
 | `issuer`, `credentialSubject.id` | 56 characters | `did:key` over Ed25519 (2.3) |
 | `validFrom`, `proof.created` | 24 characters | RFC3339 UTC, ≤ 3 fractional digits (2.3) |
 | `credentialSubject.format` | one constant | 7.2 |
@@ -980,18 +1073,23 @@ count. Only `channel` is free text; every other property above is
 confined to an alphabet that escapes to one byte per character.
 Measured over the whole escaping range, at 64 `channel` characters:
 
-| `channel` alphabet | bytes per character | schema maximum | valid maximum |
+| `channel` alphabet | bytes per character | schema maximum (without `commitment`) | valid maximum (without `commitment`) |
 |---|---|---|---|
-| unescaped one-byte ASCII | 1 | 1068 | 1029 |
-| quote or backslash | 2 | 1132 | 1093 |
-| three-byte BMP code point | 3 | 1196 | 1157 |
-| non-BMP code point | 4 | 1260 | 1221 |
-| C0 control character | 6 | **1388** | **1349** |
+| unescaped one-byte ASCII | 1 | 1291 | 1252 |
+| quote or backslash | 2 | 1355 | 1316 |
+| three-byte BMP code point | 3 | 1419 | 1380 |
+| non-BMP code point | 4 | 1483 | 1444 |
+| C0 control character | 6 | **1611** | **1572** |
 
 **The two columns are two different claims, and only one of them is a
 credential.**
 
-- The **schema maximum, 1388 bytes**, takes every property at the
+- The **schema maximum without the optional `commitment` fragment,
+  1611 bytes** — this sweep's figures already include the
+  proof-`@context` copy (84 bytes, the 0.27 repair) and the DTG
+  adoption delta (139 bytes); the historical 0.22 base was 1388 —
+  takes every
+  property at the
   bound its *schema* admits — a 56-character `ceremony`, a
   49-character `enactmentBinding`. It is a size construction, **not a
   valid credential**: a 56-character ceremony identifier names no
@@ -1001,9 +1099,10 @@ credential.**
   argued against the *format*: no document the schema admits can
   exceed it, so nothing this document can emit — valid or not —
   reaches 2048.
-- The **valid maximum, 1349 bytes**, takes every property at the bound
+- The **valid maximum without `commitment`, 1572 bytes** (0.22
+  base: 1349, same two deltas included), takes every property at the bound
   a *credential that passes 5.6* can reach: `ceremony` is
-  `encounter-scan@0.19`, 19 characters, because that is the one
+  `encounter-scan@0.25`, 19 characters, because that is the one
   ceremony this version registers (5.1); and `enactmentBinding` is 47
   characters, because a SHA-256 multihash is `0x12 0x20` plus 32
   bytes, whose base58btc rendering is always exactly 46 characters
@@ -1015,8 +1114,22 @@ credential.**
   produced 47 characters in every case and no other length. The
   schema's 49 is syntactic slack that no correct multihash occupies.
 
-Both numbers are **measured**, not estimated, and both are below 2048
-with margin. **A producer therefore needs no size check to stay inside
+**The `commitment` adjustment, measured:** the maximal
+`commitment` fragment `,"commitment":{"suite":"<32>","value":"<97>"}`
+measures **166 bytes** (independently measured in joint round 2,
+superseding two shorter arithmetic guesses). The sweep maxima above
+already include the proof-`@context` copy (84 bytes, the 0.27
+repair) and the **DTG adoption delta, measured on the regenerated
+vector credential: 139 bytes** (the DTG context in body and proof
+copy, two added type members); adding the commitment fragment —
+one addition, applied once: schema maximum
+**1777**, valid maximum
+**1738** — under 2048 with margin. Emission is gated (7.2), so no
+producible credential reaches these bounds until a suite is
+registered; the bounds cover the format either way.
+
+Both base numbers are **measured**, not estimated, and all bounds are
+below 2048 with margin. **A producer therefore needs no size check to stay inside
 the cap**, and a receiver enforcing the cap never rejects a conforming
 credential.
 
@@ -1046,12 +1159,20 @@ manufacture a consistent pair, and nothing on the wire can expose that
 as proof that a meeting took place; its honest reading is *these two
 anchors mutually assert an encounter, consistently*.
 
+Under pair enactment (4.4) the third-party reading shrinks further,
+by design: the anchors in a credential pair are pair anchors —
+meaningful to the two holders, opaque capabilities to everyone else.
+A collector of leaked credential pairs learns that *two anchors it
+cannot attribute* assert an encounter; attribution requires a
+per-recipient mapping act of the holder (`rltp-visibility` §6). This
+is the collector-blind regime the pair casting exists for.
+
 *(Informative: in DTGWG evidence terms the pair is `collected` step
 evidence joined by a shared descriptor — deliberately no more.)*
 
 ## 9. Time Parameters
 
-| Parameter | `encounter-scan@0.19` | Meaning |
+| Parameter | `encounter-scan@0.25` | Meaning |
 |---|---|---|
 | `challenge-max-age` | PT5M | max age of a challenge at record creation (5.5), both paths |
 | `issuance-window` | PT24H | max delay from enactment to credential issuance (5.6 step 6) |
@@ -1098,65 +1219,46 @@ Enactments MUST be possible without any service (the offline path, 5.8).
 
 - Every wire artifact carries an explicit format version — cards,
   credentials (`credentialSubject.format`), tasks (their Type URIs).
-- **Wire version and profile version are distinct, and this casting
-  moves only one of them.** A wire version advances when a wire
-  *shape* changes; the profile version advances with every casting of
-  this document. Profile `rltp-encounter@0.22` therefore
-  produces and accepts exactly the `…/0.19` wire forms — `rltp-card/0.19`,
-  `rltp-encounter-credential/0.19`, and the ceremony
-  `encounter-scan@0.19` — because none of 0.20, 0.21 and 0.22 adds a
-  property, removes one, renames one or retypes one: 0.20 **narrowed
-  the admitted value range of four existing fields inside an unchanged
-  shape** (7.5), 0.21 adds a **comparison rule** (2.3) that touches
-  no serialized byte at all, and 0.22 changes neither an artifact nor
-  a verdict — it corrects the wording of that rule and strengthens one
-  vector. **This
-  paragraph is the compatibility statement the companion documents
-  rely on:** the Delivery Contract 0.17 names the ceremony
-  `encounter-scan@0.19` and the Access Layer 0.25 pins
-  `rltp-encounter@0.19` where encounter rules are used; both hold
-  unchanged, and no schema and no fixture of either companion moves.
-  The comparison rule of 2.3 governs those companions' **encounter-time
-  comparisons** and only those — the Delivery Contract's staged
-  evaluation resolves challenges and evaluates the issuance window
-  under this layer's rules, and it does so with this layer's
-  normalization, while a companion's own windows (Membership's
-  `membership-skew`, the Access Layer's service, duty-slot,
-  provisional and retention bounds) remain governed by the document
-  that defines them (2.3). Either way nothing they serialize changes,
-  so the pins hold.
-- **What the narrowing costs, in both directions.** A 0.19 receiver
-  accepts **every** artifact a 0.22 producer emits, because producers
-  from 0.20 onward emit a strict subset. In the other direction a 0.22
-  receiver rejects a 0.19 artifact in exactly two cases. A
-  `proofValue` outside the length of an Ed25519 signature is the
-  harmless one — it could never have verified (2.3), so the format
-  check merely fails earlier than the signature check. A timestamp
-  spending more than three fractional digits is the real one: such an
-  artifact **could** have verified, and this is a narrow but genuine
-  break, stated rather than glossed. A wire bump would not repair it
-  but widen it: version handling in this layer is exact match (5.6
-  step 1, Section 6), so bumping would make a 0.22 receiver reject
-  *every* 0.19 artifact instead of the few that spend a precision the
-  protocol never read. The bound is therefore drawn where the common
-  serializers already stop, and Appendix A records the migration.
-- **What the comparison rule costs, stated with the same honesty.**
-  It changes no artifact, but it does change *verdicts*: a 0.19
-  receiver compared full instants, a receiver from 0.21 onward
-  compares whole
-  seconds. Where the two disagree is exactly bounded — only for values
-  lying within one second of an interval endpoint, since truncation
-  moves an operand by less than a second while every gate is already
-  widened by `skew-tolerance` of PT5M. No conforming artifact is
-  rejected that a 0.19 receiver accepted for a reason other than
-  a sub-second position at a boundary, and none is accepted that
-  0.19 rejected for any other reason. The disagreement is in fact
-  one-sided at the tolerated bounds: truncation only ever widens
-  acceptance there (2.3, *Why truncating cannot narrow acceptance*).
-  This is not a wire break and
-  needs no wire bump: it is the removal of an indeterminacy 0.19 and
-  0.20 both had, in which two 0.19 receivers could already disagree
-  with each other on the same input.
+- **Wire version and profile version are distinct — and this casting
+  moves both, deliberately.** 0.20–0.22 kept the wire at `0.19`
+  because they changed values and verdicts, never shapes. The pair
+  castings (0.24) changed shapes and semantics — the enacting
+  anchor class (4.4) and one added optional member (7.2) — and
+  **this casting moves the wire again, to `0.25`**: the credential
+  gains the DTG context and the DTG type hierarchy (7.1), so its
+  serialized bytes change; the card and ceremony strings move with
+  the family. All wire strings stand at `0.25`; version handling
+  remains exact match, so a 0.25 receiver rejects `…/0.24` and
+  `…/0.19` artifacts and vice versa — an honest break in a
+  wire nobody has deployed. **The compatibility break this
+  casting opened is now resolved on both sides:** the pre-loop
+  Delivery and Access castings pinned the archived 0.19/0.22
+  generation and held *for it* — and the companions have
+  since completed their recasts (the M-DID loop) and are converted
+  to this wire in the same repository move, so the **unversioned
+  schema files** —
+  `schemas/encounter-credential.schema.json` and
+  `schemas/contact-card.schema.json` — **carry the 0.25 forms**
+  under their mobile `$id`s; the archived earlier forms live only
+  in the archive, and this casting's
+  forms live equally in `schemas/encounter-credential-0.25.schema.json` and
+  `schemas/contact-card-0.25.schema.json`. The follow-up this
+  casting demanded has landed at its true size — the M-DID loop:
+  **Access recast its membership proof model** (vouching is
+  Access's own `vouch@1`, deliberately not an Encounter
+  credential, whose fresh pair anchors can satisfy neither the
+  subject binding nor the currency — its §4.2/§5.3), Delivery
+  carries the ceremony re-pin (`encounter-scan@0.25`), and
+  Membership followed Access; the DTG adoption converts all of
+  them onto 0.25 in the same move. The comparison-rule reach of 2.3 is
+  unchanged: encounter-time comparisons and only those.
+- **Historical note (0.19→0.22).** The narrowing and
+  comparison-rule analyses of the 0.20–0.22 castings — which
+  artifacts a mixed 0.19/0.22 population would disagree on, and by
+  how little — are preserved in `archive/encounter-layer-0.22.md`
+  §12. After the pair castings' exact-match break they no longer describe a
+  reachable deployment state; the comparison rule itself (2.3)
+  carries forward unchanged.
 - New ceremonies, channels and card fields register new identifiers;
   existing ones are never re-interpreted. Ceremony registrations pin
   time parameters. Credential root and subject are closed; extension
@@ -1227,30 +1329,42 @@ Enactments MUST be possible without any service (the offline path, 5.8).
   the value is high-entropy, was publicly displayed by its owner,
   grants nothing — and the stable anchors on both cards already
   reveal the parties to the same observer.
-- **Anchors are stable and therefore correlatable** across contexts;
-  channel and service identifiers MAY be derived per relationship.
-  Minimal-disclosure presentations are OI-3. *(Informative: the DTGWG
+- **Anchors are stable per tuple — the correlation radius is one
+  chain link.** Everything one pair anchor ever signs is
+  correlatable by whoever holds it, and that is the accepted price
+  of stability, now paid at tuple scope instead of globally: under
+  fresh-always enactment (4.4), a leaked credential pair correlates
+  exactly one enactment tuple; the relationship as a whole is
+  connected only by holder-local continuity facts, invisible to
+  third parties. *(Informative: the DTGWG
   `enactmentPrivacy: blinded` pattern — a per-step commitment
-  `H(enactment ‖ stepSalt)`, salts revealed by the receipt — solves
-  enactment correlation where identifiers are pairwise. Under this
-  profile's stable anchors the credential pair is correlatable
-  regardless, which is why this layer states the fact instead of
-  blinding a value the anchors reveal anyway; should a future Layer-1
-  profile introduce pairwise disclosure, the upstream pattern is
-  available.)*
+  `H(enactment ‖ stepSalt)` — addresses enactment correlation where
+  identifiers are pairwise; with fresh-per-enactment anchors, the
+  anchors themselves already provide that separation.)*
 - The acknowledgement's probe surface is stated in the Delivery
   Contract §10.
 
 ## 15. Conformance
 
-- **Profile** `rltp-encounter@0.22`, whose wire forms remain those of
-  `0.19` (Section 12 — no wire shape changed); includes the interim
-  securing profile (2.3) until `rltp-identity` is cast; **normatively
-  references `rltp-delivery@0.17`** for the one-scan transmission.
+- **Profile** `rltp-encounter@0.28`, wire forms `…/0.25` (Section 12
+  — a deliberate break with no deployed predecessor); securing
+  profile bound to `rltp-identity@0.12` (2.3); **normatively
+  references the Delivery Contract** for the one-scan
+  transmission — the Section-12 pin debt is discharged: Delivery
+  names `encounter-scan@0.25` since its M-DID-loop recast.
 - **Classes:** *participant* · *verifier*.
 - **Normative schemas (shipped):**
-  `schemas/encounter-credential.schema.json`,
-  `schemas/contact-card.schema.json`.
+  `schemas/encounter-credential-0.25.schema.json`,
+  `schemas/contact-card-0.25.schema.json`.
+- **Shipped vectors:** `vectors/encounter-cards.json` — displayed
+  and sent contact cards and a step credential in the 0.25 wire
+  forms (DTG-typed credential), eddsa-jcs-2022 proofs recomputable from the shared key
+  oracle (`vectors/identity-derivation.json`), the enactment
+  binding recomputable from the challenge fixtures per 5.4, and
+  negatives at the declared steps (mutation, unbound
+  verificationMethod, malformed sent card); ceremony-STATE checks
+  stay in the plan below. The former card-vector debt of the
+  M-DID-loop companions is discharged by this file.
 - **Vector plan:** everything of 0.5, plus: the gate on **both**
   legs (future-stamped own challenge beyond skew refused as
   `gate-future` at optical record creation too; aged-out value
@@ -1304,22 +1418,26 @@ Enactments MUST be possible without any service (the offline path, 5.8).
   the bound its schema admits — 56-character ceremony identifier,
   88-character challenge, 49-character binding, 64-character
   `channel`, 24-character `validFrom` and `proof.created`,
-  89-character `proofValue` — serializes to **1388 bytes** with
-  `channel` in C0 control characters and **1068 bytes** with `channel`
-  in unescaped one-byte ASCII. **This vector is a size construction,
+  89-character `proofValue` — and, since the pair castings, the
+  `commitment` object at its caps — serializes to **1777 bytes** with
+  `channel` in C0 control characters and **1457 bytes** with `channel`
+  in unescaped one-byte ASCII (pre-commitment: 1611/1291). **This vector is a size construction,
   not a valid credential:** it MUST be rejected at 5.6 step 1 for its
   unregistered ceremony, and its 49-character binding decodes to no
   SHA-256 multihash. It is the vector that carries the 2048-byte
   argument, because the guarantee is about what the *format* admits ·
   **at the valid maximum:** the largest credential that passes all of
-  5.6 — ceremony `encounter-scan@0.19` (19 characters), 47-character
-  binding, everything else at its bound — serializes to **1349 bytes**
-  (**1029** with `channel` in unescaped one-byte ASCII) and is
+  5.6 — ceremony `encounter-scan@0.25` (19 characters), 47-character
+  binding, everything else at its bound — serializes to **1738 bytes**
+  (**1418** with `channel` in unescaped one-byte ASCII; pre-commitment
+  1572/1252 — and while the suite registry is empty the commitment
+  member is not producible (7.2), so today's largest *producible*
+  valid credential remains at the pre-commitment figure) and is
   **accepted**; together with the previous vector this shows the
   Access 5.3 acceptance cap met **at the source**, with no size check
   performed anywhere · **the escaping range:** the same 64-character
   `channel` in quotes/backslashes, three-byte BMP code points and
-  non-BMP code points measures 1132 / 1196 / 1260 bytes at the schema
+  non-BMP code points measures 1521 / 1585 / 1649 bytes at the schema
   maximum, confirming the C0 case is the maximum over *all* alphabets
   and not merely over the one tested · **over the bound, field by
   field, each `ERR_VERSION` at
@@ -1427,7 +1545,7 @@ Enactments MUST be possible without any service (the offline path, 5.8).
 |---|---|---|
 | Contact card | QR-challenge payload | no version field; `enc` → Multikey; **`sentTo` new** |
 | Challenge | `nonce` (UUID v4) | **non-conformant (122 bits)** — migration generates new values |
-| One-scan flow | relay counter-verification | the connected path of `encounter-scan@0.19` over Delivery Contract tasks; the offline path replaces manual two-way handling |
+| One-scan flow | relay counter-verification | the connected path of `encounter-scan@0.25` over Delivery Contract tasks; the offline path replaces manual two-way handling |
 | Ack | `attestation-receipt` | Delivery Contract `delivery-ack`: arrival semantics, **proof-carrying** |
 | Encounter credential | `WotVerification` VC-JWS | RLTP `EncounterCredential`, embedded `eddsa-jcs-2022`, closed root, pinned contexts |
 | Acceptance gate | Trust 002 gate | 5.6 with named errors, `proof.created` windowed |
@@ -1469,5 +1587,5 @@ W3C Data Integrity EdDSA Cryptosuites v1.0 · W3C Verifiable
 Credentials Data Model 2.0 · DTG Credential Specification (ToIP DTGWG,
 draft) · ToIP DTGWG Trust Ceremonies ADR 0001 and design note
 (Proposed) · did:key method draft · Multikey / multicodec registry ·
-**RLTP Delivery Contract 0.17 (normative)** · wot-spec v0.1 (superseded
+**RLTP Delivery Contract 0.21 (normative)** · wot-spec v0.1 (superseded
 parts, Appendix B).

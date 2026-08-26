@@ -1,0 +1,142 @@
+{
+  "mnemonic": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+  "passphrase": "",
+  "wordlist": "english",
+  "rootIkm": "5eb00bbddcf069084889a8ab9155568165f5c453ccb85e70811aaed6f6da5fc19a5ac40b389cd370d086206dec8aa6c43daea6690f20ad3d8d48b2d2ce9e38e4",
+  "rootIkmLength": 64,
+  "hkdf": {
+    "hash": "SHA-256",
+    "salt": ""
+  },
+  "genesisDigestSample": "uEiDYLnFbXqm2cwuJWuk9yNzRmlzWDpCTH6yA_4aP_1z_RA",
+  "vectors": [
+    {
+      "label": "self",
+      "edInfo": "wot/identity/ed25519/v1",
+      "xInfo": "wot/encryption/x25519/v1",
+      "edSeed": "f5dfa334475ac58513d0be39daaa1ad4677e65a5a2dc42e695b7fc22881af96c",
+      "xSeed": "955ae6771ff7a40465800baded885780c88527b2eabcd9ef4683dac041ab1e82",
+      "anchor": "did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a",
+      "keyAgreement": "z6LSqA7sbKGK3WVHP9SBcmv9ikp19iDNb1P5Q315kRPQrcTV"
+    },
+    {
+      "label": "group/uEiDYLnFbXqm2cwuJWuk9yNzRmlzWDpCTH6yA_4aP_1z_RA",
+      "edSeed": "deb10d6cb0ba4df5b38c205fc5a0e4b6c92f0df2be75d3f79a279d01ac6001bf",
+      "xSeed": "bac4801e8e1811ad0bf3c86fc95404eeaca2e3b6da66a3dccd4a06d520e98c61",
+      "anchor": "did:key:z6Mkp252PiZp5e3EzakYaFCbWuJjpCiVfkr2ZffkqyEVAE2t",
+      "keyAgreement": "z6LSfGq1jMrqQ3jmQFB1pJrsKvVQhgQxRFtdkpdBYSn6Lum6"
+    },
+    {
+      "label": "persona/Anna",
+      "edSeed": "b76e12502547ae5c101b8868a4eda2c07d8573b376882a7c01e705867ceccbea",
+      "xSeed": "382958e07a25c7b6ddc2d5307a736a4e47191a3ac97150dc6c6f0d445f994260",
+      "anchor": "did:key:z6MkkfafvRtofcUe2qRjeN5wWF3pbJ8cX3wM8hPrNc5m6eQi",
+      "keyAgreement": "z6LSmJ5NXLqcbrro1dQ3XGmf5D1foCq5PUtRDbNj7GKPjipA"
+    },
+    {
+      "label": "persona/anna",
+      "edSeed": "b3e37f7307ac2a35e04d83c8d50cbc57ef8007b2548ead4f4608f69c57263413",
+      "xSeed": "d662acd6a4886e95d1c4499d5149c8a665246506ef858c8541891261da7ef5a2",
+      "anchor": "did:key:z6MkvoHVymGrpVQa71z1s8B7hnaQBLgURXQTErFfiW5Ndwj4",
+      "keyAgreement": "z6LSiUWjtWGKauvov34ksdHpxzCJpYiGgB8YA9HEuCb8CdrG"
+    },
+    {
+      "label": "persona/An na",
+      "edSeed": "f8ecbf8bc4e14fac42ced38b17b600163d908e29f44c3d3ece6f2abebbb2255d",
+      "xSeed": "b8af578e721cd2af2da995201717339709bcf37bd503d336048342bc474d59b5",
+      "anchor": "did:key:z6MkjSsmG6KP6dQFsNgpjGgpsM2LC6PPRmoVSeypzZbHs34j",
+      "keyAgreement": "z6LSk8UmzyMoAyQkv9Nh9TR9sAQdux1sQS7HMNJ6LUvypFQN"
+    },
+    {
+      "label": "pair/uEiBjDc0pZsQzZpESVEi7sltP9BKknHMtssirwbhYG9cQ3Q",
+      "relationshipNonce": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+      "note": "pair context (0.8): digest = sha2-256 multihash OF the 32 nonce bytes, encoded like a group digest; the nonce is a documented sample — real nonces MUST come from a CSPRNG and never travel",
+      "edSeed": "2c7ac44b463ae617a0851052a3282bd31f46006248723b4fd858d0766a2420e1",
+      "xSeed": "d833cc4bdcc093d0af7485dadc20663055eb6d967059b54fd5e672c0f6c6c35c",
+      "anchor": "did:key:z6MkoFmDjYURbueh9eraATv8YBJMqhbZpFnK9W9qZfm1jF4J",
+      "keyAgreement": "z6LSjZCn6MctoMKaXj3wjRugvV1U5Y41vGLBNgJESZY5vXwr"
+    }
+  ],
+  "service": {
+    "info": "rltp/v1/service-identity/uEiDYLnFbXqm2cwuJWuk9yNzRmlzWDpCTH6yA_4aP_1z_RA",
+    "note": "Ed25519-only — sealed delivery to services is not a 0.x capability",
+    "edSeed": "0ca8bb4cc89302c3e996a0beeb2081182edf87a88d62284e15420b3b44113283",
+    "anchor": "did:key:z6Mkg5LgE8A1LgjMNqWqitMyQje3sj72dZuoizLGSukxqzgz",
+    "zFormInput": "zQmctXr3tRbmrD5JGXvfdimQkJ9tKvJQ7VrtyGGdEvsEVu5",
+    "zFormNote": "z-multibase of the same 34 multihash bytes — MUST normalize to the u-form and yield the same service identity"
+  },
+  "nfc": {
+    "inputComposed": "persona/Café",
+    "inputDecomposed": "persona/Café",
+    "normalizedLabel": "persona/Café",
+    "equal": true,
+    "edSeed": "1d131b761a61139a0db8aade89009764090cf4d0eac808bd28aa1eb7db323dcf",
+    "anchor": "did:key:z6Mkj9hwwNQ5yE5DbaGo354it9Hvm8bXP53DfAcM6UwXXwUH"
+  },
+  "rejects": [
+    {
+      "label": "self",
+      "reason": "self is not a label (Identity 5.3)"
+    },
+    {
+      "label": "group/uEiDYLnFbXqm2cwuJWuk9yNzRmlzWDpCTH6yA_4aP_1z_RB",
+      "reason": "non-canonical base64url (trailing bits not zero)"
+    },
+    {
+      "label": "group/uEiDYLnFbXqm2cwuJWuk9yNzRmlzWDpCTH6yA_4aP_1z_RA=",
+      "reason": "padding present"
+    },
+    {
+      "label": "group/UEiDYLnFbXqm2cwuJWuk9yNzRmlzWDpCTH6yA_4aP_1z_RA",
+      "reason": "wrong multibase prefix case"
+    },
+    {
+      "label": "persona/   ",
+      "reason": "whitespace-only name"
+    },
+    {
+      "label": "",
+      "reason": "empty"
+    },
+    {
+      "label": "persona/",
+      "reason": "empty name component"
+    },
+    {
+      "label": "group/",
+      "reason": "empty digest component"
+    },
+    {
+      "label": "persona/a/b",
+      "reason": "slash inside name component"
+    },
+    {
+      "label": "group/uEiBHZWZvbmRlZC1ncm91cC1kaWdlc3QtZXhhbXBsZQ",
+      "reason": "declared sha2-256 multihash carries 29 of 32 digest bytes"
+    },
+    {
+      "label": "pair/x",
+      "reason": "malformed digest component (pair is a registry label as of 0.7; digest validation identical to group)"
+    },
+    {
+      "label": "device/x",
+      "reason": "reserved prefix"
+    },
+    {
+      "label": " persona/Anna",
+      "reason": "leading whitespace"
+    },
+    {
+      "label": "persona/An\u0007na",
+      "reason": "control character (Cc)"
+    },
+    {
+      "label": "persona/An‍na",
+      "reason": "format character (Cf)"
+    }
+  ],
+  "badMnemonic": {
+    "mnemonic": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon",
+    "reason": "invalid BIP-39 checksum — MUST be rejected at input"
+  }
+}

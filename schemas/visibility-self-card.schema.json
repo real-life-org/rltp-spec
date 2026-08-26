@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "body",
+    "proof"
+  ],
+  "properties": {
+    "body": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "anchor",
+        "keyAgreement"
+      ],
+      "properties": {
+        "type": {
+          "const": "self-card@1"
+        },
+        "anchor": {
+          "type": "string",
+          "pattern": "^did:key:z6Mk[1-9A-HJ-NP-Za-km-z]{44}$"
+        },
+        "keyAgreement": {
+          "type": "string",
+          "pattern": "^z6LS[1-9A-HJ-NP-Za-km-z]{44}$"
+        }
+      }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proofValue"
+      ],
+      "properties": {
+        "proofValue": {
+          "type": "string",
+          "pattern": "^z[1-9A-HJ-NP-Za-km-z]{64,88}$"
+        }
+      }
+    }
+  },
+  "title": "RLTP self-card@1 (rltp-visibility@0.15)"
+}

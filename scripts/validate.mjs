@@ -40,10 +40,10 @@ const ajv = new Ajv2020({ strict: false, allErrors: true, loadSchema: async (uri
   throw new Error(`network resolution forbidden (offline rule): ${uri}`)
 }})
 const schemaFiles = Object.keys(parsed).filter((f) => f.startsWith('schemas/'))
-for (const f of schemaFiles) ajv.addSchema(parsed[f])
+for (const f of schemaFiles) ajv.addSchema(parsed[f], parsed[f].$id || 'https://real-life.org/rltp/v1/' + f)
 const validators = {}
 for (const f of schemaFiles) {
-  try { validators[parsed[f].$id] = ajv.compile(parsed[f]); ok(`compiles: ${f}`) }
+  try { validators[parsed[f].$id || f] = ajv.compile(parsed[f]); ok(`compiles: ${f}`) }
   catch (e) { err(`${f}: ${e.message}`) }
 }
 

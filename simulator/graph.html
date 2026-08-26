@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RLTP Graph Simulator</title>
+<style>
+  :root {
+    --bg: #ffffff; --card: #ffffff; --fg: #2b3344; --muted: #64748b;
+    --border: #e2e8f0; --tint: #f1f5f9; --primary: #2563eb;
+    --primary-tint: #eff6ff; --green: #16a34a; --amber: #b45309;
+    --shadow: 0 10px 15px -3px rgba(0,0,0,.10), 0 4px 6px -4px rgba(0,0,0,.10);
+  }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg: #141821; --card: #1b212c; --fg: #eef2f7; --muted: #94a3b8;
+    --border: #2d3644; --tint: #222937; --primary: #60a5fa;
+    --primary-tint: #1d2839; --green: #4ade80; --amber: #fbbf24;
+    --shadow: 0 10px 15px -3px rgba(0,0,0,.35), 0 4px 6px -4px rgba(0,0,0,.35);
+  }}
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+    font-family: Inter, system-ui, sans-serif; font-size: 15px;
+    height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+  header { display: flex; align-items: baseline; gap: 1rem; padding: .9rem 1.2rem .4rem; }
+  header h1 { font-size: 1.15rem; margin: 0; font-weight: 800; letter-spacing: -.01em; }
+  header .sub { color: var(--muted); font-size: .8rem; }
+  .bars { display: flex; flex-wrap: wrap; gap: .5rem 1.6rem; padding: .3rem 1.2rem .6rem; align-items: center; }
+  .bar { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
+  .bar .lbl { font-size: .62rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-right: .2rem; }
+  .chip { font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer;
+    padding: .32rem .8rem; border-radius: 99px; border: 1.5px solid var(--border);
+    background: var(--card); color: var(--muted); display: inline-flex; align-items: center; gap: .4rem; }
+  .chip.active { border-color: var(--primary); color: var(--primary); background: var(--primary-tint); }
+  .chip:disabled { opacity: .38; cursor: default; }
+  .chip .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  main { flex: 1; min-height: 0; display: flex; gap: 1rem; padding: 0 1.2rem 1rem; align-items: stretch; }
+  .col { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: .8rem; }
+  aside { width: 380px; flex: none; min-height: 0; display: flex; flex-direction: column; gap: .8rem; }
+
+  #story { flex: none; display: flex; gap: 1.2rem; align-items: center; width: 100%; }
+  #story .story-text { flex: 1; min-width: 0; }
+  #story h2 { font-size: 1.05rem; margin: .1rem 0 .2rem; }
+  #story p { margin: 0; font-size: .82rem; }
+  #story .actionbtn { width: auto; margin-top: .4rem; }
+  #story .navbtns { flex: none; }
+  #stage { flex: 1; min-height: 0; background: var(--card); border: 1px solid var(--border);
+    border-radius: .9rem; box-shadow: var(--shadow); position: relative; }
+  /* the camera choice lives IN the graph: perspective governs the stage only */
+  #cambox { position: absolute; left: 14px; top: 12px; z-index: 5; display: flex; gap: .4rem;
+    align-items: center; flex-wrap: wrap; max-width: 75%; }
+  #cambox .lbl { font-size: .62rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); margin-right: .2rem; }
+  #cambox .chip { box-shadow: var(--shadow); }
+  #fabwrap { position: absolute; right: 18px; bottom: 18px; z-index: 6;
+    display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+  #fab { width: 52px; height: 52px; border-radius: 50%;
+    border: none; background: var(--primary); color: #fff; font-size: 27px; line-height: 1; cursor: pointer;
+    box-shadow: 0 8px 20px -6px rgba(0,0,0,.45); }
+  .fabpop { display: flex; flex-direction: column; gap: .4rem; min-width: 180px; align-items: stretch; }
+  .fabpop[hidden] { display: none; }
+  #overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center; z-index: 20; }
+  #overlay[hidden] { display: none; }
+  .dialog { width: 340px; background: var(--card); border: 1px solid var(--border); border-radius: .9rem;
+    box-shadow: var(--shadow); padding: 1.1rem 1.2rem; display: flex; flex-direction: column; gap: .7rem; }
+  .dialog h3 { margin: 0; font-size: 1rem; font-weight: 800; }
+  .dialog label { font-size: .64rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: .25rem; }
+  .dialog input, .dialog select { font: inherit; font-size: .9rem; width: 100%; padding: .5rem .6rem;
+    border-radius: .5rem; border: 1px solid var(--border); background: var(--bg); color: var(--fg); }
+  .dialog input:focus, .dialog select:focus { outline: 2px solid var(--primary); outline-offset: 1px; }
+  .dlgbtns { display: flex; gap: .5rem; justify-content: flex-end; margin-top: .3rem; }
+  .dlgbtns button { font: inherit; font-size: .84rem; font-weight: 700; cursor: pointer;
+    padding: .45rem 1rem; border-radius: .5rem; border: 1.5px solid var(--border); background: var(--card); color: var(--fg); }
+  .dlgbtns button.primary { border-color: var(--primary); color: var(--primary); background: var(--primary-tint); }
+  .fabpop button { font: inherit; font-size: .84rem; font-weight: 600; padding: .5rem .8rem; border-radius: .6rem;
+    border: 1px solid var(--border); background: var(--card); color: var(--fg); cursor: pointer; text-align: left;
+    box-shadow: var(--shadow); }
+  .fabpop button:hover { border-color: var(--primary); color: var(--primary); }
+  .fabpop .go { background: var(--primary-tint); border-color: var(--primary); color: var(--primary); font-weight: 700; text-align: center; }
+  svg { display: block; width: 100%; height: 100%; }
+  #phonecol { flex: none; min-height: 0; display: flex; flex-direction: column; }
+  #wallet { flex: 1; overflow-y: auto; min-height: 0; }
+  .hsplit { flex: none; width: 7px; cursor: col-resize; border-radius: 4px; margin: 0 -3px; }
+  .vsplit { flex: none; height: 7px; cursor: row-resize; border-radius: 4px; margin: -3px 0; }
+  .hsplit:hover, .vsplit:hover, .hsplit.dragging, .vsplit.dragging { background: var(--border); }
+  .colhead { font: inherit; font-size: .62rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); background: none; border: none; cursor: pointer; text-align: left;
+    padding: 2px 2px 6px; display: flex; gap: .5rem; align-items: center; width: 100%; }
+  .colhead .netarrow { margin-left: auto; }
+  #devbox[hidden] { display: none; }
+  /* wallet collapsed → the phone may take the whole column */
+  aside.devmax #phonecol { flex: 1; }
+  aside.devmax #devbox { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  aside.devmax #phone { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  aside.devmax .phone-shell { flex: 1; min-height: 0; display: flex; }
+  aside.devmax .phone-screen { height: auto; flex: 1; min-height: 0; }
+  #wallet.collapsed { flex: 0 0 auto; }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: .9rem;
+    box-shadow: var(--shadow); padding: .9rem 1rem; }
+  .panel h2 { margin: 0 0 .3rem; font-size: .95rem; }
+  .panel .step { font-size: .62rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--primary); }
+  .panel p { margin: .3rem 0 .6rem; font-size: .85rem; color: var(--muted); }
+  .navbtns { display: flex; gap: .5rem; }
+  .navbtns button, .actionbtn { font: inherit; font-size: .82rem; font-weight: 700; cursor: pointer;
+    padding: .4rem .9rem; border-radius: .5rem; border: 1.5px solid var(--border);
+    background: var(--card); color: var(--fg); }
+  .navbtns button.primary, .actionbtn { border-color: var(--primary); color: var(--primary); background: var(--primary-tint); }
+  .navbtns button:disabled { opacity: .35; cursor: default; }
+  .actionbtn { width: 100%; margin-top: .2rem; }
+  #phone { display: none; padding: 0; background: none; border: none; box-shadow: none; }
+  /* app-internal bottom sheet for irreversible acts (App UI, not simulator UI) */
+  #phdlg { position: absolute; inset: 0; background: oklch(25% 0.01 265 / .42); display: flex; align-items: flex-end; z-index: 5; }
+  .tgwrap { display: flex; flex-direction: column; align-items: center; gap: 1px; flex: none; }
+  .tglabel { font-size: 8.5px; font-weight: 600; letter-spacing: .04em; color: oklch(48% 0.008 265); }
+  .toggle { position: relative; width: 38px; height: 22px; flex: none; cursor: pointer;
+    border-radius: 99px; border: none; background: oklch(88% 0.005 265); transition: background .2s; }
+  .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: left .2s; }
+  .toggle.on { background: oklch(55% 0.21 264); }
+  .toggle.on::after { left: 18px; }
+  /* wallet: credentials held by the selected person, ceremony-sim style */
+  #wallet .whead { font-size: .62rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: .5rem; padding-left: .2rem; }
+  /* color grammar: BLUE = verification, GREEN = trust */
+  .pbadge.mutual { background: oklch(93% 0.05 264); color: oklch(45% 0.16 264); }
+  /* svg */
+  .gnode { cursor: pointer; }
+  .gnode circle { transition: fill .6s, stroke .6s, r .4s; }
+  .gnode text { font-size: 11px; fill: var(--fg); }
+  .gnode text.anchortag { font-size: 8.5px; fill: var(--muted); }
+  .gedge { stroke: var(--muted); stroke-opacity: .55; stroke-width: 1.6; transition: opacity .6s; }
+  .gedge.linkline { stroke: var(--primary); stroke-dasharray: 4 4; stroke-opacity: .8; }
+  .gedge.memberline { stroke-dasharray: 3 4; stroke-opacity: .4; }
+  .gedge.sharedline { stroke-opacity: .3; }
+  /* trust overlay: GREEN = the disclosure dimension. Solid = mutual,
+     dashed+arrow = one-sided (arrow points to the RECIPIENT of the ID) */
+  .gedge.trust2 { stroke: oklch(58% 0.15 145); stroke-opacity: .9; stroke-width: 2.2; }
+  .gedge.trust1 { stroke: oklch(58% 0.15 145); stroke-opacity: .8; stroke-width: 1.8; stroke-dasharray: 6 4; }
+  #story { position: relative; }
+  .xbtn { position: absolute; top: 6px; right: 8px; font: inherit; font-size: .8rem; line-height: 1;
+    border: none; background: none; color: var(--muted); cursor: pointer; padding: 4px; }
+  .xbtn:hover { color: var(--fg); }
+  #storyRestore { position: absolute; left: 14px; bottom: 14px; z-index: 5; }
+  body.nostory #netlog { max-height: 340px; }
+  #netpanel { flex: none; padding: 0; overflow: hidden; }
+  .nethead { font: inherit; font-size: .68rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); background: none; border: none; cursor: pointer; width: 100%; text-align: left;
+    padding: 7px 12px; display: flex; gap: .5rem; align-items: center; }
+  .nethead .netarrow { margin-left: auto; }
+  #netcount { font-weight: 400; text-transform: none; letter-spacing: 0; }
+  #netlog { max-height: 140px; overflow: auto; border-top: 1px solid var(--border);
+    font-family: ui-monospace, monospace; font-size: 10.5px; }
+  #netlog[hidden] { display: none; }
+  .netrow { padding: 2.5px 12px; border-top: 1px solid var(--tint); cursor: pointer; color: var(--fg); }
+  .netrow:first-child { border-top: none; }
+  .netrow .nkind { color: var(--muted); }
+  .netrow .nbytes { color: var(--muted); float: right; }
+  .netrow pre { margin: 3px 0 4px; padding: 6px 8px; background: var(--tint); border-radius: 6px;
+    font-size: 9.5px; line-height: 1.35; overflow-x: auto; max-height: 160px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+  .pback { font-size: 11px; font-weight: 600; color: oklch(48% 0.008 265); background: none; border: none; cursor: pointer; padding: 2px 0 8px; display: block; text-align: left; }
+  .gcircle { fill: transparent; stroke: var(--muted); stroke-opacity: .5; stroke-dasharray: 6 5; cursor: pointer; }
+  .ghub circle { fill: transparent; stroke: var(--muted); stroke-opacity: .7; stroke-dasharray: 6 5; stroke-width: 1.8 !important; }
+  .ghub text { font-weight: 700; }
+  .ghub.droptarget circle { stroke: var(--primary) !important; stroke-opacity: 1 !important; stroke-dasharray: none !important; }
+  .gnode.droptarget:not(.ghub) circle { stroke: var(--primary) !important; stroke-width: 3px !important; }
+  .glabel { font-size: 10.5px; fill: var(--muted); }
+  .ring { fill: none; stroke-width: 2; opacity: .9; }
+  .gnode.sel circle { stroke: var(--primary) !important; stroke-width: 3px !important; }
+  .gcircle.sel { stroke: var(--primary); stroke-width: 2.5; }
+  @media (prefers-reduced-motion: reduce) { .gnode { transition: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>RLTP Graph Simulator</h1>
+  <span class="sub">real credentials · WebCrypto · verify on the dancefloor, decide at home</span>
+</header>
+<div class="bars">
+  <div class="bar" style="margin-left:auto"><button class="chip" id="resetBtn" title="clear saved state">↺ Reset</button></div>
+</div>
+<main>
+  <div class="col">
+    <div id="stage"><svg id="svg" viewBox="0 0 960 660"></svg>
+      <div id="cambox"><span class="lbl">View as</span><span id="cams"></span></div>
+      <button id="storyRestore" class="chip" hidden>📖 <span id="storyRestoreNo"></span></button>
+      <div id="fabwrap">
+        <div class="fabpop" id="fabmenu" hidden></div>
+        <button id="fab">＋</button>
+      </div>
+    </div>
+    <div class="vsplit" id="splitLog" title="drag to resize"></div>
+    <div class="panel" id="netpanel">
+      <button class="nethead" id="nethead">📡 Network <span id="netcount"></span><span class="netarrow" id="netarrow">▾</span></button>
+      <div id="netlog"></div>
+    </div>
+    <div class="panel" id="story">
+      <button id="storyClose" class="xbtn" title="hide story">✕</button>
+      <div class="story-text">
+        <span class="step" id="stepno"></span>
+        <h2 id="chtitle"></h2>
+        <p id="chline"></p>
+        <button class="actionbtn" id="chaction" style="display:none"></button>
+      </div>
+      <div class="navbtns">
+        <button id="prev">‹ Back</button>
+        <button id="next" class="primary">Next ›</button>
+      </div>
+    </div>
+  </div>
+  <div class="hsplit" id="splitMain" title="drag to resize"></div>
+  <aside>
+    <div id="phonecol">
+    <button class="colhead" id="devToggle">📱 Device <span class="netarrow" id="devArrow">▾</span></button>
+    <div id="devbox">
+    <div class="panel" id="phone">
+      <div class="phone-shell">
+        <div class="phone-screen">
+          <div class="phone-status"><span id="phClock">10:00</span><span>Web of Trust</span><span id="phOwner"></span></div>
+          <div class="phone-body">
+            <div class="phone-apphead">
+              <span class="pavatar-xs" id="phDot"></span>
+              <span class="appname" id="phName"></span>
+            </div>
+            <div class="plist" id="phList"></div>
+          </div>
+          <div class="pbar">
+            <button class="pbtn active" id="tabContacts">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Contacts</button>
+            <button class="pbtn" id="tabGroups">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.1 2.182a10 10 0 0 1 3.8 0"/><path d="M13.9 21.818a10 10 0 0 1-3.8 0"/><path d="M17.609 3.721a10 10 0 0 1 2.69 2.7"/><path d="M2.182 13.9a10 10 0 0 1 0-3.8"/><path d="M20.279 17.609a10 10 0 0 1-2.7 2.69"/><path d="M21.818 10.1a10 10 0 0 1 0 3.8"/><path d="M3.721 6.391a10 10 0 0 1 2.7-2.69"/><path d="M6.391 20.279a10 10 0 0 1-2.69-2.7"/></svg>
+              Groups</button>
+            <button class="pbtn" id="tabProfile">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Profile</button>
+          </div>
+          <!-- app-internal confirm sheet: irreversible acts confirm INSIDE the phone -->
+          <div id="phdlg" hidden>
+            <div class="phdlg-card">
+              <h4 id="phdlgTitle"></h4>
+              <div id="phdlgBody"></div>
+              <div class="phdlg-btns"><button id="phdlgCancel">Cancel</button><button id="phdlgOk" class="primary">OK</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
+    </div>
+    <div class="vsplit" id="splitDev" title="drag to resize"></div>
+    <div id="wallet" style="display:none">
+      <button class="colhead" id="walletToggle">🗂 Stored on this device <span class="netarrow" id="walletArrow">▾</span></button>
+      <div class="wfilter" id="walletFilter"></div>
+      <div id="walletList"></div>
+    </div>
+  </aside>
+</main>
+<div id="overlay" hidden>
+  <div class="dialog">
+    <h3 id="dlgTitle"></h3>
+    <div id="dlgBody" style="display:flex;flex-direction:column;gap:.6rem"></div>
+    <div class="dlgbtns"><button id="dlgCancel">Cancel</button><button id="dlgOk" class="primary">Create</button></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/d3-dispatch@3/dist/d3-dispatch.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-quadtree@3/dist/d3-quadtree.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-timer@3/dist/d3-timer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-force@3/dist/d3-force.min.js"></script>
+<script type="module">
+import * as W from './graph-web.mjs'
+import { injectPhoneCss } from './rltp-phone.mjs'
+injectPhoneCss()
+
+// ── world & cast ────────────────────────────────────────────────────────
+const world = W.createWorld()
+const COLORS = { Anna:'#3b82f6', Peter:'#ef4444', Frida:'#f59e0b', Sam:'#84cc16', Lena:'#ec4899' }
+const EXTRA = ['#14b8a6','#8b5cf6','#fb923c','#06b6d4','#f43f5e']
+let now = Date.parse('2026-08-21T10:00:00Z')
+const tick = (ms=60_000) => (now += ms)
+
+const P = {}
+
+// ── persistence: action log in localStorage, deterministic replay ───────
+const KEY = 'rltp-graph-sim-v2' // v2: deferred anchor disclosure — v1 logs replay against different holdings
+const hex = (b) => [...b].map((x) => x.toString(16).padStart(2, '0')).join('')
+const unhex = (h) => new Uint8Array(h.match(/../g).map((x) => parseInt(x, 16)))
+const LOG = []
+let restoring = false
+// saved state is validated up front (review F12): anything broken is
+// discarded with a warning so the fresh-start path (cast creation) runs
+const validSave = (s) => !!s && Array.isArray(s.log) && s.log.length > 0
+  && s.log.every((a) => a && typeof a.t === 'string')
+  && (s.meta === undefined || (s.meta && typeof s.meta === 'object'))
+let saved0 = (() => { try { return JSON.parse(localStorage.getItem(KEY) ?? 'null') } catch { return null } })()
+if (saved0 && !validSave(saved0)) { console.warn('saved state invalid — starting fresh'); localStorage.removeItem(KEY); saved0 = null }
+function saveState() {
+  if (restoring) return
+  try {
+    localStorage.setItem(KEY, JSON.stringify({ log: LOG, meta: { now, ch, done: [...done], camera, selected, phoneTab, storyHidden, phoneCollapsed, walletCollapsed, asideW, netH, phoneH } }))
+  } catch {}
+}
+async function apply(a) {
+  switch (a.t) {
+    case 'person': P[a.name] = await W.addPerson(world, a.name, a.color, unhex(a.seed)); if (a.mode) P[a.name].mode = a.mode; break
+    case 'mode': { const p = world.persons.get(a.name); if (p) p.mode = a.mode; break }
+    case 'group': await W.createGroup(world, a.id, a.label); if (a.spot) groupSpots[a.id] = a.spot; break
+    // encounter entropy is stored INTO the action on first run, so replay
+    // reproduces byte-identical documents (review F7)
+    case 'enc': { now = Math.max(now, a.when); const e = await W.encounter(world, world.persons.get(a.a), world.persons.get(a.b), a.when, a.ent); if (e) a.ent = e.ent; break } // null = duplicate dropped
+    case 'join': now = Math.max(now, a.when); await W.join(world, world.persons.get(a.name), world.groups.get(a.gid), a.when, a.dn ?? undefined); break
+    case 'disclose': await W.disclose(world, world.persons.get(a.from), world.persons.get(a.to), a.labels); break
+    case 'trust': await W.setTrust(world, world.persons.get(a.a), world.persons.get(a.b), a.on, a.when); break // one-sided (review F9); delivers the pair→self mapping
+    case 'trust2': { const A = world.persons.get(a.a), B = world.persons.get(a.b); await W.setTrust(world, A, B, a.on, a.when); await W.setTrust(world, B, A, a.on, a.when); break } // legacy logs
+    case 'promote': await W.promote(world, world.persons.get(a.a), world.persons.get(a.b)); break
+    case 'recog': now = Math.max(now, a.when); await W.join(world, world.persons.get(a.name), world.groups.get(a.gid), a.when, a.on ? a.name : null); await W.setTag(world, world.persons.get(a.name), a.gid, a.tag); break
+    case 'pub': now = Math.max(now, a.when ?? now); await W.setPublic(world, world.persons.get(a.name), a.pname, a.when ?? now, a.on); break
+  }
+}
+async function run(a) { await apply(a); LOG.push(a); saveState() }
+const newSeed = () => hex(crypto.getRandomValues(new Uint8Array(32)))
+
+if (!saved0) for (const n of ['Anna','Peter','Frida','Sam'])
+  await run({ t: 'person', name: n, color: COLORS[n], seed: newSeed(), mode: 'friends' })
+const groupSpots = { chor:[820,130,82], garten:[140,130,78], rat:[830,520,74], schach:[130,520,66] }
+
+// ── layout ──────────────────────────────────────────────────────────────
+const pentagon = { Anna:[480,180], Peter:[700,330], Sam:[590,520], Lena:[370,520], Frida:[260,330] }
+function pentagonPos(name) {
+  if (pentagon[name]) return pentagon[name]
+  const names = [...world.persons.keys()]
+  const i = names.indexOf(name)
+  return [480 + 220*Math.cos(-Math.PI/2 + i*2*Math.PI/names.length),
+          330 + 220*Math.sin(-Math.PI/2 + i*2*Math.PI/names.length)]
+}
+const islandSlots = [[190,180],[480,110],[770,180],[190,420],[770,420],[350,300],[610,300],[480,480],[300,560],[660,560],[480,610],[160,300]]
+const ringPos = (i, n) => [480 + 195*Math.cos(-Math.PI/2 + i*2*Math.PI/Math.max(n,3)),
+                           330 + 195*Math.sin(-Math.PI/2 + i*2*Math.PI/Math.max(n,3))]
+function memberSlot(gid, idx, count) {
+  const [gx, gy, gr] = groupSpots[gid] ?? [480, 330, 70]
+  const a = -Math.PI/2 + idx*2*Math.PI/Math.max(count,3)
+  return [gx + (gr-24)*Math.cos(a), gy + (gr-24)*Math.sin(a)]
+}
+const short = (a) => a.slice(8, 16) + '…'
+
+// ── scene assembly ──────────────────────────────────────────────────────
+// One dot per person (when the camera knows them). Groups are HUB nodes;
+// membership is an EDGE person↔hub. Unlinked members are gray dots at the
+// hub that GLIDE into the contact dot on disclosure.
+let camera = 'omniscient'
+
+async function buildScene() {
+  const nodes = [], edges = [], rings = []
+  const persons = [...world.persons.values()]
+  const hubPos = (id) => { const [x, y] = groupSpots[id] ?? [480, 330, 0]; return [x, y] }
+  const orbit = (gid, i, n) => {
+    const [gx, gy] = hubPos(gid)
+    const a = -Math.PI/2 + i*2*Math.PI/Math.max(n,3)
+    return [gx + 52*Math.cos(a), gy + 52*Math.sin(a)]
+  }
+  const addHub = (g) => nodes.push({ id: 'g:'+g.id, x: hubPos(g.id)[0], y: hubPos(g.id)[1], r: 24, hub: true, color: null, label: g.label, ref: { kind: 'group', id: g.id } })
+
+  if (camera === 'outside') {
+    // the CREDENTIAL SPACE: every credential ever issued, collected in one
+    // place. Colors are a spectator hint — the data itself carries no names.
+    // pseudo-colors may only exist where the DATA proves identity.
+    const pseudoColor = (anchor) => {
+      let h = 0
+      for (const c of anchor ?? '') h = (h * 31 + c.charCodeAt(0)) >>> 0
+      return `hsl(${h % 360} 45% 55%)`
+    }
+    // DEFERRED ANCHOR DISCLOSURE: the ceremony emits pairwise credentials
+    // only, and the pair→self mappings are DELIVERED, never published — so
+    // the collector's pile never composes. Islands, always: this is the
+    // collector-blindness the delivered-mappings stellung buys.
+    W.allEncounters(world).forEach((e, idx) => {
+      const [sx, sy] = islandSlots[idx % islandSlots.length]
+      nodes.push({ id: `n:${e.id}:a`, x: sx - 26, y: sy, r: 6, color: null, ref: { kind: 'anchor', anchor: e.R.a.anchor, owner: null } })
+      nodes.push({ id: `n:${e.id}:b`, x: sx + 26, y: sy, r: 6, color: null, ref: { kind: 'anchor', anchor: e.R.b.anchor, owner: null } })
+      edges.push({ id: e.id, a: `n:${e.id}:a`, b: `n:${e.id}:b`, ref: { kind: 'enc', e, which: 'R' } })
+    })
+    for (const g of world.groups.values()) {
+      addHub(g)
+      const anchors = [...g.roster.keys()]
+      anchors.forEach((a, i) => {
+        // once published, a named doc names the anchor forever (F10)
+        const ctxName = W.rosterName(g.roster.get(a))
+        const [x, y] = orbit(g.id, i, anchors.length)
+        nodes.push({ id: 'a:'+a, x, y, r: 6, color: null, sub: ctxName ?? '', ref: { kind: 'anchor', anchor: a, owner: null, ctxName } })
+        edges.push({ id: 'm:'+a, a: 'g:'+g.id, b: 'a:'+a, member: true, ref: { kind: 'anchor', anchor: a, owner: null } })
+      })
+    }
+    // public personas: published by choice, named for everyone — the only
+    // deliberate color in the gray field (still pseudo: the data names the
+    // persona, not the person)
+    world.personas.forEach((pub, i) => {
+      nodes.push({ id: 'pp:'+pub.anchor, x: 170 + i*160, y: 84, r: 9, color: pseudoColor(pub.anchor),
+        label: pub.name, ref: { kind: 'anchor', anchor: pub.anchor, owner: null, ctxName: pub.name } })
+    })
+  } else if (camera === 'omniscient') {
+    // the SOCIAL TRUTH — one dot per person. Cameras change what a viewer
+    // can read, never what happened.
+    for (const p of persons) {
+      const [x, y] = pentagonPos(p.name)
+      nodes.push({ id: 'p:'+p.name, x, y, r: 10, color: p.color, label: p.name, ref: { kind: 'person', name: p.name } })
+    }
+    const seen = new Set()
+    for (const e of W.allEncounters(world)) {
+      const key = [e.aName, e.bName].sort().join('|')
+      if (seen.has(key)) continue
+      seen.add(key)
+      // trust overlay: gray = verified; blue solid = both disclosed;
+      // blue dashed arrow = one-sided, pointing to the ID's recipient
+      const aOut = !!W.contactEntry(world.persons.get(e.aName), e.bName)?.idShared
+      const bOut = !!W.contactEntry(world.persons.get(e.bName), e.aName)?.idShared
+      const trust = aOut && bOut ? 2 : (aOut || bOut) ? 1 : 0
+      const [a, b] = trust === 1 && bOut ? ['p:'+e.bName, 'p:'+e.aName] : ['p:'+e.aName, 'p:'+e.bName]
+      edges.push({ id: e.id, a, b, trust, ref: { kind: 'enc', e, which: 'R' } })
+    }
+    // membership edges as SUPERPOSITION of each person's own held docs —
+    // no god scan over personas/rosters
+    for (const g of world.groups.values()) addHub(g)
+    for (const p of persons)
+      for (const gid of p.memberships.keys())
+        if (world.groups.has(gid))
+          edges.push({ id: `m:${p.name}:${gid}`, a: 'g:'+gid, b: 'p:'+p.name, member: true, ref: { kind: 'person', name: p.name } })
+  } else {
+    // PERSON CAMERA: strictly what the viewer HOLDS — own credentials,
+    // local contact memory (name+color taken at encounter time), received
+    // disclosures, and DELIVERED star snapshots (review F2/F8)
+    const viewer = world.persons.get(camera)
+    nodes.push({ id: 'p:'+viewer.name, x: 480, y: 330, r: 12, color: viewer.color, label: viewer.name + ' (me)', pinned: [480, 330], ref: { kind: 'person', name: viewer.name } })
+    const own = W.ownEncounters(viewer, world)
+    // contact memory, addressable by pair anchor AND (if promoted) self anchor
+    const memory = new Map()
+    for (const [k, entry] of viewer.contacts) { memory.set(k, entry); if (entry.selfAnchor) memory.set(entry.selfAnchor, entry) }
+    const contactNames = [...new Set([...viewer.contacts.values()].map((c) => c.name))].sort()
+    const nameOf = (sa) => memory.get(sa)?.name
+    const slotOf = (name) => ringPos(contactNames.indexOf(name), contactNames.length)
+    const clusters = W.linkClusters(viewer)
+    for (const name of contactNames) {
+      const [x, y] = slotOf(name)
+      const cl = clusters.find((c) => c.name === name)
+      const shared = cl ? await W.sharedGroups(viewer, cl.key, world) : []
+      const centry = [...viewer.contacts.values()].find((c) => c.name === name)
+      nodes.push({ id: 'peer:'+name, x, y, r: 9, color: centry?.color,
+        label: name + (shared.length ? ` · ${shared.length} shared` : ''),
+        ref: cl ? { kind: 'contact', name, shared, anchors: [...cl.anchors.entries()] } : { kind: 'person', name } })
+    }
+    own.forEach((e) => {
+      const peer = e.aName === viewer.name ? e.bName : e.aName
+      // the viewer HOLDS the pairwise materialization only — the self one
+      // was never delivered (deferred disclosure). Trust overlay from what
+      // the viewer knows: their own act (idShared) and the received one.
+      const entry = W.contactEntry(viewer, peer)
+      const out = !!entry?.idShared, inc = !!entry?.selfAnchor
+      const trust = out && inc ? 2 : (out || inc) ? 1 : 0
+      const [a, b] = trust === 1 && inc ? ['peer:'+peer, 'p:'+viewer.name] : ['p:'+viewer.name, 'peer:'+peer]
+      edges.push({ id: e.id, a, b, trust, ref: { kind: 'enc', e, which: 'R', person: peer } })
+    })
+    // shared stars: ONLY from delivered snapshots the viewer holds — and
+    // those are BLINDED now. The viewer can resolve exactly the anchors
+    // they legitimately hold (contacts who shared their ID): intersection
+    // edges appear, everything else stays an opaque count. The three gray
+    // "unknown" circles of the raw era are GONE — that was the point.
+    {
+      const seenPairs = new Set()
+      const candidates = [...viewer.contacts.values()].filter((c) => c.selfAnchor)
+      for (const [fromAnchor, snap] of viewer.starsReceived) {
+        const fromName = nameOf(fromAnchor)
+        if (!fromName) continue
+        for (const c of candidates) {
+          if (c.selfAnchor === fromAnchor) continue
+          if (!(await W.starMatch(viewer, fromName, snap, c.selfAnchor))) continue
+          const key = [fromAnchor, c.selfAnchor].sort().join('|')
+          if (seenPairs.has(key)) continue
+          seenPairs.add(key)
+          // a star match IS a trust fact: "this contact disclosed their ID
+          // to the star's sender" — arrow toward the holder (the sender);
+          // mutual when the reciprocal star confirms the other direction
+          const back = viewer.starsReceived.get(c.selfAnchor)
+          const mutual = back ? await W.starMatch(viewer, c.name, back, fromAnchor) : false
+          edges.push({ id: 'sh:'+key, a: 'peer:'+c.name, b: 'peer:'+fromName, trust: mutual ? 2 : 1,
+            ref: { kind: 'star', from: fromName } })
+        }
+      }
+    }
+    // groups I belong to: hubs + membership edges. Only DISCLOSED mappings
+    // merge roster anchors into contacts — a B' tag proves membership of the
+    // SELF anchor, it does not reveal which roster anchor is theirs.
+    const linkedAnchors = new Map()
+    for (const c of clusters) for (const [, a] of c.anchors) linkedAnchors.set(a, c.name)
+    for (const g of W.knownGroups(viewer, world)) {
+      addHub(g)
+      const anchors = [...g.roster.keys()]
+      anchors.forEach((a, i) => {
+        const ctxName = W.rosterName(g.roster.get(a))
+        const mine = [...viewer.personas.values()].some((q) => q.anchor === a)
+        const linkedTo = linkedAnchors.get(a)
+        const merged = mine || (linkedTo && contactNames.includes(linkedTo))
+        const pos = mine ? [480, 330] : merged ? slotOf(linkedTo) : orbit(g.id, i, anchors.length)
+        nodes.push({ id: 'a:'+a, x: pos[0], y: pos[1], r: merged ? 0 : 6,
+          pin: mine ? 'p:'+viewer.name : merged ? 'peer:'+linkedTo : null,
+          color: mine ? viewer.color : linkedTo ? [...viewer.contacts.values()].find((c) => c.name === linkedTo)?.color : null,
+          sub: merged ? '' : ctxName ?? short(a),
+          ref: { kind: 'anchor', anchor: a, owner: mine ? viewer.name : linkedTo ?? null, ctxName } })
+        edges.push({ id: 'm:'+a, a: 'g:'+g.id, b: 'a:'+a, member: true, ref: { kind: 'anchor', anchor: a, owner: mine ? viewer.name : linkedTo ?? null } })
+      })
+    }
+  }
+  return { nodes, edges, rings }
+}
+
+// ── renderer: d3-force layout, draggable nodes ──────────────────────────
+const svg = document.getElementById('svg')
+// arrowhead for one-sided trust edges (points to the recipient of the ID);
+// refX pulls the tip clear of the node dot
+svg.insertAdjacentHTML('afterbegin', '<defs><marker id="arrowT" viewBox="0 0 10 10" refX="16" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="oklch(58% 0.15 145)"/></marker></defs>')
+const NS = 'http://www.w3.org/2000/svg'
+const layers = {}
+for (const l of ['edges','rings','nodes']) { layers[l] = document.createElementNS(NS,'g'); svg.appendChild(layers[l]) }
+const dom = new Map()
+function el(tag, attrs) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e }
+
+let scene = { nodes: [], edges: [], rings: [] }
+const simIndex = new Map()
+// TWO SHELLS: persons keep the center; group hubs are pushed onto an
+// outer ring (radial force) so person-to-person edges no longer cross
+// the group circles. Member links are long and soft — they must not
+// drag hubs inward.
+const sim = d3.forceSimulation([])
+  .force('link', d3.forceLink([]).id((d) => d.id).distance((l) => l.dist).strength((l) => l.str))
+  .force('charge', d3.forceManyBody().strength(-340))
+  .force('collide', d3.forceCollide().radius((d) => (d.r ?? 8) + (d.hubR ? 46 : 26)))
+  .force('radial', d3.forceRadial((d) => d.hubR ?? 0, 480, 330).strength((d) => d.hubR ? 0.35 : 0))
+  .force('x', d3.forceX(480).strength((d) => d.hubR ? 0 : 0.05))
+  .force('y', d3.forceY(330).strength((d) => d.hubR ? 0 : 0.06))
+  .on('tick', ticked)
+
+const sceneNode = (id) => scene.nodes.find((n) => n.id === id) ?? scene.rings.find((n) => n.id === id)
+function posOf(id) {
+  const sn = simIndex.get(id)
+  if (sn) return sn
+  const n = sceneNode(id)
+  if (n?.pin) return posOf(n.pin)
+  return n ?? { x: 480, y: 330 }
+}
+const simTarget = (id) => { const n = sceneNode(id); return n?.pin ? simTarget(n.pin) : id }
+
+function syncSim() {
+  const free = scene.nodes.filter((n) => !n.pin && n.r > 0)
+  for (const n of free) {
+    let sn = simIndex.get(n.id)
+    if (!sn) { sn = { id: n.id, x: n.x + (Math.random() - .5) * 8, y: n.y + (Math.random() - .5) * 8 }; simIndex.set(n.id, sn) }
+    sn.r = n.r
+    sn.hubR = n.hub ? 300 : 0
+    if (n.pinned) { sn.fx = n.pinned[0]; sn.fy = n.pinned[1] }
+  }
+  for (const id of [...simIndex.keys()]) if (!free.some((n) => n.id === id)) simIndex.delete(id)
+  const links = []
+  for (const e of scene.edges) {
+    const a = simTarget(e.a), b = simTarget(e.b)
+    if (a && b && a !== b && simIndex.has(a) && simIndex.has(b)) {
+      let dist = 170, str = 0.5
+      if (e.member) {
+        // anchor dots orbit their hub tightly; hub↔person bands are long
+        // and soft so they cannot drag hubs into the person shell
+        const sa = simIndex.get(a), sb = simIndex.get(b)
+        const other = sa.hubR ? sb : sa
+        const orbit = !other.hubR && (other.r ?? 8) <= 6
+        dist = orbit ? 64 : 250
+        str = orbit ? 0.6 : 0.08
+      }
+      links.push({ source: a, target: b, dist, str })
+    }
+  }
+  sim.nodes([...simIndex.values()])
+  sim.force('link').links(links)
+  sim.alpha(0.8).restart()
+}
+
+function syncDom() {
+  const keep = new Set()
+  for (const r of scene.rings) {
+    keep.add(r.id)
+    let g = dom.get(r.id)
+    if (!g) { g = el('g', { class: 'gnode' }); g.appendChild(el('circle', { class: 'ring', r: r.r })); layers.rings.appendChild(g); dom.set(r.id, g) }
+    g.firstChild.setAttribute('stroke', r.color)
+    g.__pin = r.pin ?? r.id
+  }
+  for (const n of scene.nodes) {
+    keep.add(n.id)
+    let g = dom.get(n.id)
+    if (!g) {
+      g = el('g', { class: 'gnode' })
+      g.appendChild(el('circle', { r: n.r }))
+      g.appendChild(el('text', { 'text-anchor': 'middle', y: 22, 'font-weight': 700 }))
+      g.appendChild(el('text', { class: 'anchortag', 'text-anchor': 'middle', y: 33 }))
+      layers.nodes.appendChild(g); dom.set(n.id, g)
+      attachInteraction(g)
+    }
+    g.__ref = n.ref; g.__id = n.id
+    g.classList.toggle('ghub', !!n.hub)
+    const c = g.querySelector('circle')
+    c.setAttribute('r', n.r)
+    if (!n.hub) {
+      c.setAttribute('fill', n.color ?? 'transparent')
+      c.setAttribute('stroke', n.color ?? (n.r ? 'var(--muted)' : 'none'))
+      c.setAttribute('stroke-width', n.color ? 0 : 1.8)
+    } else { c.removeAttribute('fill'); c.removeAttribute('stroke') }
+    g.children[1].textContent = n.label ?? ''
+    g.children[1].setAttribute('y', n.hub ? n.r + 15 : 22)
+    g.children[2].textContent = n.sub ?? ''
+    const isSel = !!personOf(n.ref) && selected === personOf(n.ref)
+    g.classList.toggle('sel', isSel)
+  }
+  for (const e of scene.edges) {
+    const id = 'E:' + e.id
+    keep.add(id)
+    let l = dom.get(id)
+    if (!l) { l = el('line', {}); layers.edges.appendChild(l); dom.set(id, l) }
+    // classes are dynamic: the trust overlay changes as disclosure acts happen
+    l.setAttribute('class', 'gedge' + (e.link ? ' linkline' : '') + (e.member ? ' memberline' : '') + (e.shared ? ' sharedline' : '')
+      + (e.trust === 2 ? ' trust2' : '') + (e.trust === 1 ? ' trust1' : ''))
+    if (e.trust === 1) l.setAttribute('marker-end', 'url(#arrowT)')
+    else l.removeAttribute('marker-end')
+    l.__ref = e.ref; l.__a = e.a; l.__b = e.b
+  }
+  for (const [id, node] of dom) if (!keep.has(id)) { node.remove(); dom.delete(id) }
+  ticked()
+}
+
+function ticked() {
+  for (const [id, g] of dom) {
+    if (g.tagName === 'line') {
+      const a = posOf(g.__a), b = posOf(g.__b)
+      g.setAttribute('x1', a.x); g.setAttribute('y1', a.y); g.setAttribute('x2', b.x); g.setAttribute('y2', b.y)
+    } else {
+      const p = posOf(g.__pin ?? g.__id ?? id)
+      g.style.transform = `translate(${p.x}px, ${p.y}px)`
+    }
+  }
+}
+
+// drag + click (click unterdrückt, wenn bewegt wurde)
+function svgPoint(ev) {
+  const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY
+  return pt.matrixTransform(svg.getScreenCTM().inverse())
+}
+function attachInteraction(g) {
+  let moved = false
+  g.addEventListener('pointerdown', (ev) => {
+    const sn = simIndex.get(simTarget(g.__id))
+    if (!sn) return
+    moved = false
+    let last = null
+    // waehrend gezogen wird: ALLE anderen Knoten einfrieren, sonst fliehen die Ziele
+    const frozen = []
+    for (const other of simIndex.values()) {
+      if (other === sn || other.fx != null) continue
+      other.fx = other.x; other.fy = other.y; frozen.push(other)
+    }
+    const dragName = personOf(g.__ref)
+    const hubAt = (p) => {
+      if (!p) return null
+      for (const n of scene.nodes) {
+        if (!n.hub) continue
+        const hp = posOf(n.id)
+        if (Math.hypot(hp.x - p.x, hp.y - p.y) < (n.r ?? 24) + 14) return n
+      }
+      return null
+    }
+    const personAt = (p) => {
+      if (!p) return null
+      for (const n of scene.nodes) {
+        if (n.hub || !(n.r > 0)) continue
+        const pn = personOf(n.ref)
+        if (!pn || pn === dragName) continue
+        if (n.id === sn.id) continue
+        const np = posOf(n.id)
+        if (Math.hypot(np.x - p.x, np.y - p.y) < (n.r ?? 8) + 14) return n
+      }
+      return null
+    }
+    const onMove = (mv) => {
+      const p = svgPoint(mv); moved = true; last = p
+      sn.fx = p.x; sn.fy = p.y
+      sim.alphaTarget(0.25).restart()
+      const hub = dragName ? hubAt(p) : null
+      const pt = dragName && !hub ? personAt(p) : null
+      for (const [id, node] of dom) {
+        if (node.tagName === 'line') continue
+        node.classList?.toggle('droptarget', (hub && hub.id === id) || (pt && pt.id === id))
+      }
+    }
+    const onUp = async () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      sim.alphaTarget(0)
+      const n = sceneNode(sn.id)
+      if (!n?.pinned) { sn.fx = null; sn.fy = null }
+      for (const hs of frozen) { hs.fx = null; hs.fy = null }
+      for (const [, node] of dom) node.classList?.remove('droptarget')
+      const hub = dragName ? hubAt(last) : null
+      const pt = dragName && !hub ? personAt(last) : null
+      if (hub) {
+        const person = world.persons.get(dragName)
+        const group = world.groups.get(hub.ref.id)
+        if (person && group && !person.memberships.has(group.id)) {
+          await run({ t: 'join', name: person.name, gid: group.id, when: tick(1000) })
+          render()
+        }
+      } else if (pt) {
+        const A = world.persons.get(dragName), B = world.persons.get(personOf(pt.ref))
+        const already = A && B && !!W.contactEntry(A, B.name)
+        if (A && B && A !== B && !already) {
+          await run({ t: 'enc', a: A.name, b: B.name, when: tick() })
+          render()
+        }
+      }
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    ev.preventDefault()
+  })
+  g.addEventListener('click', () => {
+    if (moved) { moved = false; return }
+    if (!g.__ref) return
+    selectPerson(personOf(g.__ref))
+  })
+}
+
+// draggable section borders: aside width, log height, phone height
+let asideW = null, netH = null, phoneH = null
+function applySizes() {
+  const aside = document.querySelector('aside')
+  if (asideW) aside.style.width = asideW + 'px'
+  if (netH) document.getElementById('netlog').style.maxHeight = document.getElementById('netlog').style.height = netH + 'px'
+  const scr = document.querySelector('.phone-screen')
+  if (phoneH && scr) scr.style.height = phoneH + 'px'
+}
+function makeDrag(id, onMove) {
+  const el = document.getElementById(id)
+  el.addEventListener('pointerdown', (ev) => {
+    ev.preventDefault(); el.classList.add('dragging')
+    const move = (m) => { onMove(m); applySizes() }
+    const up = () => { el.classList.remove('dragging'); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); saveState() }
+    window.addEventListener('pointermove', move); window.addEventListener('pointerup', up)
+  })
+}
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
+makeDrag('splitMain', (m) => {
+  const main = document.querySelector('main').getBoundingClientRect()
+  asideW = clamp(main.right - m.clientX - 18, 280, Math.min(700, main.width - 420))
+})
+makeDrag('splitLog', (m) => {
+  const log = document.getElementById('netlog').getBoundingClientRect()
+  netH = clamp(log.bottom - m.clientY, 50, 600)
+})
+makeDrag('splitDev', (m) => {
+  const scr = document.querySelector('.phone-screen')?.getBoundingClientRect()
+  if (scr) phoneH = clamp(m.clientY - scr.top, 260, 900)
+})
+let phoneCollapsed = false, walletCollapsed = false
+function applyColVis() {
+  document.getElementById('devbox').hidden = phoneCollapsed
+  document.getElementById('devArrow').textContent = phoneCollapsed ? '▸' : '▾'
+  document.getElementById('walletFilter').hidden = walletCollapsed
+  document.getElementById('walletList').hidden = walletCollapsed
+  document.getElementById('walletArrow').textContent = walletCollapsed ? '▸' : '▾'
+  document.getElementById('wallet').classList.toggle('collapsed', walletCollapsed)
+  document.querySelector('aside').classList.toggle('devmax', walletCollapsed && !phoneCollapsed)
+}
+document.getElementById('devToggle').onclick = () => { phoneCollapsed = !phoneCollapsed; applyColVis(); renderPhone(); saveState() }
+document.getElementById('walletToggle').onclick = () => { walletCollapsed = !walletCollapsed; applyColVis(); renderPhone(); saveState() }
+let storyHidden = false
+function applyStoryVis() {
+  document.getElementById('story').style.display = storyHidden ? 'none' : ''
+  document.getElementById('storyRestore').hidden = !storyHidden
+  document.body.classList.toggle('nostory', storyHidden)
+  document.getElementById('storyRestoreNo').textContent = `Chapter ${ch + 1}/${chapters.length}`
+}
+document.getElementById('storyClose').onclick = () => { storyHidden = true; applyStoryVis(); saveState() }
+document.getElementById('storyRestore').onclick = () => { storyHidden = false; applyStoryVis(); saveState() }
+let netOpen = true
+document.getElementById('nethead').onclick = () => {
+  netOpen = !netOpen
+  document.getElementById('netlog').hidden = !netOpen
+  document.getElementById('netarrow').textContent = netOpen ? '▾' : '▸'
+}
+let netRendered = 0
+function renderNet() {
+  const log = document.getElementById('netlog')
+  if (netRendered > world.transport.length) { log.innerHTML = ''; netRendered = 0 } // fresh replay
+  const atBottom = log.scrollTop + log.clientHeight >= log.scrollHeight - 8
+  for (; netRendered < world.transport.length; netRendered++) {
+    const p = world.transport[netRendered]
+    const row = document.createElement('div'); row.className = 'netrow'
+    const bytes = JSON.stringify(p.payload).length
+    row.innerHTML = `#${p.n} ${p.from} → ${p.to} · <span class="nkind">${p.kind}</span><span class="nbytes">${bytes} B</span>`
+    row.onclick = () => {
+      const open = row.querySelector('pre')
+      if (open) { open.remove(); return }
+      const pre = document.createElement('pre'); pre.textContent = JSON.stringify(p.payload, null, 1)
+      row.appendChild(pre)
+    }
+    log.appendChild(row)
+  }
+  document.getElementById('netcount').textContent = `· ${world.transport.length} packets`
+  if (atBottom) log.scrollTop = log.scrollHeight
+}
+async function render() {
+  scene = await buildScene()
+  syncSim(); syncDom()
+  renderBars(); renderPhone(); renderWallet(); renderNet()
+  runChecks() // executed, not asserted (review F3) — failures surface, successes stay quiet
+  saveState()
+}
+
+// chapter checks run on every render; only FAILURES become visible
+async function runChecks() {
+  const c = chapters[ch]
+  if (!c?.checks) return
+  const fails = []
+  for (const k of c.checks()) {
+    try { if (!(await k.fn())) fails.push(k.msg) } catch (err) { fails.push(`${k.msg} (${err.message})`) }
+  }
+  const el = document.getElementById('stepno')
+  if (!el) return
+  el.textContent = `Chapter ${ch+1} / ${chapters.length}` + (fails.length ? ' · ⚠ check failed' : '')
+  el.style.color = fails.length ? '#dc2626' : ''
+  if (fails.length) console.error('chapter checks failed:', fails)
+}
+
+// ── story ───────────────────────────────────────────────────────────────
+const pairs = [['Anna','Peter'],['Anna','Frida'],['Peter','Frida'],['Peter','Sam'],['Frida','Sam'],['Anna','Sam']]
+const chapters = [
+  { title: 'What actually happened.', line: 'Six people meet, for real: every encounter issues verifiable credentials. This is the omniscient view — social truth. But reality is not a database. The question of this simulator: who can PROVE what?',
+    camera: 'omniscient', level: 1,
+    setup: async () => { for (const [a,b] of pairs) await run({ t: 'enc', a, b, when: tick() }) },
+    checks: () => [
+      { msg: 'all credentials verify (WebCrypto)', fn: async () => { for (const e of W.allEncounters(world)) { if (!(await W.verifyEncounter(e)).ok) return false } return true } },
+      { msg: 'every credential uses fresh pairwise anchors', fn: async () => { const es = W.allEncounters(world); return new Set(es.flatMap((e)=>[e.R.a.anchor,e.R.b.anchor])).size === es.length*2 } },
+    ] },
+  { title: 'Your own star.', line: 'Camera: Anna. You know whom you met — you were there. The ceremony exchanged only pairwise anchors: each credential is provable between its two holders, your star is yours alone, and nothing beyond it is readable.',
+    camera: 'Anna', setup: async () => {},
+    checks: () => [ { msg: 'Anna holds their own encounters', fn: async () => W.ownEncounters(P.Anna, world).length >= 3 } ] },
+  { title: 'Communities.', line: 'Camera: Anna. Groups form, and members sign membership under derived context anchors. You can read the rosters of YOUR groups — but the gray members are anchors, not people: you cannot connect them to anyone.',
+    camera: 'Anna',
+    setup: async () => {
+      for (const [id, label] of [['chor','Choir'],['garten','Garden'],['rat','Council'],['schach','Chess']]) await run({ t: 'group', id, label })
+      for (const g of ['chor','garten','rat']) { await run({ t: 'join', name: 'Anna', gid: g, when: tick(1000) }); await run({ t: 'join', name: 'Peter', gid: g, when: tick(1000) }) }
+      await run({ t: 'join', name: 'Peter', gid: 'schach', when: tick(1000) })
+      await run({ t: 'join', name: 'Frida', gid: 'garten', when: tick(1000) })
+      await run({ t: 'join', name: 'Sam', gid: 'chor', when: tick(1000) })
+    },
+    checks: () => [ { msg: 'membership docs signed under derived anchors', fn: async () => W.diVerify(P.Peter.memberships.get('chor').doc, (await W.persona(P.Peter, `group/${world.groups.get('chor').genesisDigest}`)).anchor) } ] },
+  { title: 'The Sam moment.', line: 'Camera: Sam. Sam shares the choir with Peter and SEES an anchor in the roster — gray, anonymous. Membership is anonymous by default: nothing connects it to any person, inside or outside. Recognition is a choice.',
+    camera: 'Sam', setup: async () => {},
+    checks: () => [ { msg: 'Sam links no anchors beyond his own contacts', fn: async () => W.linkClusters(P.Sam).every((c) => [...c.anchors.keys()].every((l) => l === 'self' || l === 'pair' || [...world.groups.values()].some((g) => `group/${g.genesisDigest}` === l && world.persons.get(c.name)?.memberships.has(g.id)))) } ] },
+  { title: 'The personal community.', line: 'Camera: Anna. Your roster of encounters is your personal community. Your stable ID was never part of any ceremony: it travels LATER, per contact, one-sidedly, via Trust. Verify on the dancefloor, decide at home.',
+    camera: 'Anna', setup: async () => {},
+    checks: () => [
+      { msg: 'the ceremony leaves NO self-signed artifact behind', fn: async () => W.allEncounters(world).every((e) => !e.S) },
+      { msg: 'roster(Anna) = Frida, Peter, Sam', fn: async () => W.rosterNames(P.Anna, world).sort().join()==='Frida,Peter,Sam' },
+    ] },
+  { title: 'Disclosure.', line: 'People share their anchor mappings with their contacts — watch gray roster anchors take their colors and glide into your contacts. Anna now reads: Peter, 3 shared groups. Nobody else learned anything.',
+    camera: 'Anna',
+    setup: async () => {
+      for (const [x, y] of [['Peter','Anna'],['Anna','Peter'],['Frida','Anna'],['Anna','Frida'],['Sam','Anna'],['Anna','Sam'],['Peter','Frida'],['Frida','Peter'],['Peter','Sam'],['Sam','Peter'],['Frida','Sam'],['Sam','Frida']])
+        await run({ t: 'disclose', from: x, to: y, labels: [...P[x].memberships.values()].map((m)=>m.label) })
+      for (const n of ['Anna','Peter','Frida','Sam']) await run({ t: 'mode', name: n, mode: 'encountered' })
+    },
+    checks: () => [
+      { msg: 'Anna ↔ Peter: 3 shared groups', fn: async () => (await W.sharedGroups(P.Anna, W.contactKey(P.Anna, 'Peter'), world)).length === 3 },
+      { msg: 'Peter’s 4th group (Chess) is not shared', fn: async () => !(await W.sharedGroups(P.Anna, W.contactKey(P.Anna, 'Peter'), world)).includes('schach') },
+    ] },
+  { title: 'One-sided trust.', line: 'Lena arrives in FRIENDS mode: she meets Anna and Peter, joins two groups — her mappings go to trusted contacts only. The button is LENA’s one-sided act: she trusts Anna — her stable ID travels to Anna. Anna’s view links up; Peter keeps seeing gray — and Anna owes Lena nothing in return.',
+    camera: 'Anna',
+    setup: async () => {
+      await run({ t: 'person', name: 'Lena', color: COLORS.Lena, seed: newSeed(), mode: 'friends' })
+      await run({ t: 'enc', a: 'Anna', b: 'Lena', when: tick() })
+      await run({ t: 'enc', a: 'Peter', b: 'Lena', when: tick() })
+      await run({ t: 'join', name: 'Lena', gid: 'chor', when: tick(1000) })
+      await run({ t: 'join', name: 'Lena', gid: 'garten', when: tick(1000) })
+    },
+    action: { label: '★ Lena trusts Anna', run: async () => { await run({ t: 'trust', a: 'Lena', b: 'Anna', on: true, when: tick(1000) }) } },
+    checks: () => [
+      { msg: 'Anna ↔ Lena shared groups = 2 after promotion', fn: async () => {
+        const promoted = P.Lena?.friends.has(W.contactKey(P.Lena, 'Anna'))
+        if (!promoted) return true // the promotion is the chapter's action — nothing to assert before it
+        return (await W.sharedGroups(P.Anna, W.contactKey(P.Anna, 'Lena'), world)).length === 2
+      } },
+      { msg: 'Peter still links only Lena’s pairwise anchor', fn: async () => (W.linkClusters(P.Peter).find((c)=>c.name==='Lena')?.anchors.size ?? 1) === 1 },
+    ] },
+  { title: 'Whose graph?', line: 'All yours — cameras and the ＋ button. The omniscient view shows what happened; every other camera shows what that person can prove. The graph is what a verifier can compute.',
+    camera: 'Anna', setup: async () => {},
+    checks: () => [] },
+]
+let ch = -1
+const done = new Set()
+async function goto(i) {
+  ch = Math.max(0, Math.min(chapters.length - 1, i))
+  const c = chapters[ch]
+  if (!done.has(ch)) { await c.setup(); done.add(ch); refreshSelects() }
+  camera = c.camera
+  document.getElementById('stepno').textContent = `Chapter ${ch+1} / ${chapters.length}`
+  document.getElementById('chtitle').textContent = c.title
+  document.getElementById('chline').textContent = c.line
+  const ab = document.getElementById('chaction')
+  if (c.action) { ab.style.display = 'block'; ab.textContent = c.action.label; ab.onclick = async () => { await c.action.run(); ab.disabled = true; render() }; ab.disabled = false }
+  else ab.style.display = 'none'
+  document.getElementById('prev').disabled = ch === 0
+  document.getElementById('next').disabled = ch === chapters.length - 1
+  applyStoryVis()
+  render()
+}
+document.getElementById('prev').onclick = () => goto(ch - 1)
+document.getElementById('next').onclick = () => goto(ch + 1)
+document.addEventListener('keydown', (e) => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
+  if (!document.getElementById('overlay').hidden) return
+  if (e.key === 'ArrowRight') goto(ch + 1); if (e.key === 'ArrowLeft') goto(ch - 1)
+})
+
+// ── bars: always free ───────────────────────────────────────────────────
+function renderBars() {
+  const cams = document.getElementById('cams'); cams.innerHTML = ''
+  const mk = (label, value, active, color) => {
+    const b = document.createElement('button'); b.className = 'chip' + (active ? ' active' : '')
+    if (color) b.innerHTML = `<span class="dot" style="background:${color}"></span>` + label
+    else b.textContent = label
+    b.onclick = () => { camera = value; render() }
+    return b
+  }
+  cams.appendChild(mk('👁 omniscient', 'omniscient', camera === 'omniscient'))
+  cams.appendChild(mk('🗂 outside', 'outside', camera === 'outside'))
+  for (const p of world.persons.values()) cams.appendChild(mk(p.name, p.name, camera === p.name, p.color))
+}
+
+// ── selection: single person activates the phone ────────────────────────
+let selected = null
+const personOf = (ref) => !ref ? null
+  : ref.kind === 'person' || ref.kind === 'contact' ? ref.name
+  : ref.kind === 'enc' ? ref.person ?? null
+  : ref.kind === 'anchor' ? ref.owner ?? null : null
+function selectPerson(name) {
+  if (!name) return
+  selected = selected === name ? null : name
+  profileOf = null; groupProfileOf = null
+  render()
+}
+const sel = { get a() { return selected }, b: null, group: null } // kompat für isSel
+
+// ── FAB: create person / group / relationship / membership ──────────────
+const $ = (id) => document.getElementById(id)
+const fabMenu = $('fabmenu')
+$('fab').onclick = () => { fabMenu.hidden = !fabMenu.hidden; if (!fabMenu.hidden) buildFabMenu() }
+const fabWrap = $('fabwrap')
+fabWrap.addEventListener('mouseenter', () => { if (fabMenu.hidden) { buildFabMenu(); fabMenu.hidden = false } })
+fabWrap.addEventListener('mouseleave', () => { fabMenu.hidden = true })
+function buildFabMenu() {
+  fabMenu.innerHTML = ''
+  const item = (label, fn) => { const b = document.createElement('button'); b.textContent = label; b.onclick = () => { fabMenu.hidden = true; fn() }; fabMenu.appendChild(b) }
+  item('＋ Person', () => openDialog('person'))
+  item('＋ Group', () => openDialog('group'))
+  item('＋ Verification', () => openDialog('relationship'))
+  item('＋ Membership', () => openDialog('membership'))
+}
+
+// ── dialog ──────────────────────────────────────────────────────────────
+const overlay = $('overlay'), dlgBody = $('dlgBody')
+let dlgConfirm = null
+let pendingShare = null   // {a, b} — contact awaiting the share-ID confirm
+let pendingGroup = null   // {name, gid, label} — group awaiting the trust confirm
+function field(labelText, control) {
+  const w = document.createElement('div')
+  const l = document.createElement('label'); l.textContent = labelText; w.appendChild(l)
+  w.appendChild(control); return w
+}
+function personSelect(exclude) {
+  const sl = document.createElement('select')
+  for (const p of world.persons.values()) { const o = document.createElement('option'); o.textContent = p.name; sl.appendChild(o) }
+  return sl
+}
+function groupSelect() {
+  const sl = document.createElement('select')
+  for (const g of world.groups.values()) { const o = document.createElement('option'); o.value = g.id; o.textContent = g.label; sl.appendChild(o) }
+  return sl
+}
+function openDialog(kind) {
+  dlgBody.innerHTML = ''
+  const T = { person: 'New person', group: 'New group', relationship: 'New verification', membership: 'New membership' }
+  $('dlgTitle').textContent = T[kind]
+  $('dlgOk').textContent = 'Create'
+  if (kind === 'person' || kind === 'group') {
+    const inp = document.createElement('input'); inp.placeholder = kind === 'person' ? 'e.g. Maria' : 'e.g. Choir'
+    dlgBody.appendChild(field('Name', inp))
+    dlgConfirm = async () => {
+      const n = inp.value.trim()
+      if (!n) return false
+      if (kind === 'person') {
+        if (world.persons.has(n)) return false
+        await run({ t: 'person', name: n, color: EXTRA[world.persons.size % EXTRA.length], seed: newSeed() })
+      } else {
+        if (world.groups.has(n)) return false
+        await run({ t: 'group', id: n, label: n, spot: [480 + (Math.random()*300-150), 330 + (Math.random()*260-130), 70] })
+      }
+      return true
+    }
+    setTimeout(() => inp.focus(), 30)
+  } else if (kind === 'relationship') {
+    const a = personSelect(), b = personSelect()
+    if (b.options.length > 1) b.selectedIndex = 1
+    dlgBody.appendChild(field('Person', a))
+    dlgBody.appendChild(field('verifies · in person', b))
+    dlgConfirm = async () => {
+      const A = world.persons.get(a.value), B = world.persons.get(b.value)
+      if (!A || !B || A === B) return false
+      // one duplicate rule for every path (review F14): a pair verifies once
+      const already = !!W.contactEntry(A, B.name)
+      if (already) return false
+      await run({ t: 'enc', a: A.name, b: B.name, when: tick() })
+      return true
+    }
+  } else if (kind === 'membership') {
+    const a = personSelect(), g = groupSelect()
+    dlgBody.appendChild(field('Person', a))
+    dlgBody.appendChild(field('joins group', g))
+    dlgConfirm = async () => {
+      const A = world.persons.get(a.value), G = world.groups.get(g.value)
+      if (!A || !G || A.memberships.has(G.id)) return false
+      await run({ t: 'join', name: A.name, gid: G.id, when: tick(1000) })
+      return true
+    }
+  }
+  overlay.hidden = false
+}
+
+// ── app-internal confirm sheet: irreversible acts belong to the App UI ──
+let phdlgConfirm = null
+function openPhoneDialog(kind) {
+  const body = $('phdlgBody'); body.innerHTML = ''
+  const P = (text, note) => { const p = document.createElement('p'); if (note) p.className = 'note'; p.textContent = text; return p }
+  if (kind === 'shareid') {
+    $('phdlgTitle').textContent = `Trust ${pendingShare.b}`
+    $('phdlgOk').textContent = 'Trust'
+    body.append(
+      P(`Trusting ${pendingShare.b} shares your stable ID with them: they can link your anchors, recognize your tags, and receive your mappings and star.`),
+      P(`This is a one-way door: ${pendingShare.b} keeps your stable ID forever. Only the ongoing updates can be paused later.`, true))
+    phdlgConfirm = async () => {
+      await run({ t: 'trust', a: pendingShare.a, b: pendingShare.b, on: true, when: tick(1000) })
+      return true
+    }
+  } else if (kind === 'trustgroup') {
+    $('phdlgTitle').textContent = 'Trust this group'
+    $('phdlgOk').textContent = 'Trust'
+    body.append(
+      P(`Trust “${pendingGroup.label}”? Your name goes into the group, and a recognition tag lets co-members who hold your stable ID recognize you.`),
+      P('This is a one-way door: the published name and tag stay readable forever. Only the ongoing publication can be paused later.', true))
+    phdlgConfirm = async () => {
+      await run({ t: 'recog', name: pendingGroup.name, gid: pendingGroup.gid, when: tick(1000), on: true, tag: true })
+      return true
+    }
+  } else if (kind === 'publish') {
+    const A = world.persons.get(selected)
+    $('phdlgTitle').textContent = 'Public profile'
+    $('phdlgOk').textContent = 'Publish'
+    const inp = document.createElement('input'); inp.value = A?.name ?? ''; inp.placeholder = 'Public name (may be a pseudonym)'
+    body.append(inp, P('This is a one-way door: published data stays out there. Pausing later stops publishing — it does not unpublish.', true))
+    phdlgConfirm = async () => {
+      const n = inp.value.trim()
+      if (!n || !A) return false
+      await run({ t: 'pub', name: A.name, pname: n, on: true, when: tick(1000) })
+      return true
+    }
+    setTimeout(() => inp.focus(), 30)
+  }
+  $('phdlg').hidden = false
+}
+$('phdlgCancel').onclick = () => { $('phdlg').hidden = true }
+$('phdlgOk').onclick = async () => { if (phdlgConfirm && await phdlgConfirm()) { $('phdlg').hidden = true; render() } }
+document.addEventListener('keydown', (e) => {
+  const d = $('phdlg')
+  if (d.hidden) return
+  if (e.key === 'Escape') d.hidden = true
+  if (e.key === 'Enter') $('phdlgOk').click()
+})
+$('dlgCancel').onclick = () => { overlay.hidden = true }
+overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.hidden = true })
+$('dlgOk').onclick = async () => { if (dlgConfirm && await dlgConfirm()) { overlay.hidden = true; render() } }
+document.addEventListener('keydown', (e) => {
+  if (overlay.hidden) return
+  if (e.key === 'Escape') overlay.hidden = true
+  if (e.key === 'Enter') $('dlgOk').click()
+})
+function refreshSelects() {}
+
+// ── phone panel ─────────────────────────────────────────────────────────
+let phoneTab = 'contacts'
+let profileOf = null      // contact profile open in the contacts tab
+let groupProfileOf = null // group profile open in the groups tab
+async function renderPhone() {
+  const panel = document.getElementById('phone')
+  const A = world.persons.get(selected)
+  if (!A) { panel.style.display = 'none'; return }
+  // block: the shell must fill the column, not shrink to content;
+  // flex only in the maximized state (wallet collapsed), where the
+  // devmax rules stretch the screen to the full column height
+  panel.style.display = (walletCollapsed && !phoneCollapsed) ? 'flex' : 'block'
+  const av = document.getElementById('phDot')
+  av.style.background = A.color; av.textContent = A.name[0]
+  document.getElementById('phName').textContent = A.name
+  document.getElementById('phOwner').textContent = A.name
+  document.getElementById('phClock').textContent = new Date(now).toISOString().slice(11, 16)
+  document.getElementById('tabContacts').classList.toggle('active', phoneTab === 'contacts')
+  document.getElementById('tabGroups').classList.toggle('active', phoneTab === 'groups')
+  document.getElementById('tabProfile').classList.toggle('active', phoneTab === 'profile')
+  const list = document.getElementById('phList'); list.innerHTML = ''
+  list.className = phoneTab === 'profile' ? '' : 'plist'
+  // controls are honest about reversibility: irreversible acts are BUTTONS
+  // with a confirm dialog and become state afterwards; only the stoppable
+  // subscription part gets a pause/resume control.
+  const row = (avatar, nameBox, control) => {
+    const r = document.createElement('div'); r.className = 'prow'
+    r.appendChild(avatar)
+    const l = document.createElement('span'); l.className = 'plabel'
+    l.appendChild(nameBox)
+    r.appendChild(l)
+    if (control) r.appendChild(control)
+    list.appendChild(r)
+    return r
+  }
+  const mkShareBtn = (label, fn) => {
+    const b = document.createElement('button'); b.className = 'sharebtn'; b.textContent = label; b.onclick = fn; return b
+  }
+  const mkSubCtl = (stateText, linkText, fn) => {
+    const w = document.createElement('span'); w.className = 'subctl'
+    const s = document.createElement('span'); s.textContent = stateText; w.appendChild(s)
+    const b = document.createElement('button'); b.className = 'plink'; b.textContent = linkText
+    b.onclick = async () => { await fn(); render() }
+    w.appendChild(b)
+    return w
+  }
+  const tint = (hex) => hex + '33'
+  const mkAvatar = (color, initials) => {
+    const a = document.createElement('span'); a.className = 'pavatar-s'
+    a.style.background = color ? tint(color) : 'oklch(93% 0.005 265)'
+    a.style.color = color ?? 'oklch(44% 0.008 265)'
+    a.textContent = initials
+    return a
+  }
+  const mkName = (name, badges, meta) => {
+    const box = document.createElement('span')
+    const nr = document.createElement('span'); nr.className = 'pnamerow'
+    const n = document.createElement('span'); n.className = 'pname2'; n.textContent = name; nr.appendChild(n)
+    for (const badge of badges ?? []) {
+      if (!badge) continue
+      const b = document.createElement('span'); b.className = 'pbadge ' + badge.type; b.textContent = badge.text; nr.appendChild(b)
+    }
+    box.appendChild(nr)
+    if (meta) { const m = document.createElement('span'); m.className = 'pmeta'; m.textContent = meta; box.appendChild(m) }
+    return box
+  }
+  const aSelf = A.personas.get('self')?.anchor
+  if (phoneTab === 'profile') {
+    // the persona: the third audience size — trust toward EVERYONE
+    const ph = document.createElement('div'); ph.className = 'profhead'
+    const bav = document.createElement('span'); bav.className = 'pavatar'; bav.style.background = A.color; bav.textContent = A.name[0]
+    const nm = document.createElement('span'); nm.className = 'pname'; nm.textContent = A.name
+    const sb = document.createElement('span'); sb.className = 'psub2'; sb.textContent = 'Trust settings — who may recognize me'
+    ph.append(bav, nm, sb)
+    list.appendChild(ph)
+    const card = document.createElement('div'); card.className = 'plist'
+    const pp = A.publicPersona
+    const on = !!pp?.active
+    const r = document.createElement('div'); r.className = 'prow'
+    const l = document.createElement('span'); l.className = 'plabel'
+    l.appendChild(mkName('Public profile', pp ? [{ type: 'trustb', text: '→ published' }] : null,
+      on ? `as “${pp.name}” · anyone may find and recognize me`
+        : pp ? 'publishing paused — published data stays out'
+        : 'anyone may find and recognize me'))
+    r.appendChild(l)
+    // publishing is the one-way door; only the ONGOING publication pauses
+    r.appendChild(!pp
+      ? mkShareBtn('Publish', () => openPhoneDialog('publish'))
+      : mkSubCtl(on ? 'publishing on' : 'publishing paused', on ? 'pause' : 'resume',
+        async () => { await run({ t: 'pub', name: A.name, ...(on ? {} : { pname: pp.name }), on: !on, when: tick(1000) }) }))
+    card.appendChild(r)
+    list.appendChild(card)
+    return
+  }
+  const mkBack = (label, fn) => {
+    const b = document.createElement('button'); b.className = 'pback'; b.textContent = '‹ ' + label
+    b.onclick = () => { fn(); renderPhone() }
+    return b
+  }
+  // ── contact profile: per-relationship settings (WoT-app style) ────────
+  if (phoneTab === 'contacts' && profileOf) {
+    const key = W.contactKey(A, profileOf)
+    const entry = key ? A.contacts.get(key) : null
+    if (!entry) { profileOf = null } else {
+      list.className = ''
+      list.appendChild(mkBack('Contacts', () => { profileOf = null }))
+      const out = !!entry.idShared, inc = !!entry.selfAnchor, sub = A.friends.has(key)
+      const ph = document.createElement('div'); ph.className = 'profhead'
+      const bav = document.createElement('span'); bav.className = 'pavatar'; bav.style.background = entry.color; bav.textContent = entry.name[0]
+      const nm = document.createElement('span'); nm.className = 'pname'; nm.textContent = entry.name
+      const badges = document.createElement('span'); badges.className = 'pnamerow'
+      const mkB = (type, text) => { const b = document.createElement('span'); b.className = 'pbadge ' + type; b.textContent = text; badges.appendChild(b) }
+      mkB('mutual', '⇄ verified')
+      if (out && inc) mkB('trustb', '⇄ trust'); else if (out) mkB('trustb', '→ you trust'); else if (inc) mkB('trustb', '← trusts you')
+      ph.append(bav, nm, badges)
+      list.appendChild(ph)
+      // what THIS relationship received from me — and the pausable part
+      const card1 = document.createElement('div'); card1.className = 'plist'
+      const r1 = document.createElement('div'); r1.className = 'prow'
+      const l1 = document.createElement('span'); l1.className = 'plabel'
+      l1.appendChild(mkName('Trust', null, out ? `you trust ${entry.name} — they hold your stable ID forever` : 'not yet given'))
+      r1.appendChild(l1)
+      r1.appendChild(!out
+        ? mkShareBtn('Trust', () => { pendingShare = { a: A.name, b: entry.name }; openPhoneDialog('shareid') })
+        : mkSubCtl(sub ? 'updates on' : 'updates paused', sub ? 'pause' : 'resume',
+          async () => { await run({ t: 'trust', a: A.name, b: entry.name, on: !sub, when: tick(1000) }) }))
+      card1.appendChild(r1)
+      list.appendChild(card1)
+      // WoT-demo-app style: what connects us — mutual groups and mutual
+      // contacts (resolved from THEIR blinded star against MY holdings).
+      // Trust is ONE decision (Anton): trusting implies they may see our
+      // mutual contacts and may ask to introduce me — no settings menu.
+      const h2 = document.createElement('div'); h2.className = 'pfoot'
+      h2.textContent = 'Mutual groups'
+      list.appendChild(h2)
+      const card2 = document.createElement('div'); card2.className = 'plist'
+      const shared = await W.sharedGroups(A, key, world)
+      if (!shared.length) {
+        const d = document.createElement('div'); d.className = 'pempty'; d.textContent = 'none you can see'
+        card2.appendChild(d)
+      } else for (const gid of shared) {
+        const g = world.groups.get(gid)
+        const r = document.createElement('div'); r.className = 'prow'
+        r.appendChild(mkAvatar(null, (g?.label ?? gid).slice(0, 2).toUpperCase()))
+        const l = document.createElement('span'); l.className = 'plabel'
+        l.appendChild(mkName(g?.label ?? gid, null, null))
+        r.appendChild(l)
+        card2.appendChild(r)
+      }
+      list.appendChild(card2)
+      const h3 = document.createElement('div'); h3.className = 'pfoot'
+      h3.textContent = 'Mutual contacts'
+      list.appendChild(h3)
+      const card3 = document.createElement('div'); card3.className = 'plist'
+      const snap = inc ? A.starsReceived.get(entry.selfAnchor) : null
+      const mutuals = []
+      if (snap) for (const c of A.contacts.values()) {
+        if (!c.selfAnchor || c.selfAnchor === entry.selfAnchor) continue
+        if (await W.starMatch(A, entry.name, snap, c.selfAnchor)) mutuals.push(c)
+      }
+      if (!mutuals.length) {
+        const d = document.createElement('div'); d.className = 'pempty'
+        d.textContent = snap ? 'none you can see yet' : `visible once ${entry.name} shares their ID`
+        card3.appendChild(d)
+      } else for (const c of mutuals) {
+        const r = document.createElement('div'); r.className = 'prow'
+        r.appendChild(mkAvatar(c.color, c.name.slice(0, 2).toUpperCase()))
+        const l = document.createElement('span'); l.className = 'plabel'
+        l.appendChild(mkName(c.name, null, null))
+        r.appendChild(l)
+        card3.appendChild(r)
+      }
+      list.appendChild(card3)
+      return
+    }
+  }
+  // ── group profile ─────────────────────────────────────────────────────
+  if (phoneTab === 'groups' && groupProfileOf) {
+    const g = world.groups.get(groupProfileOf)
+    const m = A.memberships.get(groupProfileOf)
+    if (!g || !m) { groupProfileOf = null } else {
+      list.className = ''
+      list.appendChild(mkBack('Groups', () => { groupProfileOf = null }))
+      const namedEver = !!m.docs?.some((d) => d.name)
+      const pubOn = A.tags.has(g.id)
+      const ph = document.createElement('div'); ph.className = 'profhead'
+      const bav = document.createElement('span'); bav.className = 'pavatar'; bav.style.background = 'oklch(70% 0.02 265)'; bav.textContent = g.label[0]
+      const nm = document.createElement('span'); nm.className = 'pname'; nm.textContent = g.label
+      const sb = document.createElement('span'); sb.className = 'psub2'
+      sb.textContent = `${g.roster.size} member${g.roster.size === 1 ? '' : 's'} · genesis ${g.genesisDigest.slice(0, 12)}…`
+      ph.append(bav, nm, sb)
+      list.appendChild(ph)
+      const card = document.createElement('div'); card.className = 'plist'
+      const r = document.createElement('div'); r.className = 'prow'
+      const l = document.createElement('span'); l.className = 'plabel'
+      l.appendChild(mkName('Trust', namedEver ? [{ type: 'trustb', text: '→ named' }] : null,
+        namedEver ? 'your name stays readable for members forever' : 'anonymous membership'))
+      r.appendChild(l)
+      r.appendChild(!namedEver
+        ? mkShareBtn('Trust', () => { pendingGroup = { name: A.name, gid: g.id, label: g.label }; openPhoneDialog('trustgroup') })
+        : mkSubCtl(pubOn ? 'publication on' : 'publication paused', pubOn ? 'pause' : 'resume',
+          async () => { await run({ t: 'recog', name: A.name, gid: g.id, when: tick(1000), on: !pubOn, tag: !pubOn }) }))
+      card.appendChild(r)
+      list.appendChild(card)
+      // members — strictly what THIS viewer can read: own anchor, contacts
+      // who disclosed their group mapping to me, names published into the
+      // roster (forever), and gray anonymous anchors for everyone else
+      const hm = document.createElement('div'); hm.className = 'pfoot'
+      hm.textContent = 'Members'
+      list.appendChild(hm)
+      const cardM = document.createElement('div'); cardM.className = 'plist'
+      const label = `group/${g.genesisDigest}`
+      const linked = new Map() // roster anchor -> contact entry (disclosed to me)
+      for (const c of W.linkClusters(A)) {
+        const a = c.anchors.get(label)
+        if (a) linked.set(a, c)
+      }
+      const myAnchor = [...A.personas.values()].find((p) => p.label === label)?.anchor
+      for (const [anchor, rentry] of g.roster) {
+        const r2 = document.createElement('div'); r2.className = 'prow'
+        const ctxName = W.rosterName(rentry)
+        if (anchor === myAnchor) {
+          r2.appendChild(mkAvatar(A.color, A.name.slice(0, 2).toUpperCase()))
+          const l2 = document.createElement('span'); l2.className = 'plabel'
+          l2.appendChild(mkName(`${A.name} (you)`, null, ctxName ? 'named in the group' : 'anonymous membership'))
+          r2.appendChild(l2)
+        } else if (linked.has(anchor)) {
+          const c = linked.get(anchor)
+          r2.appendChild(mkAvatar(c.color, c.name.slice(0, 2).toUpperCase()))
+          const l2 = document.createElement('span'); l2.className = 'plabel'
+          l2.appendChild(mkName(c.name, null, 'disclosed their membership to you'))
+          r2.appendChild(l2)
+        } else if (ctxName) {
+          r2.appendChild(mkAvatar(null, ctxName.slice(0, 2).toUpperCase()))
+          const l2 = document.createElement('span'); l2.className = 'plabel'
+          l2.appendChild(mkName(ctxName, null, 'named in the group — readable forever'))
+          r2.appendChild(l2)
+        } else {
+          r2.appendChild(mkAvatar(null, '·'))
+          const l2 = document.createElement('span'); l2.className = 'plabel'
+          l2.appendChild(mkName('Anonymous member', null, anchor.slice(8, 20) + '…'))
+          r2.appendChild(l2)
+        }
+        cardM.appendChild(r2)
+      }
+      list.appendChild(cardM)
+      return
+    }
+  }
+  if (phoneTab === 'contacts') {
+    const entries = [...A.contacts.entries()]
+    if (!entries.length) { list.innerHTML = '<div class="pempty">no contacts yet — meet someone</div>'; return }
+    for (const [key, entry] of entries) {
+      // TWO relationship dimensions as badges (green = verification,
+      // blue = trust; → my act, ← their act, ⇄ both):
+      const out = !!entry.idShared         // my act: I shared my stable ID (irreversible)
+      const inc = !!entry.selfAnchor       // their act: they shared theirs
+      const sub = A.friends.has(key)       // my ongoing subscription (pausable)
+      const badges = [{ type: 'mutual', text: '⇄ verified' }]
+      if (out && inc) badges.push({ type: 'trustb', text: '⇄ trust' })
+      else if (out) badges.push({ type: 'trustb', text: '→ you trust' })
+      else if (inc) badges.push({ type: 'trustb', text: '← trusts you' })
+      const metas = []
+      // the delivered star is BLINDED: show its size plus how many entries
+      // resolve against contacts A legitimately holds
+      const snap = inc ? A.starsReceived.get(entry.selfAnchor) : null
+      if (snap && snap.count > 0) {
+        let matched = 0
+        for (const c of A.contacts.values())
+          if (c.selfAnchor && c.selfAnchor !== entry.selfAnchor && await W.starMatch(A, entry.name, snap, c.selfAnchor)) matched++
+        metas.push(`star: ${snap.count} contact${snap.count === 1 ? '' : 's'} · ${matched} you know`)
+      }
+      // the list carries only the CTA; managing the subscription lives in
+      // the contact profile (Anton: pause/resume does not belong here)
+      const r = row(mkAvatar(entry.color, entry.name.slice(0, 2).toUpperCase()), mkName(entry.name, badges, metas.join(' · ') || null),
+        !out ? mkShareBtn('Trust', () => { pendingShare = { a: A.name, b: entry.name }; openPhoneDialog('shareid') }) : null)
+      const lbl = r.querySelector('.plabel')
+      lbl.style.cursor = 'pointer'
+      lbl.onclick = () => { profileOf = entry.name; renderPhone() }
+    }
+    {
+      const f = document.createElement('div'); f.className = 'pfoot'
+      f.textContent = 'Trust is a one-way door: it shares your stable ID, and this contact keeps it forever. It travels as a designated-verifier proof (convinces only them) and your star travels blinded. Ongoing updates can be paused in the contact’s profile.'
+      list.appendChild(f)
+    }
+  } else {
+    const gs = [...A.memberships.keys()]
+    if (!gs.length) { list.innerHTML = '<div class="pempty">no groups yet — join one</div>'; return }
+    for (const gid of gs) {
+      const g = world.groups.get(gid)
+      // trust toward a group = members may recognize me: name into the
+      // group + anchor linkage tag. The naming is irreversible (append-only
+      // roster); only the ONGOING publication pauses.
+      const namedEver = !!A.memberships.get(gid)?.docs?.some((d) => d.name)
+      const pubOn = A.tags.has(gid)
+      const members = g ? g.roster.size : 0
+      const r = row(mkAvatar(null, (g?.label ?? gid).slice(0, 2).toUpperCase()),
+        mkName(g?.label ?? gid, namedEver ? [{ type: 'trustb', text: '→ named' }] : null, `${members} member${members === 1 ? '' : 's'}`),
+        !namedEver
+          ? mkShareBtn('Trust', () => { pendingGroup = { name: A.name, gid, label: g?.label ?? gid }; openPhoneDialog('trustgroup') })
+          : mkSubCtl(pubOn ? 'publication on' : 'publication paused', pubOn ? 'pause' : 'resume',
+            async () => { await run({ t: 'recog', name: A.name, gid, when: tick(1000), on: !pubOn, tag: !pubOn }) }))
+      const lbl = r.querySelector('.plabel')
+      lbl.style.cursor = 'pointer'
+      lbl.onclick = () => { groupProfileOf = gid; renderPhone() }
+    }
+    {
+      const f = document.createElement('div'); f.className = 'pfoot'
+      f.textContent = 'Trusting a group is a one-way door: your name stays readable for members forever. What CAN be paused is the ongoing publication.'
+      list.appendChild(f)
+    }
+  }
+}
+// ── wallet: credentials the selected person holds, by category ──────────
+// Category names align with the FPP vocabulary (relationship / membership);
+// the mapping itself lives in the deck, not in user-facing subs. Payloads
+// are OUR probe formats (W3C VC 2.0 + DataIntegrity eddsa-jcs-2022,
+// did:key anchors) — never imitating FPP structures we have not verified.
+const walletOpen = {}
+let walletDir = 'all' // all | out (sent/published) | in (received)
+function renderWallet() {
+  const panel = document.getElementById('wallet')
+  const A = world.persons.get(selected)
+  if (!A) { panel.style.display = 'none'; return }
+  panel.style.display = 'block'
+  const fbox = document.getElementById('walletFilter'); fbox.innerHTML = ''
+  for (const [key2, label2] of [['all', 'All'], ['out', '📤 Sent'], ['in', '📥 Received']]) {
+    const b = document.createElement('button'); b.className = 'wchip' + (walletDir === key2 ? ' active' : '')
+    b.textContent = label2
+    b.onclick = () => { walletDir = key2; renderWallet() }
+    fbox.appendChild(b)
+  }
+  const J = (o) => JSON.stringify(o, null, 1)
+  const cats = []
+  const add = (key, title, fpp, items) => cats.push({ key, title, fpp, items })
+  const peerOfPair = (label) => {
+    const bind = label.slice('pair/'.length)
+    return [...A.contacts.values()].find((c) => c.bind === bind)?.name ?? null
+  }
+
+  // 1 · identity: the derived anchors (FPP: R/M/P identifiers)
+  add('id', 'Identity · anchors', 'one identity per context, all derived from one seed',
+    [...A.personas.entries()].map(([label, p]) => ({
+      title: label === 'self' ? 'personal community anchor'
+        : label.startsWith('group/') ? `membership anchor · ${[...world.groups.values()].find((g) => `group/${g.genesisDigest}` === label)?.label ?? label}`
+        : label.startsWith('persona/') ? `persona anchor · ${label.slice('persona/'.length)}`
+        : label.startsWith('pair/') ? `relationship anchor · ${peerOfPair(label) ?? short(p.anchor)}`
+        : label,
+      sub: label.startsWith('persona/')
+        ? (A.publicPersona?.active ? 'public' : 'publishing stopped — published data stays out') + ' · ' + short(p.anchor)
+        : short(p.anchor),
+      json: J({ label, anchor: p.anchor,
+        derivation: label === 'self' ? "HKDF-SHA256(root, 'wot/identity/ed25519/v1')" : `HKDF-SHA256(root, 'rltp/anchor/ed/${label}')`,
+        backup: 'root seed only (12 words) — anchors are re-derivable', ...(label.startsWith('persona/') && A.publicPersona ? { profile: A.publicPersona.doc } : {}) }),
+    })))
+
+  // 2 · relationship credentials (FPP: VRC) — the ceremony is pairwise-only
+  const rel = []
+  for (const e of W.ownEncounters(A, world)) {
+    const m = e.R
+    const iAmA = e.aName === A.name
+    const peer = iAmA ? e.bName : e.aName
+    rel.push({ dir: 'out', title: `issued · about ${peer}`, sub: `pairwise anchors (ceremony) · binding ${m.bind.slice(0, 14)}… · 📤 presentable`, json: J(iAmA ? m.cred : m.counter) })
+    rel.push({ dir: 'in', title: `received · from ${peer}`, sub: 'immutable evidence about me · 📤 presentable', json: J(iAmA ? m.counter : m.cred) })
+  }
+  add('rel', 'Relationship credentials', 'signed evidence of every verification', rel)
+
+  // 3 · membership credentials (FPP: membership credential / m-card)
+  add('mem', 'Membership credentials', 'signed membership, anonymous unless you trust the group',
+    [...A.memberships.entries()].map(([gid, m]) => ({
+      dir: 'out',
+      title: world.groups.get(gid)?.label ?? gid,
+      sub: (m.doc.name ? 'trusted — name in doc' : 'anonymous — no name')
+        + ` · under ${short(m.doc.member)}`
+        + (m.docs.length > 1 ? ` · ${m.docs.length} issued (append-only)` : '') + ' · 📤 presentable',
+      json: J(m.doc),
+    })))
+
+  // 4 · disclosures & tags: mappings received, blinded stars, tags published
+  const dis = []
+  for (const c of W.linkClusters(A)) {
+    // the promotion artifact: the DV pair→self mapping I HOLD
+    if (c.mapping) dis.push({ dir: 'in', title: `received · from ${c.name} · stable ID`,
+      sub: '🔒 3DH-MAC — convinces only you (you could compute both MACs yourself)', json: J(c.mapping) })
+    const extra = [...c.anchors.entries()].filter(([l]) => l !== 'self' && l !== 'pair')
+    if (extra.length) dis.push({ dir: 'in', title: `received · from ${c.name}`, sub: `${extra.length} anchor mapping${extra.length === 1 ? '' : 's'}`,
+      json: J(Object.fromEntries(c.anchors)) })
+  }
+  for (const [fromAnchor, snap] of A.starsReceived) {
+    const sender = [...A.contacts.values()].find((c) => c.selfAnchor === fromAnchor)
+    dis.push({ dir: 'in', title: `received · star from ${sender?.name ?? short(fromAnchor)}`,
+      sub: `${snap.count} entr${snap.count === 1 ? 'y' : 'ies'} · blinded (HMAC under the relationship key) · 🔒 deniable`,
+      json: J(snap) })
+  }
+  // sender-side journal: what I delivered through each trust act (the
+  // complete answer to "what did I give away?")
+  for (const [key2, e2] of A.contacts) {
+    if (!e2.idShared) continue
+    const sub2 = A.friends.has(key2)
+    dis.push({ dir: 'out', title: `trusted · ${e2.name}`,
+      sub: `stable ID (🔒 DV) + ${e2.sentCtx?.size ?? 0} mapping${(e2.sentCtx?.size ?? 0) === 1 ? '' : 's'} + star delivered · ${sub2 ? 'updates on' : 'updates paused'} · one-way`,
+      json: J({ to: key2, mapping: e2.sentMapping?.body ?? null, contextLabels: [...(e2.sentCtx?.keys() ?? [])], lastStar: e2.sentStar ?? null }) })
+  }
+  for (const [gid, tag] of A.publishedTags) dis.push({ dir: 'out', title: `published tag · ${world.groups.get(gid)?.label ?? gid}`,
+    sub: (A.tags.has(gid) ? 'published' : 'publication stopped — artifact stays') + ' · readable by digest-knowers only',
+    json: J({ mechanism: 'HMAC-SHA256(genesisDigest, self-anchor) — executed', tag, anchor: A.personas.get('self')?.anchor }) })
+  add('dis', 'Disclosures & tags', 'anchor mappings — what trust discloses', dis)
+
+  const box = document.getElementById('walletList'); box.innerHTML = ''
+  for (const c of cats) {
+    if (walletDir !== 'all') {
+      c.items = c.items.filter((it) => it.dir === walletDir)
+      if (!c.items.length) continue // keys and empty categories only under All
+    }
+    const card = document.createElement('div'); card.className = 'wcat'
+    const btn = document.createElement('button')
+    btn.innerHTML = `<span>${c.title}<br><span class="wfpp">${c.fpp}</span></span><span class="wbadge">${c.items.length}</span>`
+    btn.onclick = () => { walletOpen[c.key] = !walletOpen[c.key]; renderWallet() }
+    card.appendChild(btn)
+    if (walletOpen[c.key]) {
+      const wrap = document.createElement('div'); wrap.className = 'witems'
+      if (!c.items.length) { const e = document.createElement('div'); e.className = 'wempty'; e.textContent = 'empty'; wrap.appendChild(e) }
+      for (const it of c.items) {
+        const d = document.createElement('div'); d.className = 'witem'
+        const t = document.createElement('div'); t.className = 'wtitle'; t.textContent = it.title; d.appendChild(t)
+        const s = document.createElement('div'); s.className = 'wsub'; s.textContent = it.sub; d.appendChild(s)
+        const p = document.createElement('pre'); p.textContent = it.json; d.appendChild(p)
+        wrap.appendChild(d)
+      }
+      card.appendChild(wrap)
+    }
+    box.appendChild(card)
+  }
+}
+
+document.getElementById('tabContacts').onclick = () => { phoneTab = 'contacts'; profileOf = null; renderPhone() }
+document.getElementById('tabGroups').onclick = () => { phoneTab = 'groups'; groupProfileOf = null; renderPhone() }
+document.getElementById('tabProfile').onclick = () => { phoneTab = 'profile'; renderPhone() }
+
+document.getElementById('resetBtn').onclick = () => { localStorage.removeItem(KEY); location.reload() }
+
+// replay is defensive (review F12): a failing replay falls back to a fresh
+// world instead of crashing mid-boot
+if (saved0) {
+  try {
+    restoring = true
+    now = saved0.meta?.now ?? now
+    for (const a of saved0.log) await apply(a)
+    LOG.push(...saved0.log)
+    for (const d of saved0.meta?.done ?? []) done.add(d)
+    restoring = false
+    await goto(saved0.meta?.ch ?? 0)
+    camera = saved0.meta?.camera ?? camera
+    selected = saved0.meta?.selected ?? null
+    phoneTab = saved0.meta?.phoneTab ?? 'contacts'
+    storyHidden = !!saved0.meta?.storyHidden
+    applyStoryVis()
+    phoneCollapsed = !!saved0.meta?.phoneCollapsed
+    walletCollapsed = !!saved0.meta?.walletCollapsed
+    applyColVis()
+    asideW = saved0.meta?.asideW ?? null
+    netH = saved0.meta?.netH ?? null
+    phoneH = saved0.meta?.phoneH ?? null
+    applySizes()
+    render()
+  } catch (err) {
+    console.warn('saved state failed to replay — starting fresh:', err)
+    localStorage.removeItem(KEY)
+    location.reload()
+  }
+} else {
+  goto(0)
+}
+</script>
+</body>
+</html>

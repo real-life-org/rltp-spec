@@ -1,9 +1,13 @@
 // RLTP protocol engine — the executable core of the simulator.
 //
-// Implements, faithfully to the published specs (Encounter 0.19, Delivery
-// Contract 0.17): JCS, multihash digests (emit u, accept u/z), did:key and
-// Multikey encoding, eddsa-jcs-2022 proofs, the enactment binding, the
-// sealed envelope, contact cards (displayed/sent, with boundTo), the ONE
+// Implements, faithfully to the published specs (Encounter 0.28, wire 0.25 (DTG-typed credentials),
+// Delivery Contract 0.21): JCS, multihash digests (emit u, accept u/z),
+// did:key and Multikey encoding, eddsa-jcs-2022 proofs (W3C-true, incl. the
+// proof @context copy), the enactment binding, the sealed envelope, contact
+// cards (displayed/sent, with boundTo), **fresh-always pair contexts**
+// (Encounter 4.4 / Identity §6 pair class: every enactment derives a fresh
+// pair anchor from a fresh 32-byte relationship nonce — the person's root
+// IKM stands in for the BIP-39 seed), the ONE
 // ceremony encounter-scan with its connected and optical legs, the
 // own-challenge state model (open/recorded/unknown) with the monotone
 // aging latch and precedence resolution, the delivery task documents, the
@@ -29,6 +33,10 @@ export function base58(buf) {
   for (const b of buf) { if (b === 0) out = '1' + out; else break }
   return out
 }
+import { SCHEMAS, validate } from '../conformance/lib.mjs'
+// Encounter 2.3: whole-second truncation of EVERY comparison operand (incl. now)
+export const tsec = (v) => Math.floor((typeof v === 'number' ? v : Date.parse(v)) / 1000) * 1000
+const schemaOK = (data, file) => { const s = SCHEMAS[file]; return validate(data, s, s).length === 0 }
 export const jcs = (o) => Array.isArray(o) ? '[' + o.map(jcs).join(',') + ']'
   : (o && typeof o === 'object') ? '{' + Object.keys(o).sort().map((k) => JSON.stringify(k) + ':' + jcs(o[k])).join(',') + '}'
   : JSON.stringify(o)
@@ -45,18 +53,17 @@ const ED_SPKI = Buffer.from('302a300506032b6570032100', 'hex')
 const X_SPKI = Buffer.from('302a300506032b656e032100', 'hex')
 const rawPub = (pub, prefix) => pub.export({ format: 'der', type: 'spki' }).subarray(prefix.length)
 
+const ED_PKCS8 = Buffer.from('302e020100300506032b657004220420', 'hex')
+const X_PKCS8 = Buffer.from('302e020100300506032b656e04220420', 'hex')
+const privFromSeed = (seed, pkcs8) => createPrivateKey({ key: Buffer.concat([pkcs8, seed]), format: 'der', type: 'pkcs8' })
+
 export function createPerson(name) {
-  const ed = generateKeyPairSync('ed25519')
-  const x = generateKeyPairSync('x25519')
-  const edRaw = rawPub(ed.publicKey, ED_SPKI)
-  const xRaw = rawPub(x.publicKey, X_SPKI)
-  const anchor = 'did:key:z' + base58(Buffer.concat([Buffer.from([0xed, 0x01]), edRaw]))
-  const keyAgreement = 'z' + base58(Buffer.concat([Buffer.from([0xec, 0x01]), xRaw]))
   return {
-    name, anchor, keyAgreement,
-    keys: { ed, x, edRaw, xRaw },
-    displayedChallenge: null,
-    open: new Map(),           // ownChallenge value -> { issuedAt, aged } (state model 5.3; aged = the one-way latch)
+    name,
+    rootIkm: randomBytes(64),  // stands in for the BIP-39 seed (Identity §4)
+    contexts: new Map(),       // anchor AND keyAgreement -> pair context (fresh-always)
+    displayedChallenge: null, displayedCtx: null,
+    open: new Map(),           // ownChallenge value -> { issuedAt, aged, ctx } (state model 5.3; ctx = the enacting pair context)
     records: new Map(),        // ownChallenge -> enactment record
     edges: new Map(),          // counterpartyAnchor -> { issued:[], received:[] }  (merge rule: one edge per pair)
     effectCache: new Map(),    // docDigest -> { disposition, storedAck }
@@ -66,10 +73,33 @@ export function createPerson(name) {
   }
 }
 const say = (p, msg) => { p.log.push(msg) }
+
+// fresh-always (Encounter 4.4): one pair context per enactment attempt,
+// derived per Identity §6's pair class — label = pair/<multihash(nonce)>,
+// keys = HKDF(rootIkm, 'rltp/anchor/{ed,x}/' + label)
+export function freshPairContext(p) {
+  const nonce = randomBytes(32)
+  const label = 'pair/' + digest(nonce)
+  const edSeed = Buffer.from(hkdfSync('sha256', p.rootIkm, Buffer.alloc(0), 'rltp/anchor/ed/' + label, 32))
+  const xSeed = Buffer.from(hkdfSync('sha256', p.rootIkm, Buffer.alloc(0), 'rltp/anchor/x/' + label, 32))
+  const ed = { privateKey: privFromSeed(edSeed, ED_PKCS8) }
+  const x = { privateKey: privFromSeed(xSeed, X_PKCS8) }
+  const edRaw = rawPub(createPublicKey(ed.privateKey), ED_SPKI)
+  const xRaw = rawPub(createPublicKey(x.privateKey), X_SPKI)
+  const ctx = {
+    label, keys: { ed, x, edRaw, xRaw },
+    anchor: 'did:key:z' + base58(Buffer.concat([Buffer.from([0xed, 0x01]), edRaw])),
+    keyAgreement: 'z' + base58(Buffer.concat([Buffer.from([0xec, 0x01]), xRaw])),
+  }
+  p.contexts.set(ctx.anchor, ctx)
+  p.contexts.set(ctx.keyAgreement, ctx)
+  return ctx
+}
+export const xPubOfMk = (mk) => createPublicKey({ key: Buffer.concat([X_SPKI, fromBase58(mk.slice(1)).subarray(2)]), format: 'der', type: 'spki' })
 // sender-side bookkeeping: remember whom a document went to, so a later
 // ack can be required to come exactly from that recipient (Contract 4.2)
 export function noteSent(p, doc) {
-  p.senderStatus.set(docDigest(doc), { status: 'accepted', recipient: doc.recipient, threadId: doc.threadId })
+  p.senderStatus.set(docDigest(doc), { status: 'accepted', recipient: doc.recipient, threadId: doc.threadId, sender: doc.issuer })
 }
 
 // ── contact cards (Encounter 6, 5.3) ────────────────────────────────────
@@ -78,20 +108,23 @@ export function freshChallenge(now) {
 }
 const iso = (ms) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z')
 
-export const CEREMONY = 'encounter-scan@0.19'
-export const CARD_VERSION = 'rltp-card/0.19'
-export const CRED_FORMAT = 'rltp-encounter-credential/0.19'
+export const CEREMONY = 'encounter-scan@0.25'
+export const CARD_VERSION = 'rltp-card/0.25'
+export const CRED_FORMAT = 'rltp-encounter-credential/0.25'
 
 export function displayCard(p, now) {
+  const ctx = freshPairContext(p)               // fresh-always: fresh anchor per display
   p.displayedChallenge = freshChallenge(now)
+  p.displayedCtx = ctx
   // mandatory retention: rotation changes what is DISPLAYED, never what is retained
-  p.open.set(p.displayedChallenge.value, { issuedAt: p.displayedChallenge.issuedAt, aged: false })
-  return signCard(p, { version: CARD_VERSION, anchor: p.anchor, keyAgreement: p.keyAgreement, name: p.name, challenge: p.displayedChallenge })
+  p.open.set(p.displayedChallenge.value, { issuedAt: p.displayedChallenge.issuedAt, aged: false, ctx })
+  return signCard(ctx, { version: CARD_VERSION, anchor: ctx.anchor, keyAgreement: ctx.keyAgreement, name: p.name, challenge: p.displayedChallenge })
 }
 export function sentCard(p, recipientAnchor, boundTo, now) {
+  const ctx = freshPairContext(p)               // fresh-always: the scanner's side of the fresh tuple
   const challenge = freshChallenge(now)
-  p.open.set(challenge.value, { issuedAt: challenge.issuedAt, aged: false })
-  return { card: signCard(p, { version: CARD_VERSION, anchor: p.anchor, keyAgreement: p.keyAgreement, name: p.name, challenge, sentTo: recipientAnchor, boundTo }), challenge }
+  p.open.set(challenge.value, { issuedAt: challenge.issuedAt, aged: false, ctx })
+  return { ctx, challenge, card: signCard(ctx, { version: CARD_VERSION, anchor: ctx.anchor, keyAgreement: ctx.keyAgreement, name: p.name, challenge, sentTo: recipientAnchor, boundTo }) }
 }
 
 // ── challenge resolution (Encounter 5.3) — total, precedence, one write ─
@@ -103,17 +136,21 @@ export function resolve(p, value, now) {
   if (record) return { state: 'recorded', record }
   const o = p.open.get(value)
   if (o && !o.aged) {
-    if (now > Date.parse(o.issuedAt) + PARAMS.challengeMaxAge + PARAMS.skew) { o.aged = true; return { state: 'unknown' } }
-    return { state: 'open', issuedAt: o.issuedAt }
+    if (tsec(now) > tsec(o.issuedAt) + PARAMS.challengeMaxAge + PARAMS.skew) { o.aged = true; return { state: 'unknown' } }
+    return { state: 'open', issuedAt: o.issuedAt, ctx: o.ctx }
   }
   return { state: 'unknown' }
 }
 
 // ── eddsa-jcs-2022 (DI): sign sha256(jcs(proofCfg)) || sha256(jcs(doc)) ─
-function diSign(p, doc, created) {
-  const cfg = { type: 'DataIntegrityProof', cryptosuite: 'eddsa-jcs-2022', created, verificationMethod: `${p.anchor}#${p.anchor.slice(8)}`, proofPurpose: 'assertionMethod' }
+function diSign(ctx, doc, created) {
+  const cfg = { type: 'DataIntegrityProof', cryptosuite: 'eddsa-jcs-2022', created, verificationMethod: `${ctx.anchor}#${ctx.anchor.slice(8)}`, proofPurpose: 'assertionMethod' }
+  // W3C DI-EDDSA: a present document @context is copied into the proof
+  // configuration AND the returned proof (verification reconstructs the
+  // configuration from the embedded proof alone) — Encounter 0.27 repair.
+  if (doc['@context']) cfg['@context'] = doc['@context']
   const data = Buffer.concat([sha(jcs(cfg)), sha(jcs(doc))])
-  const sig = edSign(null, data, p.keys.ed.privateKey)
+  const sig = edSign(null, data, ctx.keys.ed.privateKey)
   return { ...cfg, proofValue: 'z' + base58(sig) }
 }
 const sha = (s) => createHash('sha256').update(s, 'utf8').digest()
@@ -152,21 +189,21 @@ export function fromBase58(s) {
   let zeros = 0; for (const c of s) { if (c === '1') zeros++; else break }
   return Buffer.concat([Buffer.alloc(zeros), buf])
 }
-const signCard = (p, body) => ({ ...body, proof: diSign(p, body, body.challenge?.issuedAt ?? iso(Date.now())) })
+const signCard = (ctx, body) => ({ ...body, proof: diSign(ctx, body, body.challenge?.issuedAt ?? iso(Date.now())) })
 
 // ── enactment binding (Encounter 5.4) ───────────────────────────────────
 export const binding = (ceremony, c1, c2) => digest(jcs({ ceremony, challenges: [c1, c2].sort() }))
 
 // ── encounter credential (Encounter 7) ──────────────────────────────────
-export function issueCredential(p, subjectAnchor, ceremony, subjectChallenge, enactmentBinding, now) {
+export function issueCredential(ctx, subjectAnchor, ceremony, subjectChallenge, enactmentBinding, now) {
   const body = {
-    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://real-life.org/rltp/v1'],
-    type: ['VerifiableCredential', 'EncounterCredential'],
-    issuer: p.anchor,
+    '@context': ['https://www.w3.org/ns/credentials/v2', 'https://firstperson.network/credentials/dtg/v1', 'https://real-life.org/rltp/v1'],
+    type: ['VerifiableCredential', 'DTGCredential', 'RelationshipCredential', 'EncounterCredential'],
+    issuer: ctx.anchor,
     validFrom: iso(now),
     credentialSubject: { id: subjectAnchor, format: CRED_FORMAT, ceremony, challenge: subjectChallenge, enactmentBinding },
   }
-  return { ...body, proof: diSign(p, body, iso(now)) }
+  return { ...body, proof: diSign(ctx, body, iso(now)) }
 }
 
 // ── sealed envelope (Contract 5) ────────────────────────────────────────
@@ -183,12 +220,13 @@ export function seal(document, recipientKeyAgreement, recipientXPub) {
   return { rkid: recipientKeyAgreement, epk: b64u(rawPub(eph.publicKey, X_SPKI)), nonce: b64u(nonce), ciphertext: b64u(ct) }
 }
 export function unseal(env, p) {
-  if (env.rkid !== p.keyAgreement) return { error: 'malformed (unknown rkid)' }
+  const ctx = p.contexts.get(env.rkid)          // fresh-always: rkid names a pair context
+  if (!ctx) return { error: 'malformed (unknown rkid)' }
   const nonce = fromB64u(env.nonce), epkRaw = fromB64u(env.epk), raw = fromB64u(env.ciphertext)
   if (nonce.length !== 12 || epkRaw.length !== 32 || raw.length < 16) return { error: 'malformed' }
   if (raw.length - 16 > 65536) return { error: 'oversize' }          // size bound BEFORE decryption
   const epk = createPublicKey({ key: Buffer.concat([X_SPKI, epkRaw]), format: 'der', type: 'spki' })
-  const shared = diffieHellman({ privateKey: p.keys.x.privateKey, publicKey: epk })
+  const shared = diffieHellman({ privateKey: ctx.keys.x.privateKey, publicKey: epk })
   if (shared.every((b) => b === 0)) return { error: 'decryption-failed' } // receive-side all-zero check
   const key = Buffer.from(hkdfSync('sha256', shared, Buffer.alloc(0), 'rltp/v1/seal', 32))
   let plaintext
@@ -207,23 +245,24 @@ const uuid = () => { const b = randomBytes(16); b[6] = (b[6] & 0x0f) | 0x40; b[8
 export function bundleDocument(p, card, credential, enactmentBinding, now) {
   return {
     id: uuid(), type: 'https://real-life.org/trust-tasks/encounter-bundle/0.1',
-    issuer: p.anchor, recipient: credential.credentialSubject.id,
+    issuer: credential.issuer, recipient: credential.credentialSubject.id,
     threadId: uuid(), ceremony: { enactment: enactmentBinding, step: 'scan' },
     issuedAt: iso(now), payload: { card, credential },
   }
 }
 export function ackDocument(p, forDoc, now) {
+  const ctx = p.contexts.get(forDoc.recipient)  // the ack is signed under the addressed pair anchor
   const body = {
     id: uuid(), type: 'https://real-life.org/trust-tasks/delivery-ack/0.1',
-    issuer: p.anchor, recipient: forDoc.issuer, threadId: forDoc.threadId,
+    issuer: ctx.anchor, recipient: forDoc.issuer, threadId: forDoc.threadId,
     issuedAt: iso(now), payload: { ref: docDigest(forDoc), meaning: 'received' },
   }
-  return { ...body, proof: diSign(p, body, iso(now)) }
+  return { ...body, proof: diSign(ctx, body, iso(now)) }
 }
 export function credentialDeliveryDocument(p, credential, threadId, step, now) {
   return {
     id: uuid(), type: 'https://real-life.org/trust-tasks/encounter-credential-delivery/0.1',
-    issuer: p.anchor, recipient: credential.credentialSubject.id,
+    issuer: credential.issuer, recipient: credential.credentialSubject.id,
     threadId: threadId ?? uuid(), ceremony: { enactment: credential.credentialSubject.enactmentBinding, step },
     issuedAt: iso(now), payload: { credential },
   }
@@ -247,7 +286,7 @@ export function receiveEnvelope(p, env, now) {
     || !doc.threadId || !doc.issuedAt || Number.isNaN(Date.parse(doc.issuedAt))
     || 'expiresAt' in doc || !doc.payload || typeof doc.payload !== 'object')
     return dispose(p, doc, 'failed(malformed)')
-  if (doc.recipient !== p.anchor) return dispose(p, doc, 'failed(wrong-recipient)')
+  if (!p.contexts.has(doc.recipient)) return dispose(p, doc, 'failed(wrong-recipient)')
   if (doc.type === 'https://real-life.org/trust-tasks/encounter-bundle/0.1') {
     if (!doc.payload.card || !doc.payload.credential) return dispose(p, doc, 'failed(malformed)')
     return receiveBundle(p, doc, dd, now)
@@ -267,18 +306,24 @@ const dispose = (p, doc, disposition) => { say(p, `↳ ${disposition}`); return 
 function receiveBundle(p, doc, dd, now) {
   const { card, credential } = doc.payload
   // Contract 4.1 outer/inner consistency + pre-lock checks — validate, then consume:
+  if (!schemaOK(card, 'contact-card-0.25.schema.json')) return dispose(p, doc, 'failed(validation-failed: card schema)')
+  if (!schemaOK(credential, 'encounter-credential-0.25.schema.json')) return dispose(p, doc, 'failed(validation-failed: credential schema)')
   if (!diVerify(card, card.anchor)) return dispose(p, doc, 'failed(validation-failed: card proof)')
   if (!diVerify(credential, credential.issuer)) return dispose(p, doc, 'failed(validation-failed: credential proof)')
   if (doc.issuer !== card.anchor || doc.issuer !== credential.issuer) return dispose(p, doc, 'failed(validation-failed: issuer mismatch)')
-  if (credential.credentialSubject.id !== p.anchor) return dispose(p, doc, 'failed(validation-failed: not about me)')
-  if (card.sentTo !== p.anchor) return dispose(p, doc, 'failed(validation-failed: sentTo)')
+  if (doc.recipient !== credential.credentialSubject.id) return dispose(p, doc, 'failed(validation-failed: outer recipient is not the subject)')
   if (card.boundTo !== credential.credentialSubject.challenge) return dispose(p, doc, 'failed(validation-failed: boundTo mismatch)')
   if (credential.credentialSubject.ceremony !== CEREMONY) return dispose(p, doc, 'failed(validation-failed: ceremony label)')
   // pre-lock resolution (provisional; latches on observation) — the sim is
-  // single-threaded, so the in-lock authoritative resolution coincides:
+  // single-threaded, so the in-lock authoritative resolution coincides.
+  // fresh-always: the resolved challenge names the enacting pair context;
+  // subject and sentTo must equal exactly THAT context's anchor.
   const res = resolve(p, credential.credentialSubject.challenge, now)
   if (res.state === 'unknown')
     return dispose(p, doc, 'failed(validation-failed: challenge resolves unknown)')
+  const ownAnchor = res.state === 'recorded' ? res.record.ownCtx.anchor : res.ctx.anchor
+  if (credential.credentialSubject.id !== ownAnchor) return dispose(p, doc, 'failed(validation-failed: not about me)')
+  if (card.sentTo !== ownAnchor) return dispose(p, doc, 'failed(validation-failed: sentTo)')
 
   if (res.state === 'recorded') {
     // ── record-aware effect: the record decides ──
@@ -295,16 +340,16 @@ function receiveBundle(p, doc, dd, now) {
   }
 
   // ── record-creating effect (resolution: open) ──
-  const t_ch = Date.parse(res.issuedAt)
+  const t_ch = tsec(res.issuedAt)
   const expect = binding(CEREMONY, credential.credentialSubject.challenge, card.challenge.value)
   if (credential.credentialSubject.enactmentBinding !== expect) return dispose(p, doc, 'failed(validation-failed: binding)')
   if (doc.ceremony && doc.ceremony.enactment !== expect) return dispose(p, doc, 'failed(validation-failed: ceremony member lies)')
-  const vf = Date.parse(credential.validFrom), pc = Date.parse(credential.proof.created)
+  const vf = tsec(credential.validFrom), pc = tsec(credential.proof.created)
   const lo = t_ch - PARAMS.skew, hi = t_ch + PARAMS.challengeMaxAge + PARAMS.issuanceWindow + PARAMS.skew
   if (vf < lo || vf > hi || pc < lo || pc > hi || pc < vf - PARAMS.skew) return dispose(p, doc, 'failed(stale-issuance)')
   if (t_ch > now + PARAMS.skew) return dispose(p, doc, 'failed(gate-future)') // expiry side is structural (resolution)
   const own = { value: credential.credentialSubject.challenge, issuedAt: res.issuedAt }
-  const record = { ceremony: CEREMONY, counterparty: card.anchor, card, own, other: card.challenge, binding: expect, time: now }
+  const record = { ceremony: CEREMONY, counterparty: card.anchor, card, own, ownCtx: res.ctx, other: card.challenge, binding: expect, time: now }
   p.records.set(own.value, record)          // open → recorded: atomic supersession
   p.open.delete(own.value)
   if (p.displayedChallenge?.value === own.value) p.displayedChallenge = null
@@ -321,10 +366,11 @@ function receiveBundle(p, doc, dd, now) {
 export function opticalInput(p, card, now) {
   if (!diVerify(card, card.anchor)) return { outcome: 'refused', reason: 'card proof' }
   if (card.version !== CARD_VERSION) return { outcome: 'refused', reason: 'version' }
-  if (card.sentTo !== p.anchor) return { outcome: 'refused', reason: 'sentTo' }
   if (!card.boundTo) return { outcome: 'refused', reason: 'boundTo missing' }
   const res = resolve(p, card.boundTo, now)
   if (res.state === 'unknown') { say(p, 'optischer Scan: gate-expired → frisches Enactment nötig'); return { outcome: 'gate-expired' } }
+  const ownA = res.state === 'recorded' ? res.record.ownCtx.anchor : res.ctx.anchor
+  if (card.sentTo !== ownA) return { outcome: 'refused', reason: 'sentTo' }
   if (res.state === 'recorded') {
     const r = res.record
     if (jcs(r.card) === jcs(card)) return { outcome: 'idempotent', record: r }
@@ -334,7 +380,7 @@ export function opticalInput(p, card, now) {
   const t_ch = Date.parse(res.issuedAt)
   if (t_ch > now + PARAMS.skew) return { outcome: 'gate-future' }
   const own = { value: card.boundTo, issuedAt: res.issuedAt }
-  const record = { ceremony: CEREMONY, counterparty: card.anchor, card, own, other: card.challenge, binding: binding(CEREMONY, own.value, card.challenge.value), time: now }
+  const record = { ceremony: CEREMONY, counterparty: card.anchor, card, own, ownCtx: res.ctx, other: card.challenge, binding: binding(CEREMONY, own.value, card.challenge.value), time: now }
   p.records.set(own.value, record)
   p.open.delete(own.value)
   if (p.displayedChallenge?.value === own.value) p.displayedChallenge = null
@@ -346,8 +392,10 @@ function receiveCredentialDelivery(p, doc, dd, now) {
   const cred = doc.payload.credential
   // stage 8 here is schema + outer/inner consistency ONLY — the delivery
   // effect (durable buffer + ack) must not depend on credential acceptance
+  if (!schemaOK(cred, 'encounter-credential-0.25.schema.json')) return dispose(p, doc, 'failed(validation-failed: credential schema)')
   if (doc.issuer !== cred.issuer) return dispose(p, doc, 'failed(validation-failed: issuer mismatch)')
-  if (cred.credentialSubject?.id !== p.anchor) return dispose(p, doc, 'failed(validation-failed: not about me)')
+  if (doc.recipient !== cred.credentialSubject.id) return dispose(p, doc, 'failed(validation-failed: outer recipient is not the subject)')
+  if (!p.contexts.has(cred.credentialSubject?.id)) return dispose(p, doc, 'failed(validation-failed: not about me)')
   if (doc.ceremony && doc.ceremony.enactment && doc.ceremony.enactment !== cred.credentialSubject.enactmentBinding)
     return dispose(p, doc, 'failed(validation-failed: ceremony member lies)')
   p.buffered.push(cred)                       // the delivery effect: durable buffer
@@ -367,7 +415,7 @@ function receiveAck(p, doc, now) {
   // an ack is an attestation OF THE RECIPIENT: issuer must be exactly the
   // anchor the referenced document was sent to, on the same thread
   if (doc.issuer !== entry.recipient) return dispose(p, doc, 'failed(validation-failed: ack issuer is not the recipient)')
-  if (doc.recipient !== p.anchor || doc.threadId !== entry.threadId) return dispose(p, doc, 'failed(validation-failed: ack outer mismatch)')
+  if (doc.recipient !== entry.sender || doc.threadId !== entry.threadId) return dispose(p, doc, 'failed(validation-failed: ack outer mismatch)')
   entry.status = 'delivered'
   p.senderStatus.set(key, entry)
   // terminal document (Contract 4.2): cache entry, but NO ack-of-ack —
@@ -379,15 +427,16 @@ function receiveAck(p, doc, now) {
 
 // ── Encounter acceptance (5.6) ──────────────────────────────────────────
 export function tryAccept(p, credential, now) {
+  if (!schemaOK(credential, 'encounter-credential-0.25.schema.json')) return 'ERR_VERSION'
   if (credential.credentialSubject?.format !== CRED_FORMAT) return 'ERR_VERSION'
   if (!diVerify(credential, credential.issuer)) return 'ERR_SIG'
-  if (credential.credentialSubject.id !== p.anchor) return 'ERR_ADDRESSEE'
   const record = p.records.get(credential.credentialSubject.challenge)
   if (!record) return 'ERR_NO_RECORD'
+  if (credential.credentialSubject.id !== record.ownCtx.anchor) return 'ERR_ADDRESSEE'
   if (record.counterparty !== credential.issuer) return 'ERR_NO_RECORD'
   if (credential.credentialSubject.ceremony !== record.ceremony) return 'ERR_CEREMONY'
-  const t_ch = Date.parse(record.own.issuedAt)
-  const vf = Date.parse(credential.validFrom), pc = Date.parse(credential.proof.created)
+  const t_ch = tsec(record.own.issuedAt)
+  const vf = tsec(credential.validFrom), pc = tsec(credential.proof.created)
   const lo = t_ch - PARAMS.skew, hi = t_ch + PARAMS.challengeMaxAge + PARAMS.issuanceWindow + PARAMS.skew
   if (vf < lo || vf > hi || pc < lo || pc > hi || pc < vf - PARAMS.skew) return 'ERR_STALE_ISSUANCE'
   if (credential.credentialSubject.enactmentBinding !== record.binding) return 'ERR_BINDING'
@@ -405,6 +454,10 @@ function acceptCredential(p, credential, record) {
   p.edges.set(record.counterparty, edge)
   return 'accepted'
 }
+// generic signer under a pair context — exported for drivers and for
+// modelling attackers (who sign correctly under their OWN contexts)
+export const signDocument = (ctx, body, created) => ({ ...body, proof: diSign(ctx, body, created) })
+
 export function noteIssued(p, counterpartyAnchor, credential) {
   const edge = p.edges.get(counterpartyAnchor) ?? { issued: [], received: [] }
   edge.issued.push(credential)

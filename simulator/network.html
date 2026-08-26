@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RLTP Netzwerk-Simulator — Vorstellen</title>
+<style>
+  :root {
+    --bg: #ffffff; --card: #ffffff; --fg: #2b3344; --muted: #64748b;
+    --border: #e2e8f0; --tint: #f1f5f9; --primary: #2563eb;
+    --primary-tint: #eff6ff; --green: #16a34a; --amber: #b45309;
+    --shadow: 0 10px 15px -3px rgba(0,0,0,.10), 0 4px 6px -4px rgba(0,0,0,.10);
+  }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg: #141821; --card: #1b212c; --fg: #eef2f7; --muted: #94a3b8;
+    --border: #2d3644; --tint: #222937; --primary: #60a5fa;
+    --primary-tint: #1d2839; --green: #4ade80; --amber: #fbbf24;
+    --shadow: 0 10px 15px -3px rgba(0,0,0,.35), 0 4px 6px -4px rgba(0,0,0,.35);
+  }}
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+    font-family: Inter, system-ui, sans-serif; font-size: 15px;
+    min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: .9rem 1.2rem .6rem; display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; }
+  header h1 { font-size: 1.15rem; margin: 0; font-weight: 800; }
+  header .sub { color: var(--muted); font-size: .8rem; }
+  main { flex: 1; display: flex; gap: 1.1rem; padding: 0 1.2rem 1rem; align-items: flex-start; justify-content: center; }
+  .dev { display: flex; flex-direction: column; gap: .45rem; align-items: center; width: 320px; flex: none; }
+  .devlabel { font-size: .72rem; color: var(--muted); font-weight: 700; display: flex; gap: .6rem; align-items: center; }
+  /* phone chrome + wallet: SHARED — injected from rltp-phone.mjs */
+  .phone-shell { width: 100%; }
+  .phone-screen { height: 500px; }
+  .incoming { background: oklch(97% 0.02 264); border: 1.5px solid oklch(55% 0.21 264 / .45); border-radius: 12px;
+    padding: 9px 10px; margin-bottom: 8px; }
+  .incoming .iq { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+  .incoming .ih { font-size: 10.5px; color: oklch(44% 0.008 265); line-height: 1.4; margin-bottom: 7px; }
+  .incoming .ibtns { display: flex; gap: 6px; }
+  .incoming button { font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; padding: 5px 12px;
+    border-radius: 8px; border: 1px solid transparent; }
+  .incoming .yes { background: oklch(55% 0.21 264); color: #fff; }
+  .incoming .no { background: transparent; color: oklch(44% 0.008 265); border-color: oklch(88% 0.005 265); }
+  .sentrow { font-size: 11px; color: oklch(44% 0.008 265); padding: 6px 2px 0; }
+  /* Home (Redesign Kap. 3): KPI-Zeile + Abschnitts-Label + kompakte Kopf-Karte */
+  .kpi { display: flex; gap: 7px; margin-bottom: 10px; }
+  .kpi .k { flex: 1; background: #fff; border: 1px solid oklch(92% 0.005 265); border-radius: 11px;
+    padding: 8px 6px; text-align: center; }
+  .kpi .n { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .kpi .l { font-size: 9.5px; color: oklch(48% 0.008 265); text-transform: uppercase; letter-spacing: .04em; }
+  .sect { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
+    color: oklch(48% 0.008 265); margin: 12px 2px 6px; }
+  .card { background: #fff; border: 1px solid oklch(92% 0.005 265); border-radius: 12px; overflow: hidden; }
+  .card .prow { cursor: default; }
+  .profact button.trust { background: oklch(52% 0.14 150); border-color: transparent; color: #fff; }
+  .fab { position: absolute; right: 12px; bottom: 58px; width: 46px; height: 46px; border-radius: 50%;
+    border: none; background: oklch(55% 0.21 264); color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 16px rgba(0,0,0,.28); z-index: 4; }
+  @keyframes pspin { to { transform: rotate(360deg) } }
+  .cdlg { position: absolute; inset: 0; background: oklch(25% 0.01 265 / .42); display: flex;
+    align-items: center; justify-content: center; z-index: 5; }
+  .cdlg-card { background: #fff; border-radius: 18px; padding: 20px 16px 14px; width: 86%;
+    text-align: center; box-shadow: 0 18px 40px -18px rgba(0,0,0,.45); }
+  .cdlg .avpair { display: flex; justify-content: center; margin-bottom: 10px; }
+  .cdlg .avpair .av { width: 52px; height: 52px; border-radius: 50%; color: #fff; display: flex;
+    align-items: center; justify-content: center; font-size: 21px; font-weight: 700; border: 3px solid #fff; }
+  .cdlg .avpair .av + .av { margin-left: -10px; }
+  .cdlg h4 { margin: 0 0 4px; font-size: 15px; }
+  .cdlg p { margin: 0 0 6px; font-size: 11.5px; line-height: 1.5; color: oklch(46% 0.008 265); }
+  .cdlg .bs { display: flex; gap: 8px; margin-top: 10px; }
+  .cdlg .bs button { flex: 1; font: inherit; font-size: 12.5px; font-weight: 700; padding: 10px;
+    border-radius: 11px; border: 1px solid oklch(88% 0.005 265); background: transparent;
+    color: oklch(40% 0.008 265); cursor: pointer; }
+  .cdlg .bs button.grn { background: oklch(52% 0.14 150); border-color: transparent; color: #fff; }
+  .toast { position: absolute; top: 32px; left: 12px; right: 12px; z-index: 7; pointer-events: none;
+    background: oklch(25% 0.01 265 / .92); color: #fff; font-size: 10.5px; line-height: 1.4;
+    padding: 8px 12px; border-radius: 10px; text-align: center; }
+  /* net toggle (simulator control, outside the screen — like the ceremony sim) */
+  .tgwrap { display: flex; gap: .45rem; align-items: center; }
+  .tglabel { font-size: .68rem; font-weight: 700; color: var(--muted); }
+  .toggle { position: relative; width: 38px; height: 22px; flex: none; cursor: pointer;
+    border-radius: 99px; border: none; background: oklch(70% 0.02 265); transition: background .2s; }
+  .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: left .2s; }
+  .toggle.on { background: oklch(52% 0.14 145); }
+  .toggle.on::after { left: 18px; }
+  aside { width: 400px; flex: none; display: flex; flex-direction: column; gap: .8rem; }
+  .panel { background: var(--card); border: 1.5px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: .7rem .9rem; }
+  .panel h2 { margin: 0 0 .45rem; font-size: .72rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+  .wire { font-family: ui-monospace, monospace; font-size: .72rem; display: flex; flex-direction: column; gap: .28rem; max-height: 19rem; overflow: auto; }
+  .wire .n { color: var(--muted); }
+  .wire .put { color: var(--green); } .wire .get { color: var(--primary); } .wire .env { color: var(--amber); }
+  .note { color: var(--muted); font-size: .78rem; line-height: 1.45; }
+  .note b { color: var(--fg); }
+  .wallet { width: 100%; }
+  aside { width: 400px; flex: none; display: flex; flex-direction: column; gap: .8rem; }
+  .panel { background: var(--card); border: 1.5px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: .7rem .9rem; }
+  .panel h2 { margin: 0 0 .45rem; font-size: .72rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+  .wire { font-family: ui-monospace, monospace; font-size: .72rem; display: flex; flex-direction: column; gap: .28rem; max-height: 19rem; overflow: auto; }
+  .wire .n { color: var(--muted); }
+  .wire .put { color: var(--green); } .wire .get { color: var(--primary); } .wire .env { color: var(--amber); }
+  .note { color: var(--muted); font-size: .78rem; line-height: 1.45; }
+  .note b { color: var(--fg); }
+  /* 🗂 Stored on this device — WORTGLEICH zum Graph-Simulator-Wallet */
+  .wallet { width: 100%; }
+  .whead { font-size: .62rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); margin: .2rem 0 .35rem; padding-left: .2rem; }
+  .wfilter { display: flex; gap: 6px; margin: 0 0 8px; }
+  .wchip { font: inherit; font-size: .62rem; font-weight: 700; padding: 3px 10px; border-radius: 99px;
+    border: 1.5px solid var(--border); background: var(--card); color: var(--muted); cursor: pointer; }
+  .wchip.active { border-color: var(--primary); color: var(--primary); background: var(--primary-tint); }
+  .wcat { border: 1px solid var(--border); border-radius: .6rem; margin-bottom: .45rem; overflow: hidden;
+    background: var(--card); }
+  .wcat > button { width: 100%; display: flex; align-items: baseline; justify-content: space-between; gap: .5rem;
+    padding: .5rem .7rem; border: none; background: transparent; color: var(--fg);
+    font: inherit; font-size: .78rem; font-weight: 700; cursor: pointer; text-align: left; }
+  .wcat .wfpp { font-size: .62rem; font-weight: 400; color: var(--muted); }
+  .wcat .wbadge { font-family: ui-monospace, monospace; font-size: .68rem; color: var(--muted); flex: none; }
+  .witems { padding: 0 .7rem .55rem; display: flex; flex-direction: column; gap: .5rem; }
+  .witem { border-top: 1px solid var(--border); padding-top: .45rem; }
+  .witem .wtitle { font-size: .74rem; font-weight: 600; }
+  .witem .wsub { font-family: ui-monospace, monospace; font-size: .63rem; color: var(--muted); margin: 2px 0 4px; }
+  .witem pre { font-family: ui-monospace, monospace; font-size: .62rem; line-height: 1.5; background: var(--tint);
+    border-radius: .4rem; padding: .45rem .55rem; max-height: 220px; overflow: auto;
+    white-space: pre-wrap; word-break: break-all; margin: 0; }
+  .wempty { font-size: .68rem; color: var(--muted); padding: .2rem 0 .35rem; }
+  .wire details { border-top: 1px solid var(--border); padding: .2rem 0; }
+  .wire details:first-child { border-top: none; }
+  .wire summary { cursor: pointer; list-style: none; }
+  .wire pre { font-size: .6rem; line-height: 1.45; background: var(--tint); border-radius: .35rem;
+    padding: .35rem .45rem; margin: .25rem 0 .2rem; max-height: 180px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Network Simulator · The App</h1>
+  <div class="sub">The same app on three devices (rltp-core + rltp-crypto, DTG 0.25) · verify, introduce, trust, groups · rendezvous drop — the introducer is never needed again after their one act</div>
+</header>
+<main>
+  <div class="dev" id="dev-J"></div>
+  <div class="dev" id="dev-A"></div>
+  <div class="dev" id="dev-E"></div>
+  <aside>
+    <div class="panel"><h2>On the wire · rendezvous drop</h2><div class="wire" id="wire"></div></div>
+    <div class="panel"><h2>Scenario</h2><div class="note">
+      Jonathan and Emil are both part of the same org but have never met.
+      Anton knows both from real ceremonies (✓).<br><br>
+      <b>Try:</b> On Anton's phone → tap Emil → "Introduce…" → pick Jonathan.
+      Then flip Anton to airplane mode — and watch Jonathan and Emil find each other
+      anyway. The wire shows: after Anton's one act, not a single access comes from him.
+      Or verify someone yourself: the connect button opens your code and the scanner —
+      including the offline two-way scan.
+    </div></div>
+  </aside>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script type="module">
+import * as I from './introduce.mjs'
+import * as C from './rltp-crypto.mjs'
+import * as G from './groups.mjs'
+import * as T from './trust.mjs'
+import * as CN from './continuity.mjs'
+import * as PH from './rltp-phone.mjs'
+PH.injectPhoneCss()
+
+const T0 = Date.parse('2026-08-25T15:00:00Z')
+let now = T0
+const COLORS = { Jonathan: '#3b82f6', Anton: '#ef4444', Emil: '#84cc16' }
+const world = {
+  J: I.createPerson('Jonathan'), A: I.createPerson('Anton'), E: I.createPerson('Emil'),
+  drop: I.createDrop(), wire: [], transit: new Map(), // name -> [env] (Angebote unterwegs zu Offline-Geräten)
+  shows: {}, // der optische Kanal: id -> gezeigter Code ({ctx,ch,card} oder Fallback-Bundle)
+  ui: { J: { view: 'list', tab: 'home', wdir: 'all', wopen: {} }, A: { view: 'list', tab: 'home', wdir: 'all', wopen: {} }, E: { view: 'list', tab: 'home', wdir: 'all', wopen: {} } },
+  ready: false,
+}
+// jedes Paket, das den Draht berührt — mit echter Fracht (aufklappbar)
+const packet = (kind, from, to, payload, cls = 'env') =>
+  world.wire.push({ n: world.wire.length, kind, from, to, payload, cls })
+// Drop-Zugriffe ebenfalls als Pakete zeigen (put mit Blob, get mit Treffer)
+const _put = world.drop.put.bind(world.drop), _get = world.drop.get.bind(world.drop)
+world.drop.put = (topic, blob, by) => { packet('drop.put ' + topic.slice(0, 14) + '…', by, 'Drop', { topic, blobB64u: blob.slice(0, 120) + '… (' + blob.length + ' Zeichen, AES-GCM unter Akt-Schlüssel)' }, 'put'); return _put(topic, blob, by) }
+world.drop.get = (topic, by) => { const r = _get(topic, by); packet('drop.get ' + topic.slice(0, 14) + '… ' + (r ? '→ Treffer' : '→ leer'), by, 'Drop', { topic, hit: !!r }, 'get'); return r }
+window.__probe = world
+const byName = (n) => world[n === 'Jonathan' ? 'J' : n === 'Anton' ? 'A' : 'E']
+const idOf = (p) => p.name === 'Jonathan' ? 'J' : p.name === 'Anton' ? 'A' : 'E'
+
+// Ausgangslage: Anton kennt beide (echte Zeremonien, fresh-always)
+world.cJ = await I.ceremony(world.A, world.J, T0)
+world.cE = await I.ceremony(world.A, world.E, T0 + 1000)
+for (const id of ['J', 'A', 'E']) for (const c of world[id].contacts.values()) c.probeSent = true // Vorgeschichte: leere Probes nicht nachspielen
+world.ready = true
+
+// ── Transport: gesiegelte Zustellung mit Offline-Puffer (Relay-Semantik).
+// membership-Dokumente dispatcht groups.receiveDoc; Antworten (outbound)
+// reisen sofort weiter — jede an ihren Empfänger, transit bei offline ──
+async function deliver (toPerson, env) {
+  if (!toPerson.online) {
+    const q = world.transit.get(toPerson.name) ?? []
+    q.push(env); world.transit.set(toPerson.name, q)
+    return false // keine Ankunft — Zustellzeit unbeschränkt
+  }
+  let r = await G.receiveDoc(toPerson, env, now)
+  if (!r.handled) r = await T.receiveTrustDoc(toPerson, env, now)
+  if (!r.handled) r = await CN.receiveContinuity(toPerson, env, now)
+  if (!r.handled) r = await receiveEncounter(toPerson, env)
+  if (!r.handled) { await I.receiveOffer(toPerson, env); return true }
+  logPkt(toPerson, r)
+  const tid = idOf(toPerson)
+  if (r.disclosed) toast(tid, `${r.fromName ?? 'A contact'} trusts you now — they shared their stable identity`)
+  if (r.chained && r.name && world.ui[tid].sheet?.type !== 'verified') toast(tid, `${r.name}: recognized an existing relationship — merged into one contact`)
+  if (r.fulfilled) toast(tid, 'Your candidacy is fulfilled — a member vouched for you')
+  for (const out of r.outbound ?? []) {
+    packet(pktKind(out), toPerson.name, out.to.name, out.env)
+    await deliver(byName(out.to.name), out.env)
+  }
+  return true
+}
+const pktKind = (out) => out.kind ?? 'Dokument (versiegelt, Kanal)'
+const logPkt = () => {}
+async function flushTransit (p) {
+  const q = world.transit.get(p.name) ?? []
+  world.transit.set(p.name, [])
+  for (const env of q) await deliver(p, env)
+}
+
+// ── Aktionen (App-UI → introduce.mjs) ───────────────────────────────────
+async function doIntroduce (mediator, anchorA, anchorB) {
+  now += 5000
+  const A = mediator.contacts.get(anchorA), B = mediator.contacts.get(anchorB)
+  const r = await I.introduce(mediator, anchorA, anchorB, now)
+  packet('introduction-offer@2 (versiegelt)', mediator.name, A.name, r.offers[0].env)
+  packet('introduction-offer@2 (versiegelt)', mediator.name, B.name, r.offers[1].env)
+  await deliver(byName(A.name), r.offers[0].env)
+  await deliver(byName(B.name), r.offers[1].env)
+  render()
+}
+window.__decide = async (id, i, yes) => {
+  const p = world[id], e = p.inbox.filter((x) => !x.decided)[i]
+  if (!e) return
+  now += 5000
+  if (!yes) { e.decided = true; e.ignored = true; p.log.push('ignoriert — nichts hat das Gerät verlassen (die Karte der Gegenseite kann trotzdem eintreffen)'); render(); return }
+  await I.consent(p, e, world.drop, now)
+  render()
+  // KEIN Cross-Device-Update: jedes Gerät holt selbst, im eigenen Sync-Tick
+}
+window.__net = async (id) => {
+  const p = world[id]
+  if (p.online) { await I.setOnline(p, false, world.drop) }
+  else {
+    await flushTransit(p)
+    await I.setOnline(p, true, world.drop)   // führt Queue aus + checkDrop
+  }
+  render()
+}
+// 🗂 Wallet-Kategorien — dieselbe Struktur wie renderWallet() im
+// Graph-Simulator (Titel/Sub/JSON pro Artefakt; dir für Sent/Received)
+const short = (s) => s.slice(0, 14) + '…'
+const J = (o) => JSON.stringify(o, null, 1)
+function walletCats (p) {
+  const peerOfCtx = (ctx) => {
+    for (const c of p.contacts.values()) if (c.channel?.own?.anchor === ctx.anchor) return c.name
+    for (const e of p.inbox) if (!e.kind && e.ownCtx?.anchor === ctx.anchor) return e.offer.peer.name
+    return null
+  }
+  const groupOfLabel = (label) => [...p.groups.values()].find((g) => label === 'group/' + g.genesisDigest)
+  const ctxs = [...new Map([...p.contexts.values()].map((c) => [c.label, c])).values()]
+  const cats = []
+  cats.push({ key: 'id', title: 'Identity · anchors', fpp: 'one identity per context, all derived from one seed',
+    items: ctxs.map((ctx) => ({
+      title: ctx.label.startsWith('group/')
+        ? `membership anchor · ${groupOfLabel(ctx.label)?.label ?? short(ctx.anchor)}`
+        : `relationship anchor · ${peerOfCtx(ctx) ?? short(ctx.anchor)}`,
+      sub: short(ctx.anchor),
+      json: J({ label: ctx.label, anchor: ctx.anchor, derivation: `HKDF-SHA256(root, 'rltp/anchor/ed/${ctx.label}')`, backup: 'root seed only (12 words) — anchors are re-derivable' }),
+    })) })
+  const rel = []
+  for (const c of p.contacts.values()) if (c.provenance === 'ceremony' && c.credential) {
+    rel.push({ dir: 'out', title: `issued · about ${c.name}`, sub: `pairwise anchors (ceremony) · binding ${c.credential.credentialSubject.enactmentBinding.slice(0, 14)}… · 📤 presentable`, json: J(c.credential) })
+    rel.push({ dir: 'in', title: `card · from ${c.name}`, sub: 'contact card, key-agreement key for the sealed channel', json: J(c.card) })
+  }
+  cats.push({ key: 'rel', title: 'Relationship credentials', fpp: 'signed evidence of every verification', items: rel })
+  const intro = []
+  for (const e of p.inbox) {
+    if (e.kind) continue // Membership-Einträge gehören in die Membership-Kategorie
+    intro.push({ dir: 'in', title: `offer · from ${e.mediator} (${e.offer.peer.name})`, sub: `introduction-offer@2 · act ${e.offer.act.slice(0, 14)}… · ${e.ignored ? 'ignored' : e.released ? 'released' : 'open'}`, json: J(e.offer) })
+    if (e.ownCard) intro.push({ dir: 'out', title: `released card · for ${e.offer.peer.name}`, sub: 'deposited at the drop (AES-GCM under the act secret)', json: J(e.ownCard) })
+  }
+  for (const c of p.contacts.values()) if (c.voucher) {
+    intro.push({ dir: 'in', title: `card · from ${c.name}`, sub: `${c.state} ${c.provenance} · fetched from the drop`, json: J(c.card) })
+    intro.push({ dir: 'in', title: `voucher · about ${c.name}`, sub: 'introduction-voucher@2 · act-bound, under MY introducer\'s channel anchor', json: J(c.voucher) })
+  }
+  cats.push({ key: 'intro', title: 'Introductions', fpp: 'offers, released cards, act-bound vouchers', items: intro })
+  const tr = []
+  for (const c of p.contacts.values()) {
+    if (c.sentMapping) tr.push({ dir: 'out', title: `anchor-mapping · to ${c.name}`, sub: `anchor-mapping@2 (DV, double MAC) · one-way door ${c.trustPaused ? '· updates paused' : ''}`, json: J(c.sentMapping) })
+    if (c.mapping) tr.push({ dir: 'in', title: `anchor-mapping · from ${c.name}`, sub: 'verified with own secrets — worthless to third parties (deniable)', json: J(c.mapping) })
+    if (c.sentStar) tr.push({ dir: 'out', title: `contact update · to ${c.name}`, sub: `blinded snapshot · ${c.sentStar.count} anchors as HMACs, salt ${c.sentStar.salt}`, json: J(c.sentStar) })
+    if (c.starReceived) tr.push({ dir: 'in', title: `contact update · from ${c.name}`, sub: `${c.starReceived.count} contacts (blinded) · you know ${c.starInfo?.knownNames?.length ?? 0}`, json: J(c.starReceived) })
+  }
+  cats.push({ key: 'trust', title: 'Trust', fpp: 'disclosed anchors, blinded snapshots — the one-way doors', items: tr })
+  const mem = []
+  for (const g of p.groups.values()) {
+    if (g.role === 'founder') mem.push({ dir: 'out', title: `genesis · ${g.label}`, sub: `group-genesis@probe · digest ${g.genesisDigest.slice(0, 16)}… (the group's identity)`, json: J(g.genesis) })
+    for (const [anchor, th] of g.threads) mem.push({ dir: 'out', title: `invite (offen) · ${g.label}`, sub: 'membership-invite/0.2 · InvitationCredential, one carrier', json: J(th.invite) })
+  }
+  for (const e of p.inbox) if (e.kind === 'invite') mem.push({ dir: 'in', title: `invite · "${e.invite.credentialSubject.name}" from ${e.from}`, sub: `membership-invite/0.2 · prelude check passed · ${e.accepted ? 'joined' : e.ignored ? 'ignored' : 'open'}`, json: J(e.invite) })
+  cats.push({ key: 'mem', title: 'Membership', fpp: 'genesis, invitations, the group identity', items: mem })
+  return cats
+}
+window.__wdir = (id, dir) => { world.ui[id].wdir = dir; render() }
+window.__wcat = (id, key) => { world.ui[id].wopen[key] = !world.ui[id].wopen[key]; render() }
+const walletOf = (id, p) => PH.walletHtml({ cats: walletCats(p), dir: world.ui[id].wdir, open: world.ui[id].wopen,
+  onDir: (k) => `__wdir('${id}','${k}')`, onCat: (k) => `__wcat('${id}','${k}')` })
+// jedes ONLINE-Gerät synct periodisch selbst: Transit abholen + Drop prüfen —
+// die UI ist danach reine Funktion der Gerätedaten
+setInterval(async () => {
+  if (!world.ready) return
+  let changed = false
+  for (const id of ['J', 'A', 'E']) {
+    const p = world[id]
+    if (!p.online) continue
+    const before = p.log.length + p.contacts.size
+    await flushTransit(p)
+    for (const e of p.inbox) if (!e.kind) await I.checkDrop(p, e, world.drop)
+    for (const d of (p.pendingDocs ?? []).splice(0)) {
+      packet('encounter-verify@probe — nachgeholt (war offline)', p.name, d.toName, d.env)
+      await deliver(byName(d.toName), d.env)
+      changed = true
+    }
+    const ui = world.ui[id]
+    if (ui.view === 'waiting') {
+      ui.ackTicks = (ui.ackTicks ?? 0) + 1
+      if (ui.ackTicks > 2) {
+        ui.view = 'fallback'
+        world.shows[id] = { fallback: true, card: ui.enc.sentCard, name: ui.enc.peerName }
+        p.log.push('Ack-Wartezeit verstrichen · dieselbe Begegnung geht optisch weiter: die gesendete Karte wird zum QR (Adapter-Wechsel, kein Zeremonie-Wechsel)')
+        changed = true
+      }
+    }
+    for (const [k, c] of p.contacts) {
+      if (!c.channel?.own || c.probeSent || c.deactivated) continue
+      c.probeSent = true
+      for (const out of (await CN.buildProbe(p, k)) ?? []) {
+        packet('continuity-probe@1 (geblendet, gepolstert, versiegelt)', p.name, out.to.name, out.env)
+        await deliver(byName(out.to.name), out.env)
+      }
+      changed = true
+    }
+    if (p.log.length + p.contacts.size !== before) changed = true
+  }
+  if (changed) render()
+}, 900)
+window.__nav = (id, view, anchor) => { Object.assign(world.ui[id], { view, anchor, sheet: null }); render() }
+window.__tab = (id, tab) => { Object.assign(world.ui[id], { tab, view: 'list', anchor: null, sheet: null }); render() }
+window.__rr = () => render()
+window.world = world
+window.__sheet = (id, sheet) => { world.ui[id].sheet = sheet; render() }
+window.__foundGroup = async (id) => {
+  const p = world[id]
+  const name = document.getElementById('gname-' + id)?.value?.trim()
+  world.ui[id].sheet = null
+  if (!name) { render(); return }
+  now += 5000
+  await G.foundGroup(p, name, now)
+  render()
+}
+window.__inviteToGroup = async (id, gid, contactAnchor) => {
+  const p = world[id]
+  world.ui[id].sheet = null
+  now += 5000
+  const pkt = await G.preludeRequest(p, contactAnchor, gid, now)
+  packet('membership-prelude-request@probe (versiegelt)', p.name, pkt.to.name, pkt.env)
+  await deliver(byName(pkt.to.name), pkt.env)
+  render()
+}
+window.__decideInvite = async (id, act, yes) => {
+  const p = world[id]
+  const e = p.inbox.find((x) => x.kind === 'invite' && !x.decided && x.invite.taskContext === act)
+  if (!e) return
+  now += 5000
+  if (!yes) { e.decided = true; e.ignored = true; p.log.push('Einladung ignoriert — verfällt still mit validUntil'); render(); return }
+}
+window.__joinConfirm = async (id, act) => {
+  const p = world[id]
+  const e = p.inbox.find((x) => x.kind === 'invite' && !x.decided && x.invite.taskContext === act)
+  world.ui[id].sheet = null
+  if (!e) { render(); return }
+  now += 5000
+  const candidacy = !!document.getElementById('cand-' + id)?.checked
+  const pkt = await G.acceptInvite(p, e, now, { candidacy })
+  packet('membership-accept/0.2 (versiegelt, Task-Proof, candidacy=' + candidacy + ')', p.name, pkt.to.name, pkt.env)
+  await deliver(byName(pkt.to.name), pkt.env)
+  render()
+}
+// ── der WoT-App-Flow (wie Zeremonie-Sim/Demo-App): FAB → Code zeigen ODER
+// scannen → Scanner fliegt übers zeigende Phone → Person bestätigen →
+// Credential reist übers NETZ → Gegenseite bestätigt zurück; ohne Netz
+// wechselt die App automatisch auf den Two-Way-Scan (optische Fortsetzung
+// DERSELBEN Begegnung — Adapter-Wechsel, kein Zeremonie-Wechsel).
+const ET = 'https://real-life.org/trust-tasks/encounter-verify@probe'
+const displayCard = async (p, sh, whenIso) =>
+  C.signCard(sh.ctx, C.cardBody(sh.ctx, { name: p.name, challenge: { value: sh.ch, issuedAt: whenIso } }), whenIso)
+window.__openVerify = async (id) => {
+  const p = world[id], ui = world.ui[id]
+  ui.sheet = null
+  if (world.shows[id]?.fallback) { ui.view = 'fallback'; render(); return } // laufende Begegnung geht vor
+  const sh = await I.ceremonyShow(p)
+  ;(p.showLog ??= new Map()).set(sh.ctx.anchor, sh.ch)
+  world.shows[id] = { ctx: sh.ctx, ch: sh.ch, card: await displayCard(p, sh, C.iso(now)) }
+  ui.view = 'verify'
+  p.log.push('Code gezeigt — frisches Anker-Paar geprägt (verrät nichts)')
+  render()
+}
+function toast (id, text) {
+  world.ui[id].toast = text
+  render()
+  clearTimeout(world.ui[id].toastT)
+  world.ui[id].toastT = setTimeout(() => { world.ui[id].toast = null; render() }, 3200)
+}
+window.__promptLater = (id) => {
+  // parkt den Akt: er bleibt im Home-Posteingang und im Kontakt-Detail —
+  // „Not now" merkt sich nichts vor und entscheidet nichts
+  Object.assign(world.ui[id], { view: 'list', tab: 'home', promptAnchor: null })
+  render()
+}
+window.__closeVerify = (id) => {
+  if (!world.shows[id]?.fallback) delete world.shows[id]
+  Object.assign(world.ui[id], { view: 'list', scan: null })
+  render()
+}
+window.__startScan = (id) => {
+  const ui = world.ui[id]
+  const target = ['J', 'A', 'E'].find((o) => o !== id && world.shows[o])
+  if (!target) { ui.sheet = { type: 'scanmiss' }; render(); return }
+  ui.view = 'scanner'; ui.scanTarget = target
+  render()
+  animScan(id, target)
+  clearTimeout(ui.autoCapture)
+  ui.autoCapture = setTimeout(() => captureNow(id), 2600) // die Kamera erkennt selbst
+}
+// die Scan-Choreografie (Port aus dem Zeremonie-Sim): beide Phones fliegen
+// auf EINEM Bogen zur Bildschirmmitte und neigen sich in die Kurve; das
+// scannende liegt eine Ebene über dem zeigenden und bekommt ein ECHTES
+// Durchguck-Loch (CSS-Maske) an der Sucher-Stelle — sein Bogen endet mit
+// dem Loch exakt über dem Code. Bei Erkennung kehrt alles zurück.
+let scanAnim = null
+function animScan (scanId, showId) {
+  const shellS = document.querySelector('#dev-' + scanId + ' .phone-shell')
+  const shellP = document.querySelector('#dev-' + showId + ' .phone-shell')
+  const hole = document.getElementById('vf-' + scanId)
+  if (!shellS || !shellP || !hole) return
+  const qr = shellP.querySelector('.qrimg')
+  const rs = shellS.getBoundingClientRect(), rp = shellP.getBoundingClientRect()
+  const rh = hole.getBoundingClientRect(), rq = (qr ?? shellP).getBoundingClientRect()
+  const cx = window.innerWidth / 2, cy = Math.max(300, window.innerHeight / 2)
+  const rad = (a) => a * Math.PI / 180
+  const rot = (v, a) => ({ x: v.x * Math.cos(rad(a)) - v.y * Math.sin(rad(a)), y: v.x * Math.sin(rad(a)) + v.y * Math.cos(rad(a)) })
+  const ctr = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 })
+  const pc = ctr(rp), sc = ctr(rs), qc = ctr(rq), hc = ctr(rh)
+  // beide neigen sich 45° zur Mitte und HALTEN die Neigung durch den Scan:
+  // Loch und Code sind Quadrate — bei 90° Relativdrehung passt der Code
+  const ptilt = pc.x < sc.x ? 45 : -45
+  const stilt = -ptilt
+  const pd = { x: cx - pc.x, y: cy - pc.y }
+  const qOff = rot({ x: qc.x - pc.x, y: qc.y - pc.y }, ptilt)
+  const hOff = rot({ x: hc.x - sc.x, y: hc.y - sc.y }, stilt)
+  const sd = { x: cx + qOff.x - sc.x - hOff.x, y: cy + qOff.y - sc.y - hOff.y }
+  const arc = (d, lift, tiltAt, n) => {
+    const c = { x: d.x / 2, y: d.y / 2 - lift }
+    const fr = []
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, u = 1 - t
+      fr.push({ offset: t, transform: 'translate(' + (2 * u * t * c.x + t * t * d.x) + 'px,' + (2 * u * t * c.y + t * t * d.y) + 'px) rotate(' + tiltAt(t) + 'deg)' })
+    }
+    return fr
+  }
+  // Durchguck-Loch: das Sucher-Rechteck aus dem ganzen Phone-Stapel ausstanzen
+  const mx = rh.left - rs.left + 6, my = rh.top - rs.top + 6, mw = rh.width - 12, mh = rh.height - 12
+  shellP.style.zIndex = 100
+  Object.assign(shellS.style, { zIndex: 110,
+    maskImage: 'linear-gradient(#000 0 0),linear-gradient(#000 0 0)',
+    maskPosition: `0 0, ${mx}px ${my}px`, maskSize: `100% 100%, ${mw}px ${mh}px`,
+    maskRepeat: 'no-repeat', maskComposite: 'exclude' })
+  const ease = 'cubic-bezier(.35,0,.25,1)'
+  scanAnim = { byId: { [showId]: shellP, [scanId]: shellS }, anims: [
+    shellP.animate(arc(pd, 70, (t) => t * ptilt, 8), { duration: 950, easing: ease, fill: 'forwards' }),
+    shellS.animate(arc(sd, 140, (t) => t * stilt, 8), { duration: 2150, easing: ease, fill: 'forwards' }),
+  ] }
+}
+// Erkennung/Abbruch: aktuelle Positionen EINFRIEREN, Flug beenden —
+// der Rückflug läuft danach auf den FRISCH gerenderten Elementen
+// (render() ersetzt das DOM; auf dem alten Element würde er verpuffen)
+function snapshotScanAnim () {
+  if (!scanAnim) return null
+  const snap = {}
+  for (const [id, el] of Object.entries(scanAnim.byId)) {
+    try { snap[id] = getComputedStyle(el).transform } catch { snap[id] = null }
+  }
+  for (const a of scanAnim.anims) { try { a.cancel() } catch {} }
+  scanAnim = null
+  return snap
+}
+function returnFlights (snap) {
+  if (!snap) return
+  for (const [id, cur] of Object.entries(snap)) {
+    const el = document.querySelector('#dev-' + id + ' .phone-shell')
+    if (!el || !cur || cur === 'none') continue
+    el.style.zIndex = 120
+    const a = el.animate([{ transform: cur }, { transform: 'none' }], { duration: 750, easing: 'cubic-bezier(.4,0,.2,1)' })
+    a.onfinish = () => { el.style.zIndex = '' }
+  }
+}
+async function captureNow (id) {
+  const ui = world.ui[id]
+  clearTimeout(ui.autoCapture)
+  const snap = snapshotScanAnim() // Erkennung: Positionen einfrieren
+  if (ui.view !== 'scanner') { returnFlights(snap); return }
+  const target = ui.scanTarget, show = world.shows[target]
+  if (!show) { ui.view = 'verify'; render(); returnFlights(snap); return }
+  if (show.fallback) { await captureBundle(id, target, show.card); returnFlights(snap); return }
+  ui.scan = { peer: target, card: show.card }
+  ui.view = 'confirm'
+  render()
+  returnFlights(snap) // beide gleiten animiert an ihre Plätze zurück
+}
+window.__scanCancel = (id) => {
+  const ui = world.ui[id]
+  clearTimeout(ui.autoCapture)
+  const snap = snapshotScanAnim()
+  Object.assign(ui, { view: 'verify', scan: null })
+  render()
+  returnFlights(snap)
+}
+// die bewusste Bestätigung der scannenden Seite: Credential wird AUSGESTELLT
+// und übers Netz GESCHICKT — die Gegenseite entscheidet danach selbst
+window.__verifyConfirm = async (id) => {
+  const p = world[id], ui = world.ui[id]
+  const scan = ui.scan, own = world.shows[id]
+  if (!scan || !own) return
+  now += 5000
+  const peerCard = scan.card
+  const iso = C.iso(now)
+  const bind = await C.binding(C.CEREMONY, own.ch, peerCard.challenge.value)
+  const cred = await C.issueCredential(own.ctx, peerCard.anchor, C.CEREMONY, peerCard.challenge.value, bind, iso)
+  const sentCard = await C.signCard(own.ctx, C.cardBody(own.ctx, { name: p.name, challenge: { value: own.ch, issuedAt: iso }, sentTo: peerCard.anchor, boundTo: peerCard.challenge.value }), iso)
+  const priors = CN.snapshotPriors(p)
+  p.contacts.set(peerCard.anchor, { name: peerCard.name, card: peerCard, credential: cred, provenance: 'ceremony', state: '→', since: iso, channel: { own: own.ctx, counterpartKa: peerCard.keyAgreement }, priorCands: priors, probeSent: true })
+  p.log.push(`${peerCard.name} verifiziert — Credential unterwegs (Ankunft ≠ Annahme)`)
+  const doc = await C.diSign(own.ctx, { id: globalThis.crypto.randomUUID(), type: ET, issuer: own.ctx.anchor, recipient: peerCard.anchor, issuedAt: iso, payload: { card: sentCard, credential: cred } }, iso)
+  const env = await C.seal(doc, peerCard.keyAgreement)
+  delete world.shows[id]
+  Object.assign(ui, { scan: null, enc: { sentCard, peer: scan.peer, peerName: peerCard.name } })
+  const q = world[scan.peer]
+  packet('encounter-verify@probe — Credential + gesendete Karte (versiegelt, Relay)', p.name, q.name, env)
+  const arrived = await deliver(q, env)
+  ui.view = arrived ? 'delivered' : 'waiting'
+  ui.ackTicks = 0
+  render()
+}
+// optische Fortsetzung: das Fallback-Bundle der Gegenseite gescannt
+async function captureBundle (id, target, card) {
+  const p = world[id], ui = world.ui[id]
+  const ctx = p.contexts.get(card.sentTo)
+  const myCh = p.showLog?.get(card.sentTo)
+  if (!ctx || card.boundTo !== myCh || !(await C.diVerify(card, card.anchor))) {
+    p.log.push('gesendete Karte nicht verwendbar (sentTo/boundTo/Proof) — nicht für dieses Gerät')
+    ui.view = 'verify'; render(); return
+  }
+  const existing = p.contacts.get(card.anchor)
+  if (existing) { // Gegenrichtung des Two-Way-Scans: Karten jetzt beidseitig
+    existing.card = card
+    p.log.push(`${card.name}s Karte optisch übernommen — Karten beidseitig, Credentials folgen übers Netz`)
+    Object.assign(ui, { view: 'list' })
+    render(); return
+  }
+  const priors = CN.snapshotPriors(p)
+  p.contacts.set(card.anchor, { name: card.name, card, provenance: 'ceremony', state: '←', since: C.iso(now), channel: { own: ctx, counterpartKa: card.keyAgreement }, priorCands: priors, probeSent: true, credentialPending: true })
+  p.inbox.push({ kind: 'verifyback', from: card.name, peerAnchor: card.anchor, myCtx: ctx, myCh, peerCh: card.challenge.value, decided: false, optical: true })
+  p.log.push(`${card.name}'s sent card captured optically — same encounter, the confirmation follows over the network`)
+  Object.assign(ui, { view: 'prompt', promptAnchor: card.anchor, sheet: null })
+  render()
+}
+// Empfangsseite: Ankunft des Credentials — nie Annahme
+async function receiveEncounter (toPerson, env) {
+  const ctx = toPerson.contexts.get(env.rkid)
+  if (!ctx) return { handled: false }
+  const open = await C.unseal(env, ctx.x.priv)
+  if (open.error) return { handled: false }
+  const doc = open.document
+  if (doc?.type !== ET) return { handled: false, doc }
+  const { card, credential } = doc.payload
+  const id = idOf(toPerson)
+  if (!(await C.diVerify(card, card.anchor)) || !(await C.diVerify(credential, card.anchor))) return { handled: true, error: 'proof' }
+  if (card.sentTo !== ctx.anchor) return { handled: true, error: 'sentTo ≠ mein Kontext' }
+  const myCh = toPerson.showLog?.get(ctx.anchor)
+  if (!myCh || card.boundTo !== myCh) return { handled: true, error: 'boundTo löst nicht auf' }
+  if (credential.credentialSubject.id !== ctx.anchor) return { handled: true, error: 'subject' }
+  const bind = await C.binding(C.CEREMONY, card.challenge.value, myCh)
+  if (credential.credentialSubject.enactmentBinding !== bind) return { handled: true, error: 'enactmentBinding' }
+  const existing = toPerson.contacts.get(card.anchor)
+  if (existing && (existing.state === '→' || existing.state === '←')) {
+    // die Gegenrichtung DERSELBEN Begegnung: beidseitig
+    existing.state = '✓'; existing.credentialIn = credential; existing.card = card
+    delete existing.credentialPending
+    existing.probeSent = false // Tupel lebt beidseitig → §6a-Probe im Tick
+    toPerson.log.push(`${existing.name} — Credential angekommen, ihr seid beidseitig verifiziert ✓`)
+    world.ui[id].sheet = { type: 'verified', of: card.anchor }
+    if (['waiting', 'delivered', 'fallback'].includes(world.ui[id].view)) { world.ui[id].view = 'list'; delete world.shows[id] }
+    return { handled: true }
+  }
+  const priors = CN.snapshotPriors(toPerson)
+  toPerson.contacts.set(card.anchor, { name: card.name, card, credentialIn: credential, provenance: 'ceremony', state: '←', since: doc.issuedAt, channel: { own: ctx, counterpartKa: card.keyAgreement }, priorCands: priors, probeSent: true })
+  toPerson.inbox.push({ kind: 'verifyback', from: card.name, peerAnchor: card.anchor, myCtx: ctx, myCh, peerCh: card.challenge.value, decided: false })
+  toPerson.log.push(`${card.name} verified you — arrival, not acceptance: you decide`)
+  // der App-Moment: Vollbild-Prompt (wie Zeremonie-Sim), nie nur ein Toast
+  if (world.ui[id].view === 'verify') delete world.shows[id]
+  Object.assign(world.ui[id], { view: 'prompt', promptAnchor: card.anchor, sheet: null })
+  return { handled: true }
+}
+// die Rück-Bestätigung (Gegenseite): eigenes Credential ausstellen
+window.__verifyBack = async (id, peerAnchor, yes) => {
+  const p = world[id]
+  const e = p.inbox.find((x) => x.kind === 'verifyback' && !x.decided && x.peerAnchor === peerAnchor)
+  if (!e) return
+  if (!yes) { e.later = true; p.log.push('verify-back parked — the received confirmation stays (arrival ≠ acceptance), the act lives in the contact detail'); render(); return }
+  e.decided = true
+  if (world.ui[id].view === 'prompt') Object.assign(world.ui[id], { view: 'list', promptAnchor: null })
+  now += 5000
+  const c = p.contacts.get(peerAnchor)
+  const iso = C.iso(now)
+  const bind = await C.binding(C.CEREMONY, e.myCh, e.peerCh)
+  const cred = await C.issueCredential(e.myCtx, peerAnchor, C.CEREMONY, e.peerCh, bind, iso)
+  const sentCard = await C.signCard(e.myCtx, C.cardBody(e.myCtx, { name: p.name, challenge: { value: e.myCh, issuedAt: iso }, sentTo: peerAnchor, boundTo: e.peerCh }), iso)
+  c.credential = cred
+  c.state = c.credentialIn ? '✓' : '→' // ohne das Gegen-Credential (optischer Pfad) ehrlich einseitig
+  if (c.state === '✓') { c.probeSent = false; world.ui[id].sheet = { type: 'verified', of: peerAnchor } }
+  const doc = await C.diSign(e.myCtx, { id: globalThis.crypto.randomUUID(), type: ET, issuer: e.myCtx.anchor, recipient: peerAnchor, issuedAt: iso, payload: { card: sentCard, credential: cred } }, iso)
+  const env = await C.seal(doc, c.channel.counterpartKa)
+  const q = ['J', 'A', 'E'].map((k) => world[k]).find((x) => x !== p && x.contexts.get(peerAnchor))
+  packet('encounter-verify@probe — Gegen-Credential (versiegelt, Relay)', p.name, q.name, env)
+  if (!p.online) {
+    ;(p.pendingDocs ??= []).push({ toName: q.name, env })
+    // Two-Way-Scan: auch die eigene gesendete Karte wird zum QR
+    world.shows[id] = { fallback: true, card: sentCard, name: q.name }
+    p.log.push('offline — Gegen-Credential wartet auf Netz; die eigene Karte geht optisch weiter (Two-Way-Scan)')
+  } else {
+    await deliver(q, env)
+  }
+  render()
+}
+window.__trustGive = async (id, anchor) => {
+  const p = world[id]
+  world.ui[id].sheet = null
+  now += 5000
+  const pkt = await T.setTrust(p, anchor, now)
+  if (pkt.env) {
+    packet('trust-disclosure@probe (DV-Mapping + Stern, versiegelt)', p.name, pkt.to.name, pkt.env)
+    await deliver(byName(pkt.to.name), pkt.env)
+  }
+  render()
+}
+window.__trustPause = (id, anchor) => {
+  const p = world[id]
+  T.setTrustPaused(p, anchor, !p.contacts.get(anchor)?.trustPaused)
+  render()
+}
+window.__vouch = async (id, gid, candidate) => {
+  const p = world[id]
+  now += 5000
+  const m = p.groups.get(gid)?.roster.get(candidate)
+  const contact = m?.contactAnchor ? p.contacts.get(m.contactAnchor) : null
+  const prov = contact?.provenance === 'ceremony' ? 'met' : 'introduced'
+  const pkt = await G.vouchFor(p, gid, candidate, prov, now)
+  if (pkt.env) {
+    packet(`membership-vouch@2 (AdmissionVouch, ${prov}, versiegelt)`, p.name, pkt.to.name, pkt.env)
+    await deliver(byName(pkt.to.name), pkt.env)
+  }
+  render()
+}
+window.__confirmIntroduce = async (id) => {
+  const p = world[id], ui = world.ui[id]
+  const s = ui.sheet
+  ui.sheet = null; ui.view = 'list'; ui.anchor = null
+  await doIntroduce(p, s.a, s.b)
+}
+
+// ── Rendering: die App ──────────────────────────────────────────────────
+// gekettete (deaktivierte) Tupel sind Beziehungsgeschichte, keine Kontakte
+const activeContacts = (p) => [...p.contacts.entries()].filter(([, c]) => !c.deactivated)
+const colorOf = (name) => COLORS[name] ?? '#64748b'
+const av = (name, cls = 'pavatar-xs') => cls === 'pavatar' ? `<span class="pavatar" style="background:${colorOf(name)}">${name[0]}</span>` : PH.avatarXs(name, colorOf(name))
+// Badge-Grammatik (geteilte Klassen aus rltp-phone):
+// BLAU mutual = Verifikation · GRÜN trustb = Trust · AMBER byme = einseitig/unverifiziert
+const trustBadge = (c) => c.trustGiven && c.trustReceived ? PH.badge('trustb', '⇆ trust')
+  : c.trustGiven ? PH.badge('trustb', '→ you trust')
+  : c.trustReceived ? PH.badge('trustb', '← trusts you') : ''
+const badgesOf = (c) => (c.provenance === 'ceremony'
+  ? c.state === '→' ? PH.badge('mutual', '→ verified')
+    : c.state === '←' ? PH.badge('mutual', '← verified you')
+    : PH.badge('mutual', '⇄ verified')
+  : c.state === '⇄' ? PH.badge('byme', '⇄ introduced')
+  : PH.badge('byme', '◇ introduced')) + trustBadge(c)
+// metaLine (Design Kap. 0): First-Match über der Evidenz, genau EIN Satz.
+// Ränge ohne Logik-Unterbau (Stern, Vertrauen) greifen schlicht nie.
+function metaLine (p, c, ctx = 'contacts') {
+  const fresh = c.since && (now - Date.parse(c.since)) < 7 * 24 * 3600 * 1000
+  const rel = (iso) => { const d = Math.floor((now - Date.parse(iso)) / 86400000); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : `on ${iso.slice(5, 10)}` }
+  // rank 2: state explanation (origin ≠ ceremony)
+  if (c.provenance !== 'ceremony') {
+    return c.state === '⇄' ? `${c.provenance} — not yet verified; the first real meeting makes ✓`
+      : `${c.provenance} · one-sided — you released nothing`
+  }
+  // rank 2b: one-sided verification — explain the direction
+  if (c.state === '→') return `verified by you — ${c.name} still decides about the way back`
+  if (c.state === '←') return `verified you — your confirmation is pending${c.credentialPending ? ' (their confirmation follows over the network)' : ''}`
+  // rank 3: fresh ceremony (the credential carries no place — only time)
+  if (fresh) return `verified ${rel(c.since)}`
+  // rank 4: visible shared group (suppressed inside that group's roster)
+  const shared = (c.sharedGroups ?? []).filter((gid) => ctx !== 'roster:' + gid && p.groups.has(gid))
+  if (shared.length) { const g = p.groups.get(shared[0]); return `Together in "${g.label}"` + (shared.length > 1 ? ` and ${shared.length - 1} more` : '') }
+  // rank 5: mutual contacts (blinded star, only legitimately held anchors)
+  const known = c.starInfo?.knownNames ?? []
+  if (known.length) return `You both know ${known[0]}` + (known.length > 1 ? ` and ${known.length - 1} more` : '')
+  // rank 6: the honest count from the contact update
+  if (c.starInfo) return `${c.starInfo.count} contact${c.starInfo.count === 1 ? '' : 's'}`
+  // rank 7: fallback
+  return c.since ? `Verified ${rel(c.since)}` : 'verified (ceremony)'
+}
+const stateBadge = (c) => c.state === '✓' ? '<span class="pstate v">✓</span>' : c.state === '⇄' ? '<span class="pstate m">⇄</span>' : '<span class="pstate d">◇</span>'
+
+function promptCards (id, p) {
+  const vb = p.inbox.filter((e) => e.kind === 'verifyback' && !e.decided).map((e) => `
+    <div class="incoming">
+      <div class="iq">${e.from} verified you${e.optical ? ' (optical, two-way scan)' : ''}</div>
+      <div class="ih">Arrival, not acceptance — you decide. Confirming makes the connection mutual${e.optical ? '; the confirmations follow over the network' : ''}.</div>
+      <div class="ibtns"><button class="yes" onclick="__verifyBack('${id}','${e.peerAnchor}',true)">Verify back</button><button class="no" onclick="__verifyBack('${id}','${e.peerAnchor}',false)">Later</button></div>
+    </div>`).join('')
+  const invites = p.inbox.filter((e) => e.kind === 'invite' && !e.decided)
+  const inv = invites.map((e) => `
+    <div class="incoming">
+      <div class="iq">${e.from} invites you to "${e.invite.credentialSubject.name}"</div>
+      <div class="ih">Invitation verified (credential proof; prelude check: it names YOUR OWN derivation) · valid until ${e.invite.validUntil.slice(0, 10)}.</div>
+      <div class="ibtns"><button class="yes" onclick='__sheet("${id}",{type:"join",act:"${e.invite.taskContext}"})'>Join…</button><button class="no" onclick="__decideInvite('${id}','${e.invite.taskContext}',false)">Ignore</button></div>
+    </div>`).join('')
+  const offers = p.inbox.filter((e) => !e.kind && !e.decided)
+  const off = offers.map((e, i) => `
+    <div class="incoming">
+      <div class="iq">${e.mediator} wants to connect you with ${e.offer.peer.name}</div>
+      <div class="ih">"${e.offer.peer.name}" — that is what ${e.mediator} calls them.${e.offer.peer.provenance === 'introduced' ? ` <b>${e.mediator} was themselves only introduced to ${e.offer.peer.name}.</b>` : ''} Connecting releases your fresh card; the other side decides independently.</div>
+      <div class="ibtns"><button class="yes" onclick="__decide('${id}',${i},true)">Connect</button><button class="no" onclick="__decide('${id}',${i},false)">Ignore</button></div>
+    </div>`).join('')
+  return vb + inv + off
+}
+function openCount (p) { return p.inbox.filter((e) => !e.decided).length }
+
+function screenHome (id, p) {
+  const prompts = promptCards(id, p)
+  // Richtungs-Ehrlichkeit: „Waiting for you" = Akte, die DEINE Entscheidung
+  // brauchen · „Waiting for them" = benannte Wartezustände auf die Gegenseite
+  const waiting = p.inbox.filter((e) => !e.kind && e.decided && !e.done && !e.ignored)
+    .map((e) => `<div class="sentrow">◇ ${e.offer.peer.name} — card released, waiting for the other side</div>`).join('')
+  return `${PH.appHead(p.name, colorOf(p.name))}
+    <div class="kpi">
+      <div class="k"><div class="n">${activeContacts(p).length}</div><div class="l">Contacts</div></div>
+      <div class="k"><div class="n">${p.groups.size}</div><div class="l">Groups</div></div>
+      <div class="k"><div class="n" ${openCount(p) ? 'style="color:oklch(50% 0.12 70)"' : ''}>${openCount(p)}</div><div class="l">Open</div></div>
+    </div>
+    ${prompts ? `<div class="sect">Waiting for you</div>${prompts}` : ''}
+    ${waiting ? `<div class="sect">Waiting for them</div>${waiting}` : ''}`
+}
+
+// ECHTE QR-Codes mit den ECHTEN Daten (qrcode-generator, wie im
+// Zeremonie-Sim): der Code trägt die signierte Karte als JSON
+function qrImg (data, size = 150) {
+  try {
+    const q = window.qrcode(0, 'L')
+    q.addData(typeof data === 'string' ? data : JSON.stringify(data))
+    q.make()
+    return `<img class="qrimg" src="${q.createDataURL(4, 6)}" alt="QR" style="width:${size}px;height:${size}px;display:block;margin:0 auto;image-rendering:pixelated">`
+  } catch (e) {
+    return `<div class="pempty">QR-Encoder nicht geladen (${e.message})</div>`
+  }
+}
+function screenFlow (id, p) {
+  const ui = world.ui[id]
+  if (ui.view === 'verify') {
+    const sh = world.shows[id]
+    if (!sh) { ui.view = 'list'; return screenList(id, p) }
+    return `<div style="display:flex;flex-direction:column;align-items:stretch;text-align:center;padding:4px 4px 0">
+      <div style="font-size:21px;font-weight:800;letter-spacing:-.01em;margin-top:8px">Connect</div>
+      <div style="font-size:12px;line-height:1.5;color:oklch(46% 0.008 265);max-width:225px;margin:4px auto 0;text-wrap:balance">Show your code or scan the other person's code.</div>
+      <div style="background:#fff;border:1px solid oklch(92% 0.005 265);border-radius:16px;padding:11px;margin:14px auto 0;box-shadow:0 1px 3px rgba(0,0,0,.05)">${qrImg(sh.card, 172)}</div>
+      <div style="display:flex;align-items:center;gap:12px;margin:14px 6px 8px"><div style="flex:1;height:1px;background:oklch(90% 0.008 265)"></div><span style="font-size:11px;color:oklch(55% 0.008 265)">or</span><div style="flex:1;height:1px;background:oklch(90% 0.008 265)"></div></div>
+      <button style="font:inherit;font-size:13px;font-weight:700;color:#fff;background:oklch(55% 0.21 264);border:none;border-radius:12px;cursor:pointer;padding:12px 30px;margin:4px auto 0;display:flex;align-items:center;justify-content:center;gap:8px" onclick="__startScan('${id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Scan code</button>
+    </div>`
+  }
+  if (ui.view === 'scanner') {
+    const show = world.shows[ui.scanTarget]
+    return `<div style="text-align:center;margin:8px 0"><div style="font-size:15px;font-weight:800">Point at the code</div></div>
+      <div style="position:relative;height:230px;border-radius:14px;background:oklch(28% 0.01 265);display:flex;align-items:center;justify-content:center;overflow:hidden">
+        <div id="vf-${id}" style="width:150px;height:150px;border:2px dashed oklch(78% 0.12 264);border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center">
+          ${show ? qrImg(show.card, 128) : ''}</div>
+        <div style="position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:9.5px;color:oklch(82% 0.01 247)">camera — carries no traffic · captures automatically</div>
+      </div>
+      <div class="profact" style="margin-top:10px"><button onclick="__scanCancel('${id}')">Cancel</button></div>`
+  }
+  if (ui.view === 'confirm') {
+    const c = ui.scan?.card
+    if (!c) { ui.view = 'list'; return screenList(id, p) }
+    return `<div style="text-align:center;display:flex;flex-direction:column;gap:10px;margin-top:14px">
+      <div style="font-size:16px;font-weight:800;text-wrap:balance">Are you standing in front of this person?</div>
+      <div style="align-self:center;width:64px;height:64px;border-radius:50%;background:${colorOf(c.name)};color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700">${c.name[0]}</div>
+      <div style="font-size:17px;font-weight:700">${c.name}</div>
+      <div class="pmeta" style="max-width:230px;align-self:center">Only confirm if you know this person personally and they are standing in front of you.</div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button style="flex:1;font:inherit;font-size:12.5px;font-weight:700;padding:10px;border-radius:11px;border:1.5px solid oklch(88% 0.005 265);background:transparent;color:oklch(40% 0.008 265);cursor:pointer" onclick="__scanCancel('${id}')">Cancel</button>
+        <button style="flex:1;font:inherit;font-size:12.5px;font-weight:700;padding:10px;border-radius:11px;border:none;background:oklch(52% 0.14 150);color:#fff;cursor:pointer" onclick="__verifyConfirm('${id}')">Confirm</button>
+      </div></div>`
+  }
+  if (ui.view === 'waiting') {
+    return `<div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:11px;padding-top:56px">
+      <div style="width:40px;height:40px;border-radius:50%;border:3px solid oklch(90% 0.008 265);border-top-color:oklch(55% 0.21 264);animation:pspin .9s linear infinite"></div>
+      <div style="font-size:16px;font-weight:800">Sent to ${ui.enc?.peerName ?? '…'}</div>
+      <div class="pmeta" style="max-width:230px">Your confirmation is on its way. Without a connection, the same encounter simply continues by camera in a moment.</div></div>`
+  }
+  if (ui.view === 'delivered') {
+    return `<div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:11px;padding-top:48px">
+      <div style="width:56px;height:56px;border-radius:50%;background:oklch(94% 0.06 142);color:oklch(48% 0.16 142);display:flex;align-items:center;justify-content:center;font-size:26px">✓</div>
+      <div style="font-size:16px;font-weight:800">Arrived on ${ui.enc?.peerName ?? '…'}'s device</div>
+      <div class="pmeta" style="max-width:240px">Arrival, not acceptance — ${ui.enc?.peerName ?? 'they'} decides for themselves whether to verify you back.</div>
+      <div class="profact" style="width:100%"><button onclick="__closeVerify('${id}')">Back</button></div></div>`
+  }
+  if (ui.view === 'fallback') {
+    const sh = world.shows[id]
+    if (!sh?.fallback) { ui.view = 'list'; return screenList(id, p) }
+    return `<div style="text-align:center;margin:2px 0 8px"><div style="font-size:15px;font-weight:800">Show this code to ${sh.name}</div>
+      <div class="pmeta">No connection right now — the same encounter simply continues by camera.</div></div>
+      <div class="card" style="padding:12px;text-align:center">
+        ${qrImg(sh.card, 158)}
+        <div class="pmeta" style="margin-top:8px">Carries your card for exactly this encounter.<br>Your confirmation follows over the network once there is a connection.</div>
+      </div>
+      <div class="profact" style="margin-top:10px"><button onclick="__closeVerify('${id}')">Keep waiting for the network instead</button></div>`
+  }
+  if (ui.view === 'prompt') {
+    const e = p.inbox.find((x) => x.kind === 'verifyback' && x.peerAnchor === ui.promptAnchor && !x.decided)
+    if (!e) { ui.view = 'list'; return screenList(id, p) }
+    return `<div style="text-align:center;display:flex;flex-direction:column;gap:10px;margin-top:12px">
+      <div style="font-size:11.5px;font-weight:700;color:oklch(48% 0.16 142)">${e.from} verified you${e.optical ? ' · two-way scan' : ''}</div>
+      <div style="font-size:17px;font-weight:800">Verify ${e.from} back?</div>
+      <div style="align-self:center;width:64px;height:64px;border-radius:50%;background:${colorOf(e.from)};color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700">${e.from[0]}</div>
+      <div class="pmeta" style="max-width:240px;align-self:center">Arrival is not acceptance — you decide. Confirming makes the connection mutual${e.optical ? '; the confirmations follow over the network' : ''}.</div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button style="flex:1;font:inherit;font-size:12.5px;font-weight:700;padding:10px;border-radius:11px;border:1.5px solid oklch(88% 0.005 265);background:transparent;color:oklch(40% 0.008 265);cursor:pointer" onclick="__promptLater('${id}')">Not now</button>
+        <button style="flex:1;font:inherit;font-size:12.5px;font-weight:700;padding:10px;border-radius:11px;border:none;background:oklch(52% 0.14 150);color:#fff;cursor:pointer" onclick="__verifyBack('${id}','${e.peerAnchor}',true)">Confirm</button>
+      </div></div>`
+  }
+  return screenList(id, p)
+}
+function screenList (id, p) {
+  const rows = activeContacts(p).map(([anchor, c]) =>
+    PH.contactRow({ name: c.name, color: colorOf(c.name), badges: badgesOf(c), meta: metaLine(p, c), onclick: `__nav('${id}','profile','${anchor}')` })).join('')
+  return `${PH.appHead(p.name, colorOf(p.name))}
+    <div class="plist">${rows || '<div class="pempty">— no contacts yet —</div>'}</div>
+    ${rows ? '<div class="pfoot">Blue = you really met (ceremony). Amber = via an introducer or one-sided — the first real meeting upgrades it through continuity.</div>' : ''}`
+}
+
+// Groups-Tab: die echten Gruppen aus den Gerätedaten (Stage C)
+function screenGroups (id, p) {
+  const ui = world.ui[id]
+  if (ui.view === 'group' && p.groups.has(ui.gid)) return screenGroupDetail(id, p, p.groups.get(ui.gid))
+  const rows = [...p.groups.values()].map((g) => `
+    <button class="prow" onclick="__nav('${id}','group'); world.ui['${id}'].gid='${g.genesisDigest}'; window.__rr()">${PH.avatarS(g.label, '#8b5cf6')}
+      <span class="plabel"><span class="pnamerow"><span class="pname2">${g.label}</span>${g.role === 'founder' ? PH.badge('trustb', 'founder') : ''}</span>
+      <span class="pmeta">${g.roster.size} member${g.roster.size === 1 ? '' : 's'} · ${g.genesisDigest.slice(0, 14)}…</span></span></button>`).join('')
+  return `${PH.appHead(p.name, colorOf(p.name))}
+    <div class="plist">${rows || '<div class="pempty">— no groups yet —</div>'}</div>
+    <div class="profact"><button class="primary" onclick='__sheet("${id}",{type:"found"})'>＋&nbsp; Found a group…</button></div>`
+}
+function screenGroupDetail (id, p, g) {
+  const invitable = activeContacts(p).filter(([, c]) => c.state === '✓' || c.state === '⇄')
+  const rows = [...g.roster.entries()].map(([anchor, m]) => `
+    <div class="prow">${PH.avatarS(m.name, colorOf(m.name))}
+      <span class="plabel"><span class="pnamerow"><span class="pname2">${m.name}${anchor === g.myMemberCtx.anchor ? ' (du)' : ''}</span>${m.founder ? PH.badge('trustb', 'founder') : ''}${m.candidacy ? PH.badge('byme', '⏳ candidacy') : ''}</span>
+      <span class="pmeta">member anchor ${anchor.slice(8, 24)}… · since ${m.addedAt.slice(0, 10)}</span></span></div>`).join('')
+  const open = [...g.threads.entries()].map(([a]) => `<div class="sentrow">◇ invitation open — waiting for the answer</div>`).join('')
+  // Bürgschafts-Sektion (Design Kap. 6): nur bei sichtbaren Kandidaturen
+  const need = g.vouchThreshold ?? 1
+  const cand = [...g.roster.entries()].filter(([, m]) => m.candidacy)
+  const candRows = cand.map(([anchor, m]) => {
+    if (anchor === g.myMemberCtx.anchor) {
+      const n = g.vouchesReceived?.size ?? 0
+      return `<div class="prow" style="cursor:default">${PH.avatarS(m.name, colorOf(m.name))}
+        <span class="plabel"><span class="pnamerow"><span class="pname2">${m.name} (du)</span></span>
+        <span class="pmeta">${need > 1 ? `vouches ${n}/${need}` : n ? `${n} vouch received` : 'waiting for a vouch'}</span></span></div>`
+    }
+    if (!g.roster.has(g.myMemberCtx.anchor)) return ''
+    if (g.myVouches?.has(anchor)) return `<div class="sentrow">✓ you vouched for ${m.name} (${g.myVouches.get(anchor).credentialSubject.endorsement.provenance})</div>`
+    const contact = m.contactAnchor ? p.contacts.get(m.contactAnchor) : null
+    if (!contact) return `<div class="sentrow">${m.name} asks for vouches — vouching needs a channel: meet ${m.name}, or get introduced.</div>`
+    const prov = contact.provenance === 'ceremony' ? ['met', 'met in person'] : ['introduced', 'introduced to you']
+    return `<div class="prow" style="cursor:default">${PH.avatarS(m.name, colorOf(m.name))}
+      <span class="plabel"><span class="pnamerow"><span class="pname2">${m.name}</span></span>
+      <span class="pmeta">asks for vouches · your basis: ${prov[1]}</span></span>
+      <button class="yes" style="font:inherit;font-size:11px;font-weight:700;cursor:pointer;padding:5px 12px;border-radius:8px;border:none;background:oklch(52% 0.14 150);color:#fff" onclick="__vouch('${id}','${g.genesisDigest}','${anchor}')">Vouch</button></div>`
+  }).join('')
+  return `${PH.backHead('Groups', `__nav('${id}','list')`, p.name)}
+    ${PH.profHead({ name: g.label, color: '#8b5cf6', sub: `${g.role === 'founder' ? 'founded by you' : 'member'} · genesis ${g.genesisDigest.slice(0, 16)}…` })}
+    <div class="plist">${rows}</div>${open}
+    ${cand.length ? `<div class="sect">Candidacies${need > 1 ? ` · threshold ${need}` : ''}</div><div class="plist">${candRows}</div>` : ''}
+    <div class="profact"><button class="primary" ${invitable.length ? '' : 'disabled'} onclick='__sheet("${id}",{type:"invitepick",gid:"${g.genesisDigest}"})'>✉&nbsp; Invite a member…</button></div>
+    <div class="sentrow">The invitation travels the relationship channel: prelude (member anchor) → InvitationCredential → accept → admission → welcome.</div>`
+}
+
+// Profile-Tab: die eigene Identität, komplett aus den Gerätedaten
+function screenOwnProfile (id, p) {
+  const ctxs = [...new Map([...p.contexts.values()].map((c) => [c.label, c])).values()]
+  return `${PH.appHead(p.name, colorOf(p.name))}
+    ${PH.profHead({ name: p.name, color: colorOf(p.name), sub: `${p.online ? 'online' : '✈ offline'} · ${ctxs.length} relationship anchors, all derived from ONE seed` })}
+    <div class="plist">${ctxs.map((ctx) => `
+      <div class="prow" style="cursor:default"><span class="plabel">${ctx.label.slice(0, 22)}…<span class="psub">anchor ${ctx.anchor.slice(8, 26)}…</span></span></div>`).join('') || '<div class="pempty">— no anchors yet —</div>'}</div>
+    <div class="sect">My data</div>
+    <div class="plist"><button class="prow" onclick="__nav('${id}','wallet')">
+      <span class="plabel"><span class="pnamerow"><span class="pname2">Everything this device holds</span></span>
+      <span class="pmeta">Cards, offers, vouchers, memberships — the full evidence</span></span></button></div>
+    <div class="sentrow">Backup: only the root seed (12 words) — every anchor is re-derivable.</div>`
+}
+function screenWallet (id, p) {
+  return `${PH.backHead('Profile', `__nav('${id}','list')`, p.name)}
+    ${walletOf(id, p)}`
+}
+
+function screenProfile (id, p, anchor) {
+  const c = p.contacts.get(anchor)
+  if (!c) { world.ui[id] = { ...world.ui[id], view: 'list' }; return screenList(id, p) }
+  const others = activeContacts(p).filter(([a, o]) => a !== anchor && o.channel?.own)
+  const canIntroduce = !!c.channel?.own && others.length > 0
+  const shared = (c.sharedGroups ?? []).filter((gid) => p.groups.has(gid))
+  const sharedRows = shared.map((gid) => { const g = p.groups.get(gid); return `
+    <button class="prow" onclick="__nav('${id}','group'); world.ui['${id}'].tab='groups'; world.ui['${id}'].gid='${gid}'; window.__rr()">${PH.avatarS(g.label, '#8b5cf6')}
+      <span class="plabel"><span class="pnamerow"><span class="pname2">${g.label}</span></span>
+      <span class="pmeta">you are both members</span></span></button>` }).join('')
+  const known = c.starInfo?.knownNames ?? []
+  const knownRows = known.map((n) => `
+    <div class="prow" style="cursor:default">${PH.avatarS(n, colorOf(n))}
+      <span class="plabel"><span class="pnamerow"><span class="pname2">${n}</span></span>
+      <span class="pmeta">you both hold the disclosed anchor</span></span></div>`).join('')
+  const starSect = known.length
+    ? `<div class="sect">Mutual contacts · ${c.starInfo.count} contact${c.starInfo.count === 1 ? '' : 's'}, you know ${known.length}</div>
+       <div class="plist">${knownRows}</div>`
+    : ''
+  const trustAct = c.channel?.own && !c.trustGiven
+    ? `<button class="trust" onclick='__sheet("${id}",{type:"trust",of:"${anchor}"})'>🤝&nbsp; Trust…</button>` : ''
+  const trustSub = c.trustGiven ? `
+    <div class="prow" style="cursor:default"><span class="plabel"><span class="pnamerow"><span class="pname2">Contact updates to ${c.name}</span></span>
+      <span class="pmeta">${c.trustPaused ? 'paused — what was delivered stays' : 'active — your circle travels blinded'}</span></span>
+      <button class="toggle ${c.trustPaused ? '' : 'on'}" onclick="__trustPause('${id}','${anchor}')" aria-label="Updates ${c.name}"></button></div>` : ''
+  return `${PH.backHead('Contacts', `__nav('${id}','list')`, p.name)}
+    <div class="card"><div class="prow" style="padding:10px">${PH.avatarS(c.name, colorOf(c.name))}
+      <span class="plabel"><span class="pnamerow"><span class="pname2" style="font-size:15px">${c.name}</span>${badgesOf(c)}</span>
+      <span class="pmeta">${metaLine(p, c, 'detail')}</span></span></div></div>
+    ${shared.length ? `<div class="sect">Shared groups · the ones you show each other</div><div class="plist">${sharedRows}</div>` : ''}
+    ${starSect}
+    <div class="sect">Actions</div>
+    <div class="profact">
+      ${c.state === '←' ? `<button class="primary blue" onclick="__verifyBack('${id}','${anchor}',true)">Verify ${c.name} back</button>`
+        : c.provenance !== 'ceremony' || c.state !== '✓' ? `<button class="primary blue" onclick="__openVerify('${id}')">Verify — when you meet…</button>` : ''}
+      ${trustAct}
+      <button class="primary" ${canIntroduce ? '' : 'disabled'} onclick='__sheet("${id}",{type:"pick",of:"${anchor}"})'>⇠⇢&nbsp; Introduce…</button>
+      <button onclick='__sheet("${id}",{type:"invitegroup",of:"${anchor}"})'>✉&nbsp; Invite to group…</button>
+    </div>
+    ${trustSub ? `<div class="sect">Settings</div><div class="plist">${trustSub}</div>` : ''}
+    <div class="profmeta">anchor ${c.card.anchor.slice(0, 34)}…<br>keyAgreement ${c.card.keyAgreement.slice(0, 30)}…${c.voucher ? '<br>voucher: introduction-voucher@2 · Akt ' + c.voucher.act.slice(0, 16) + '…' : ''}${c.chain?.length ? `<br>continuity: ${c.chain.length + 1} enactments — recognized via the §6a probe, evidence accumulates` : ''}</div>`
+}
+
+function sheet (id, p) {
+  const s = world.ui[id].sheet
+  if (!s) return ''
+  if (s.type === 'found') {
+    return PH.bottomSheet(`<h4>Found a new group</h4>
+      <p>The genesis is signed under a fresh founding pair anchor; your member anchor is
+      derived from the genesis digest. The digest IS the group's identity — forever.</p>
+      <input id="gname-${id}" placeholder="Group name" />
+      <div class="phdlg-btns"><button onclick="__sheet('${id}',null)">Cancel</button>
+      <button class="primary blue" onclick="__foundGroup('${id}')">Found</button></div>`)
+  }
+  if (s.type === 'join') {
+    const e = p.inbox.find((x) => x.kind === 'invite' && !x.decided && x.invite.taskContext === s.act)
+    if (!e) return ''
+    const inv = e.invite
+    return PH.bottomSheet(`<h4>Join "${inv.credentialSubject.name}"?</h4>
+      <p>Invited by <b>${e.from}</b> · invitation verified (it names your own derivation).</p>
+      <p><b>Joining means:</b> the group sees you under your group anchor. Your joining becomes part of the group's history — permanently.</p>
+      <div class="prow" style="border:1px solid oklch(92% 0.005 265);border-radius:10px;margin-bottom:8px">
+        <span class="plabel" style="white-space:normal"><span style="font-weight:700;font-size:11.5px">Show candidacy</span><br>
+        <span style="font-size:10.5px;color:oklch(48% 0.008 265)">Members see that you want to join and can vouch for you. This too stays visible permanently.</span></span>
+        <input type="checkbox" id="cand-${id}" checked style="width:16px;height:16px"></div>
+      <div class="phdlg-btns"><button onclick="__sheet('${id}',null)">Cancel</button>
+      <button class="primary blue" onclick="__joinConfirm('${id}','${s.act}')">Join</button></div>`)
+  }
+  if (s.type === 'scanmiss') {
+    return PH.bottomSheet(`<h4>No code in view</h4>
+      <p>Nobody is showing a code right now. The person in front of you opens
+      theirs via the connect button — then try again.</p>
+      <div class="phdlg-btns"><button onclick="__sheet('${id}',null)">Ok</button></div>`)
+  }
+  if (s.type === 'verified') {
+    // der Feier-Moment: MITTIGER Dialog (Meilenstein) — Einweg-Türen bleiben Sheets
+    const c = p.contacts.get(s.of)
+    if (!c) return ''
+    const chained = c.chain?.length
+    return `<div class="cdlg"><div class="cdlg-card">
+      <div class="avpair"><span class="av" style="background:${colorOf(p.name)}">${p.name[0]}</span><span class="av" style="background:${colorOf(c.name)}">${c.name[0]}</span></div>
+      <h4>🎉 Verified!</h4>
+      <p><b>You and ${c.name} have now verified each other.</b></p>
+      ${chained ? `<p>You recognized each other — one contact, ${c.chain.length + 1} encounters.</p>` : ''}
+      ${!c.trustGiven ? `<p>Trusting shares your stable identity with ${c.name} — a separate act, never automatic.</p>
+      <div class="bs"><button onclick="__sheet('${id}',null)">Later</button>
+      <button class="grn" onclick='__sheet("${id}",{type:"trust",of:"${s.of}"})'>🤝 Trust…</button></div>`
+      : `<div class="bs"><button onclick="__sheet('${id}',null)">Done</button></div>`}
+    </div></div>`
+  }
+  if (s.type === 'trust') {
+    const c = p.contacts.get(s.of)
+    return PH.bottomSheet(`<h4>Trust ${c.name} permanently?</h4>
+      <p>You give ${c.name} your <b>stable identity</b> — the bridge between your
+      relationship anchors. Only ${c.name} can verify the link; to everyone else it is
+      worthless (deniable, designated verifier). Who you know travels along only blinded —
+      checkable, never as a list.</p>
+      ${c.provenance !== 'ceremony' ? `<p><b>Not yet verified:</b> ${c.provenance} — you are relying
+      on the introduction here, not on a meeting of your own. The first real meeting makes ✓.</p>` : ''}
+      <p><b>This door only opens one way:</b> once shared is shared for good. Pausing later
+      only stops future contact updates — never what was already delivered.</p>
+      <div class="phdlg-btns"><button onclick="__sheet('${id}',null)">Cancel</button>
+      <button class="primary blue" style="background:oklch(52% 0.14 150)" onclick="__trustGive('${id}','${s.of}')">Trust</button></div>`)
+  }
+  if (s.type === 'invitegroup') {
+    const c = p.contacts.get(s.of)
+    const groups = [...p.groups.values()].filter((g) => g.roster.has(g.myMemberCtx.anchor))
+    const rows = groups.map((g) => `
+      <button class="prow" onclick="__inviteToGroup('${id}','${g.genesisDigest}','${s.of}')">${PH.avatarS(g.label, '#8b5cf6')}
+        <span class="plabel"><span class="pnamerow"><span class="pname2">${g.label}</span></span>
+        <span class="pmeta">${g.roster.size} member${g.roster.size === 1 ? '' : 's'}</span></span></button>`).join('')
+    return PH.bottomSheet(`<h4>Invite ${c.name} — to which group?</h4>
+      <p>Your device asks for ${c.name}'s group anchor automatically (prelude); the invitation follows.</p>
+      <div class="plist">${rows || '<div class="pempty">— you are in no group —</div>'}</div>
+      <div class="phdlg-btns"><button onclick="__sheet('${id}',null)">Cancel</button></div>`)
+  }
+  if (s.type === 'invitepick') {
+    const rows = activeContacts(p).filter(([, c]) => c.state === '✓' || c.state === '⇄').map(([a, c]) =>
+      PH.contactRow({ name: c.name, color: colorOf(c.name), badges: badgesOf(c), onclick: `__inviteToGroup('${id}','${s.gid}','${a}')` })).join('')
+    return PH.bottomSheet(`<h4>Invite whom?</h4>
+      <p>The invitation needs the person's member anchor — your device asks for it via the
+      prelude over your channel; the invitation follows automatically.</p>
+      <div class="plist">${rows}</div>
+      <div class="phdlg-btns"><button onclick="__sheet('${id}',null)">Cancel</button></div>`)
+  }
+  if (s.type === 'pick') {
+    const of = p.contacts.get(s.of)
+    const rows = activeContacts(p).filter(([a, o]) => a !== s.of && o.channel?.own).map(([a, c]) =>
+      PH.contactRow({ name: c.name, color: colorOf(c.name), badges: badgesOf(c), onclick: `__sheet(&quot;${id}&quot;,{type:&quot;confirm&quot;,a:&quot;${s.of}&quot;,b:&quot;${a}&quot;})` })).join('')
+    return PH.bottomSheet(`<h4>Introduce ${of.name} — to whom?</h4>
+      <div class="plist">${rows}</div>
+      <div class="phdlg-btns"><button onclick="__sheet('${id}',null)">Cancel</button></div>`)
+  }
+  const A = p.contacts.get(s.a), B = p.contacts.get(s.b)
+  return PH.bottomSheet(`<h4>Introduce ${A.name} and ${B.name} to each other?</h4>
+    <p>Both receive an offer and decide independently. You pass on <b>no</b> anchors —
+    each side mints a fresh card on consent. After this, your device is never needed again.</p>
+    <div class="phdlg-btns"><button onclick="__sheet('${id}',null)">Cancel</button>
+    <button class="primary blue" onclick="__confirmIntroduce('${id}')">Introduce</button></div>`)
+}
+
+function phone (id) {
+  const p = world[id], ui = world.ui[id]
+  const inFlow = ['verify', 'scanner', 'confirm', 'waiting', 'delivered', 'fallback', 'prompt'].includes(ui.view)
+  const body = inFlow ? screenFlow(id, p)
+    : ui.tab === 'home' ? screenHome(id, p)
+    : ui.tab === 'groups' ? screenGroups(id, p)
+    : ui.tab === 'profile' ? (ui.view === 'wallet' ? screenWallet(id, p) : screenOwnProfile(id, p))
+    : ui.view === 'profile' ? screenProfile(id, p, ui.anchor) : screenList(id, p)
+  document.getElementById('dev-' + id).innerHTML = PH.phoneShell({
+    owner: p.name, color: colorOf(p.name), clock: `15:0${(now / 60000 | 0) % 10}`, online: p.online,
+    body,
+    tabs: PH.tabBar([['home', 'Home'], ['contacts', 'Contacts'], ['groups', 'Groups'], ['profile', 'Profile']], ui.tab, (k) => `__tab('${id}','${k}')`),
+    sheet: (ui.toast ? `<div class="toast">${ui.toast}</div>` : '') + sheet(id, p) + (['verify', 'scanner', 'confirm', 'waiting', 'delivered', 'fallback', 'prompt'].includes(ui.view) || ui.sheet
+      ? '' : `<button class="fab" onclick="__openVerify('${id}')" aria-label="Verifizieren ${p.name}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg></button>`),
+    labelExtra: `<span class="tgwrap"><span class="tglabel">Netz</span><button class="toggle ${p.online ? 'on' : ''}" onclick="__net('${id}')" aria-label="Netz ${p.name}"></button></span>`,
+  })
+}
+
+function render () {
+  const open = new Set([...document.querySelectorAll('.wire details[open]')].map((d) => d.dataset.n))
+  for (const id of ['J', 'A', 'E']) phone(id)
+  document.getElementById('wire').innerHTML = world.wire.map((w) => `
+    <details class="${w.cls}" data-n="${w.n}" ${open.has(String(w.n)) ? 'open' : ''}>
+      <summary><span class="n">${w.n}</span> ${w.from} ⇒ ${w.to} · ${w.kind}</summary>
+      <pre>${JSON.stringify(w.payload, null, 1).replace(/</g, '&lt;')}</pre>
+    </details>`).join('') || '<div class="n">— noch nichts unterwegs —</div>'
+}
+render()
+</script>
+</body>
+</html>

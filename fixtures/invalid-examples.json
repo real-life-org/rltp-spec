@@ -6,48 +6,56 @@
       "document": {
         "@context": [
           "https://www.w3.org/ns/credentials/v2",
+          "https://firstperson.network/credentials/dtg/v1",
           "https://real-life.org/rltp/v1"
         ],
         "type": [
           "VerifiableCredential",
+          "DTGCredential",
+          "RelationshipCredential",
           "EncounterCredential"
         ],
-        "issuer": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
-        "validFrom": "2026-08-10T12:00:00Z",
+        "issuer": "did:key:z6MkoFmDjYURbueh9eraATv8YBJMqhbZpFnK9W9qZfm1jF4J",
+        "validFrom": "2026-08-23T12:00:00Z",
         "credentialSubject": {
-          "id": "did:key:z6Mkjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj",
-          "format": "rltp-encounter-credential/0.19",
-          "ceremony": "encounter-scan@0.19",
-          "challenge": "AAAAAAAAAAAAAAAAAAAAAA",
-          "enactmentBinding": "uEiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+          "id": "did:key:z6MkgH4AfnsQtPHYYLsg3TywkVTmZGoJL9D5bstbFM6AehKw",
+          "format": "rltp-encounter-credential/0.25",
+          "ceremony": "encounter-scan@0.25",
+          "challenge": "ujNsvrcZr0q9FERd0jSZaSb_Q2bYlcLquTMuuI7BfjP0",
+          "enactmentBinding": "uEiCjr5L0z726fbvDwPpVdj0ozRCbw2ZHVfXL1PFjhCemZQ"
         },
         "proof": {
           "type": "DataIntegrityProof",
           "cryptosuite": "eddsa-jcs-2022",
-          "created": "2026-08-10T12:00:00Z",
-          "verificationMethod": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh#z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+          "created": "2026-08-23T12:00:00Z",
+          "verificationMethod": "did:key:z6MkoFmDjYURbueh9eraATv8YBJMqhbZpFnK9W9qZfm1jF4J#z6MkoFmDjYURbueh9eraATv8YBJMqhbZpFnK9W9qZfm1jF4J",
           "proofPurpose": "assertionMethod",
-          "proofValue": "z3FXQjecWJKTXvHiLcYQkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+          "proofValue": "z3Gf8AdeQMbsUxT6GDKdSQbCdEjXeLXC3b4Y3sDPwuu7uXjX1j5ELW2bdKJP5eCvnUpaY5bCXMZwj5TDUVp5xHFg7",
+          "@context": [
+            "https://www.w3.org/ns/credentials/v2",
+            "https://firstperson.network/credentials/dtg/v1",
+            "https://real-life.org/rltp/v1"
+          ]
         }
       }
     },
     "card": {
       "schema": "https://real-life.org/rltp/v1/schemas/contact-card.schema.json",
       "document": {
-        "version": "rltp-card/0.19",
-        "anchor": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
-        "keyAgreement": "z6LShhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+        "version": "rltp-card/0.25",
+        "anchor": "did:key:z6MkoFmDjYURbueh9eraATv8YBJMqhbZpFnK9W9qZfm1jF4J",
+        "keyAgreement": "z6LSjZCn6MctoMKaXj3wjRugvV1U5Y41vGLBNgJESZY5vXwr",
         "challenge": {
-          "value": "AAAAAAAAAAAAAAAAAAAAAA",
-          "issuedAt": "2026-08-10T12:00:00Z"
+          "value": "u8BPX31WVpE-kX4f4iPv60oqn7IldHWsNT3vXXvHHLLI",
+          "issuedAt": "2026-08-23T11:58:00Z"
         },
         "proof": {
           "type": "DataIntegrityProof",
           "cryptosuite": "eddsa-jcs-2022",
-          "created": "2026-08-10T12:00:00Z",
-          "verificationMethod": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh#z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+          "created": "2026-08-23T11:58:00Z",
+          "verificationMethod": "did:key:z6MkoFmDjYURbueh9eraATv8YBJMqhbZpFnK9W9qZfm1jF4J#z6MkoFmDjYURbueh9eraATv8YBJMqhbZpFnK9W9qZfm1jF4J",
           "proofPurpose": "assertionMethod",
-          "proofValue": "z3FXQjecWJKTXvHiLcYQkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+          "proofValue": "z3XJfyxwBXu3C2GF6gckqGEs1EDpvK8DzKMWfvPEob4JpAnw5BmMnSrdy3fNZvVTUBZbqp31jjq6MEcGcrns7vqMV"
         }
       }
     },
@@ -96,20 +104,20 @@
             "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh"
           ],
           "card": {
-            "version": "rltp-card/0.19",
-            "anchor": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
-            "keyAgreement": "z6LShhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+            "version": "rltp-card/0.25",
+            "anchor": "did:key:z6MkoFmDjYURbueh9eraATv8YBJMqhbZpFnK9W9qZfm1jF4J",
+            "keyAgreement": "z6LSjZCn6MctoMKaXj3wjRugvV1U5Y41vGLBNgJESZY5vXwr",
             "challenge": {
-              "value": "AAAAAAAAAAAAAAAAAAAAAA",
-              "issuedAt": "2026-08-10T12:00:00Z"
+              "value": "u8BPX31WVpE-kX4f4iPv60oqn7IldHWsNT3vXXvHHLLI",
+              "issuedAt": "2026-08-23T11:58:00Z"
             },
             "proof": {
               "type": "DataIntegrityProof",
               "cryptosuite": "eddsa-jcs-2022",
-              "created": "2026-08-10T12:00:00Z",
-              "verificationMethod": "did:key:z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh#z6Mkhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh",
+              "created": "2026-08-23T11:58:00Z",
+              "verificationMethod": "did:key:z6MkoFmDjYURbueh9eraATv8YBJMqhbZpFnK9W9qZfm1jF4J#z6MkoFmDjYURbueh9eraATv8YBJMqhbZpFnK9W9qZfm1jF4J",
               "proofPurpose": "assertionMethod",
-              "proofValue": "z3FXQjecWJKTXvHiLcYQkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+              "proofValue": "z3XJfyxwBXu3C2GF6gckqGEs1EDpvK8DzKMWfvPEob4JpAnw5BmMnSrdy3fNZvVTUBZbqp31jjq6MEcGcrns7vqMV"
             }
           },
           "policy": {

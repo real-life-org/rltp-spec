@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "body",
+    "proof"
+  ],
+  "properties": {
+    "body": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "salt",
+        "seq",
+        "last",
+        "count",
+        "blinded"
+      ],
+      "properties": {
+        "type": {
+          "const": "star@1"
+        },
+        "salt": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,17}$"
+        },
+        "seq": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,17}$"
+        },
+        "last": {
+          "type": "boolean"
+        },
+        "count": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,17})$"
+        },
+        "blinded": {
+          "type": "array",
+          "maxItems": 1024,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^u[A-Za-z0-9_-]{43}$"
+          }
+        }
+      }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mac"
+      ],
+      "properties": {
+        "mac": {
+          "type": "string",
+          "pattern": "^u[A-Za-z0-9_-]{43}$"
+        }
+      }
+    }
+  },
+  "title": "RLTP star@1 (rltp-visibility@0.15)"
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "body",
+    "proof"
+  ],
+  "properties": {
+    "body": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "act"
+      ],
+      "properties": {
+        "type": {
+          "const": "introduction-ack@1"
+        },
+        "act": {
+          "type": "string",
+          "pattern": "^u[A-Za-z0-9_-]{43}$"
+        }
+      }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mac"
+      ],
+      "properties": {
+        "mac": {
+          "type": "string",
+          "pattern": "^u[A-Za-z0-9_-]{43}$"
+        }
+      }
+    }
+  },
+  "title": "RLTP introduction-ack@1 (rltp-visibility@0.15)"
+}

@@ -1,10 +1,13 @@
 # RLTP Ceremony Simulator
 
 An interactive, browser-only implementation of the RLTP ceremony pair
-(Encounter Layer 0.19 · Delivery Contract 0.17): two app instances,
-one delivery channel, the complete protocol in WebCrypto (Ed25519,
-X25519, HKDF, AES-256-GCM) — including a live byte-for-byte
-reproduction of [`vectors/seal.json`](../vectors/seal.json) at boot.
+(Encounter Layer 0.28, wire 0.25 (DTG-typed credentials) · Delivery Contract 0.21) under
+**fresh-always pair anchors**: two app instances, one delivery
+channel, the complete protocol in WebCrypto (Ed25519, X25519, HKDF,
+AES-256-GCM) — including a live byte-for-byte reproduction of
+[`vectors/seal.json`](../vectors/seal.json) at boot. The Node engine
+(`engine.mjs`) additionally models the Identity §6 seed derivation
+and is checked by `conformance/iut-simulator.mjs`.
 
 **Run it here:** the repository's GitHub Pages deployment serves this
 directory directly. Or locally:
@@ -15,12 +18,22 @@ python3 -m http.server 8199    # any static server works
 # → http://localhost:8199/
 ```
 
+**Headless test suites in the agent sandbox** (`tests-ui-*.mjs`;
+`adversarial.mjs` needs plain node only): ESM needs a resolvable
+`@playwright/test`, and the sandbox has no `/usr/bin/chromium` —
+
+```sh
+ln -sfn ../../node_modules/.pnpm/node_modules simulator/node_modules
+export CHROME_BIN=~/.var/app/com.vscodium.codium/cache/ms-playwright/chromium-1208/chrome-linux64/chrome
+(cd simulator && python3 -m http.server 8199 &) && node simulator/tests-ui-suite.mjs
+```
+
 The first load needs the network (React and a QR library via CDN);
 the protocol cryptography itself runs locally in WebCrypto.
 
 ## What it shows
 
-The one registered ceremony `encounter-scan@0.19` end to end:
+The one registered ceremony `encounter-scan@0.25` end to end:
 
 - the **connected path** — bundle through the delivery service,
   staged receiver dispositions (stages 1–9), record-creating effect,

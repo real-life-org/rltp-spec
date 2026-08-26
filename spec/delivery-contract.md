@@ -3,16 +3,21 @@
 **Real Life Trust Protocol — service contract: Delivery**
 
 - **Status:** Editor's Draft
-- **Version:** 0.17.0-draft (seventeenth casting)
+- **Version:** 0.22.0-draft (twenty-second casting — a minimal
+  surgical casting, two cuts from the replication joint loop
+  (`design/replication-review8-joint-2026-08.md` M-7/M-8, the
+  first two points of the planned adapter-declaration addendum):
+  the service-identity `rkid` clause is withdrawn (5), and the
+  registry gains the direct-effect prohibition (4.4))
 - **Editors:** Anton Tranelis
-- **Date:** 2026-08-10
+- **Date:** 2026-08-24
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
 - **Task-type namespace:** `https://real-life.org/trust-tasks/`
 - **Target Trust Tasks framework version:** 0.4
-- **Conformance profile:** `rltp-delivery@0.17` (draft)
+- **Conformance profile:** `rltp-delivery@0.22` (draft)
 - **Position:** not a layer. Delivery is the service behind the port
-  that Encounter §11 requires; every layer may use it, none depends on
-  its internals.
+  the Encounter Layer requires; every layer may use it, none depends
+  on its internals.
 
 ## Abstract
 
@@ -25,10 +30,15 @@ itself, and the sender **never** what the receiver decided.
 
 Messages are **Trust Task documents** of private, versioned types under
 `https://real-life.org/trust-tasks/` (ToIP DTGWG Trust Tasks framework
-0.4, §6.5 private specifications). This casting registers three types —
-`encounter-bundle`, `delivery-ack`, `encounter-credential-delivery` —
-the RLTP document profile they share, and the sealed envelope they
-travel in.
+0.4, §6.5 private specifications). This casting registers four types
+of its own — `encounter-bundle`, `delivery-ack`,
+`encounter-credential-delivery`, `registry-declaration` — the RLTP
+document profile all types
+share, the sealed envelope they travel in, and the **task registry**
+(4.4) through which companion layers register theirs: the membership
+and access types (registered in their own documents), the
+introduction and continuity types of the network-visibility layer,
+and the member-mapping disclosure of the access layer.
 
 ## Status of This Document
 
@@ -36,12 +46,39 @@ This is an **Editor's Draft** with no standing beyond its own
 argument. It is developed together with the Encounter Layer through
 an adversarial convergence process — each casting is reviewed in full
 by an independent adversarial reviewer and recast, never patched. The
-current casting is the seventeenth; its review round returned no
-findings, and the pair was judged blocker-free and compatibly
-implementable. The document will keep changing as implementation
-experience accumulates; known open questions are collected in
-Section 12. Feedback is welcome via the issues of the publication
-repository (github.com/real-life-org/rltp-spec).
+seventeenth casting's review round returned no findings and the pair
+was judged blocker-free and compatibly implementable.
+
+This eighteenth casting is this document's part of the **M-DID
+loop** (`design/mdid-guss-plan-2026-08.md`) and discharges the
+re-pin debt the Encounter Layer's pair castings opened: the
+**Encounter pin moves from 0.19 to 0.26 (wire 0.25)** — under
+fresh-always enactment (Encounter §4.4) the bundle's bindings hold
+over fresh pair anchors, and the checks of 4.1 are unchanged
+because they were anchor-class-neutral all along; and the **task
+registry** (4.4) becomes explicit, admitting the companion-
+registered types that were this contract's named registration
+debt: the five introduction tasks and the two continuity tasks of
+Network Visibility 0.15 (its §8.1/§6a.3), and the access layer's
+`member-mapping` disclosure (Access §5.5) — including the registry
+entry's **published operational constants**, of which the
+introduction mediator's `ack-delay` (Visibility §8.4) is the
+first. Known open questions are collected in Section 12. This
+casting begins a fresh convergence loop with its companions.
+
+The nineteenth casting answers the loop's joint round 1
+(`design/mdid-joint-review1-2026-08.md`): the registry becomes an
+**implementable contract** — 4.4 defines the registry-entry form
+(type URI → schema reference, proof declaration, constants), and
+per-party operational constants travel as this contract's own new
+task type **`registry-declaration/0.1`** over the relationship
+channel, so a requester holds the mediator's `ack-delay` before
+its first request (B4); the encounter re-pin is completed on the
+consumed wire (`encounter-scan@0.25`, the mobile card and
+credential schemas now carry the 0.24 forms — B3); and the
+member-mapping vector states the honest verdict path (M7).
+Feedback is welcome via the issues of the publication repository
+(github.com/real-life-org/rltp-spec).
 
 ## 1. Introduction (informative)
 
@@ -140,13 +177,17 @@ profile — normative wire form
 - `issuedAt` — REQUIRED.
 - `expiresAt` — MUST be absent. Delivery time is unbounded; validity
   windows live in payloads and ceremonies, with issuance semantics.
-- `proof` — REQUIRED on `delivery-ack` (its authenticity has no other
-  carrier: 1.1, 4.2); MUST be absent on the other types of this
-  casting, whose authenticity is carried by the signed payloads
-  inside. Where `proof` is present, TT §4.8.2 audience binding is
+- `proof` — REQUIRED on `delivery-ack` and on
+  `registry-declaration` (4.4) — the two types whose authenticity
+  has no other carrier (1.1); MUST be absent on the other types of
+  this casting, whose authenticity is carried by the signed
+  payloads inside. Where `proof` is present, TT §4.8.2 audience binding is
   satisfied by the in-band `recipient`.
-- `payload` — REQUIRED; governed by the type's **payload schema**,
-  whose `$id` is the Type URI (TT §6.3). Payload schemas describe only
+- `payload` — REQUIRED; governed by the type's **payload schema**.
+  For the types this document registers itself, the schema's `$id`
+  is the Type URI (TT §6.3); companion-registered types dispatch
+  through their registry entry (4.4), whose schema reference is
+  authoritative — one dispatch rule, stated once. Payload schemas describe only
   the payload; the outer members are validated by the document-profile
   schema.
 
@@ -183,7 +224,10 @@ scanner's sent card and step credential.
   the card carries a sent-challenge with `sentTo` = `recipient` and
   `boundTo` = `credential.credentialSubject.challenge`
   (Encounter 6); a present `ceremony.enactment` equals
-  `credential.credentialSubject.enactmentBinding`.
+  `credential.credentialSubject.enactmentBinding`. Under
+  fresh-always enactment (Encounter §4.4) every anchor of these
+  equalities is a **fresh pair anchor** of the enacting parties;
+  the checks are anchor-class-neutral and stand unchanged.
 - **Pre-lock validation (MUST, in order — validate, then consume:
   read-only against local state **except for Encounter 5.3's aging
   latch, which every resolution writes**, and consuming nothing;
@@ -211,7 +255,7 @@ scanner's sent card and step credential.
      the lock and **re-enters at stage 4** (the waiter rule of 6.2),
      completing every check under the new state before any effect;
      **`credentialSubject.ceremony` equals this
-     ceremony (`encounter-scan@0.19`)** — a credential labelled
+     ceremony (`encounter-scan@0.25`)** — a credential labelled
      with any other ceremony is `failed(validation-failed)`, so the
      record's ceremony is grounded rather than copied from the
      sender's label; and the enactment binding recomputes per
@@ -369,6 +413,109 @@ outside any bundle thread (`"deliver"`).
   Encounter acceptance (5.6) runs separately, never acknowledges, and
   its outcome is never signaled to the issuer (Encounter 7.4).
 
+### 4.4 The task registry — companion-registered types
+
+Every type under the task-type namespace shares the document
+profile (Section 3), the sealed envelope (Section 5), and the
+disposition and acknowledgement rules (Section 6). Beyond the
+four types this document registers itself, the registry's
+members are registered **where their semantics live**, each as a
+private Trust Task specification naming its type URI, payload
+schema, proof declaration, and consistency rules:
+
+- `membership-invite/0.2` · `membership-accept/0.2` ·
+  `access-operation/0.1` · `membership-evidence/0.1` — Membership
+  Tasks §3;
+- `key-delivery/0.1` · `removal-notice/0.1` — Access §10;
+- `introduction-request/0.1` · `introduction-forward/0.1` ·
+  `introduction-reply/0.1` · `introduction-ack/0.1` ·
+  `introduction-voucher/0.1` — Network Visibility §8.1; payload
+  schemas `schemas/visibility-payload-introduction-request.schema.json`,
+  `…-forward…`, `…-reply…`, `…-ack…`, `…-voucher….schema.json`;
+  proofs per Visibility §2.1 (the artifacts carry their own MACs
+  and signatures; the documents carry none — one carrier);
+- `continuity-probe/0.1` · `continuity-mapping/0.1` — Network
+  Visibility §6a.2/§6a.4; the payload is the artifact itself
+  (`schemas/visibility-continuity-probe.schema.json`,
+  `schemas/visibility-continuity-mapping.schema.json`), travelling
+  on the enactment tuple's own channel (its §6a.3);
+- `member-mapping/0.1` — Access §5.5; payload
+  `schemas/member-mapping.schema.json`, travelling on the existing
+  relationship channel between discloser and addressee, never a
+  group space.
+
+**The registry-entry form (normative):** a registry is a set of
+entries, one per type, each carrying exactly: the **type URI**
+(under the task-type namespace) · the **payload schema
+reference** (the shipped schema file the receiver validates
+against — dispatch resolves through the entry, so a companion
+schema needs no `$id` equal to the type URI; §3's `$id` rule
+binds the types this document registers itself) · the **proof
+declaration** (proof present/absent and its carrier, per the
+registering specification) · and optionally **operational
+constants** of the role (below). A type absent from a receiver's
+registry is `unknown-type` (6.2), exactly as for this document's
+own types; registration creates no authority anywhere — every
+type's effects are governed by its own specification, **under one
+global rule no registration can waive: a registered type's
+defined effect MUST NOT write replicated state directly. Where an
+effect touches replicated state, it does so exclusively by
+handing full entries with their closure to the Replication
+Contract's ingest admission (Replication §7, I14) — the admission
+verdict, not the delivery disposition, decides any replicated
+effect.** A registry entry whose specification defines a direct
+replicated write is not registrable.
+
+**Operational constants and `registry-declaration/0.1`
+(normative):** a party serving a role whose specification names a
+published constant declares it **per party** — fixed,
+non-adaptive — and its counterparts MUST hold it before they
+depend on it. The carrier is this contract's own task type
+`registry-declaration/0.1`: `payload`
+`{ "declaration": { "role": <type URI of the served role>,
+"revision": <int-string, ≥ 1>,
+"constants": { <name>: <value string> } } }`
+per `schemas/payload-registry-declaration.schema.json`;
+`threadId` fresh; `proof` **REQUIRED**, verifying under the
+document `issuer` (the declaring party — §3's proof rule names
+this type). Defined effect: durable recording per (issuer,
+role) under the **generic revision rule** (the pattern of
+Visibility §6.4): a higher `revision` wins; an equal revision
+with JCS-identical payload is idempotent; an equal revision with
+a different payload is an equivocation error — reject, keep
+state; a lower revision is rejected — so a delayed or redelivered
+older declaration can never roll a value back. A replacement is
+prospective, never retroactive for a running act. **Roles and
+their constants are named by the registering specification**: the
+role URI is the type URI of the task the party serves as
+receiver — for the introduction mediator,
+`https://real-life.org/trust-tasks/introduction-request/0.1` —
+and the registering specification closes which constant names a
+role admits and their domains; unknown constant names or
+out-of-domain values reject the declaration. The first
+registration: `ack-delay`, an RFC 3339/ISO-8601 duration,
+`PT1S ≤ ack-delay ≤ PT1H` (Visibility §8.4). **This declaration IS
+the "task registration entry" Visibility §8.4 publishes from** —
+that entry's per-party published form; one mechanism, two names.
+**Act binding and revision skew, stated honestly:** each side of a
+running act computes from the declaration it holds — the mediator
+from its own current value at the act's arrival, the requester
+from the highest revision it holds at send. A revision landing
+between the two is safe by construction: the requester's early
+`failed` is Visibility §8.4's named role divergence, converged by
+the retry as a new act; a mediator that raises its `ack-delay`
+SHOULD expect such retries until the new declaration reaches its
+contacts. **A party MUST declare identical constants to all
+counterparts** ("per party, fixed"); the declaration is
+transferably signed for exactly this reason — two counterparts
+comparing declarations hold attributable proof of an
+equivocation. The first registered constant is the introduction
+mediator's `ack-delay` (Visibility §8.4): a requester computes
+its verdict window from the mediator's declared value and MUST
+NOT send an `introduction-request` to a mediator whose
+declaration it does not hold — asking first is the flow, not an
+error path.
+
 ## 5. The Sealed Envelope
 
 A document travels sealed to its recipient:
@@ -390,9 +537,12 @@ Normative construction, exactly one way:
   envelope from a CSPRNG and MUST NOT be reused. **Nonce:** 96 bits
   from a CSPRNG per envelope.
 - **Shared secret:** X25519(ephemeral private, recipient public),
-  where the recipient public key is the one identified by `rkid` (the
-  key-agreement Multikey from the recipient's card, or a derived
-  service identity, Layer-1 A7). An all-zero shared secret MUST be
+  where the recipient public key is the one identified by `rkid` —
+  the key-agreement Multikey from the recipient's card. (A derived
+  service identity is **not** admissible here: Identity §7 defines
+  it Ed25519-only, and no sealing-to-service exists in the 0.x
+  stack; a future service-seal capability needs its own X25519
+  key, binding artifact, and flow.) An all-zero shared secret MUST be
   rejected on both sides.
 - **Key derivation:** AES-256 key = HKDF-SHA-256(ikm = shared secret,
   salt = empty, info = ASCII `rltp/v1/seal`), 32 bytes.
@@ -564,7 +714,7 @@ enactment** continues on the optical leg, and the late bundle is
 accepted via the record (4.1). A **fresh enactment** arises only when
 the optical leg's `boundTo` no longer resolves — the `gate-expired`
 outcome of Encounter 5.8; the resulting parallel enactments are
-reconciled by **Encounter 0.19, 4.2 and 5.8**: both are valid, a late
+reconciled by **Encounter 0.28 (wire 0.25), 4.2 and 5.8**: both are valid, a late
 counter-credential to the first is accepted, and enactment
 multiplicity never multiplies edges (one edge per anchor pair). This
 contract adds nothing to those rules and relies on them.
@@ -645,7 +795,9 @@ no ack and consumes nothing; B's prompt is C4, never automated.
 
 ## 11. Conformance
 
-- **Profile** `rltp-delivery@0.17`.
+- **Profile** `rltp-delivery@0.22`; the Encounter pin is
+  `rltp-encounter@0.28` (wire 0.25); companion registrations per
+  4.4 (Network Visibility 0.15, Access 0.52, Membership Tasks 0.16, Replication 0.26).
 - **Classes:** *sender* (sealing, status trias, ack-wait switch
   trigger) · *receiver* (unsealing, staged dispositions, ack
   generation) · adapters are below the port line.
@@ -654,7 +806,10 @@ no ack and consumes nothing; B's prompt is C4, never automated.
   `schemas/sealed-envelope.schema.json` ·
   `schemas/payload-encounter-bundle.schema.json` ·
   `schemas/payload-delivery-ack.schema.json` ·
-  `schemas/payload-encounter-credential-delivery.schema.json`.
+  `schemas/payload-encounter-credential-delivery.schema.json` ·
+  `schemas/payload-registry-declaration.schema.json` —
+  plus, by reference through 4.4, the companion-registered payload
+  schemas named there.
 - **Shipped vector:** `vectors/seal.json` (5).
 - **Vector plan:** seal/unseal roundtrip against the shipped vector ·
   digest invariance under re-sealing · every disposition stage of 6.2
@@ -719,7 +874,22 @@ no ack and consumes nothing; B's prompt is C4, never automated.
   concurrent first deliveries → exactly one `unique`, one
   `duplicate-known`, identical acks · crash between effect commit and
   ack transmission → redelivery yields the mandatory re-ack ·
-  key retirement never precedes the declared adapter horizon.
+  key retirement never precedes the declared adapter horizon ·
+  **eighteenth-casting additions (the registry):** a
+  companion-registered type with a registry entry → dispatched to
+  its own specification's consistency rules; the same type absent
+  from the registry → `failed(unknown-type)` per 6.2, no effect · a
+  registry entry publishing an adaptive constant → nonconformant
+  (constants are fixed) · `registry-declaration/0.1`: valid
+  declaration recorded; unsigned or foreign-signed → discarded;
+  replacement prospective-only · introduction-ack timing computed
+  from the declared `ack-delay` (Visibility §8.4's verdict
+  window); an introduction-request sent without holding the
+  mediator's declaration → nonconformant at the sender ·
+  a `member-mapping/0.1` document from a party the receiver holds
+  no relationship with → rejected by the receiver's own
+  acceptance list (Access §5.5 step 2 — the transport verdict is
+  ordinary; the channel rule is the artifact's, stated honestly).
 
 ## 12. Open Issues
 
@@ -752,6 +922,9 @@ no ack and consumes nothing; B's prompt is C4, never automated.
 [RFC2119] · [RFC8174] BCP 14 · [RFC3339] · [RFC8785] JCS · [RFC5869]
 HKDF · [TT] ToIP DTGWG Trust Tasks framework specification 0.4
 (§4.8.2, §4.11.1, §6.1, §6.3, §6.5, §7.2–7.3) · RLTP Encounter Layer
-0.19 (port §11, binding 5.4, ceremony 5.8, state model 5.3, merge
-rule 4.2) · Sync
+0.28, wire 0.25 (delivery port, binding 5.4, ceremony 5.8,
+fresh-always §4.4, state model 5.3, merge rule 4.2) · RLTP Network
+Visibility 0.15 (§2.1, §6a, §8) · RLTP Access Layer 0.52, wire
+0.24 · RLTP Replication Contract 0.26 (§7/I14, the
+direct-effect seam of 4.4) · RLTP Membership Tasks 0.16 (§3) · Sync
 001/003 (superseded transport specs, Appendix A).

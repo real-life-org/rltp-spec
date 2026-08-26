@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "voucher"
+  ],
+  "properties": {
+    "voucher": {
+      "$ref": "visibility-introduction-voucher.schema.json"
+    }
+  },
+  "title": "RLTP payload introduction-voucher (rltp-visibility@0.15)"
+}

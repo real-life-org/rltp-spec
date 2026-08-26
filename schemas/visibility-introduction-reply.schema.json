@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "body",
+    "proof"
+  ],
+  "properties": {
+    "body": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "act",
+        "requestDigest",
+        "requesterPair",
+        "cardDigest"
+      ],
+      "properties": {
+        "type": {
+          "const": "introduction-reply@1"
+        },
+        "act": {
+          "type": "string",
+          "pattern": "^u[A-Za-z0-9_-]{43}$"
+        },
+        "requestDigest": {
+          "type": "string",
+          "pattern": "^u[A-Za-z0-9_-]{46}$",
+          "description": "sha2-256 multihash (0x12 0x20 + 32 hash bytes) over JCS of the request body, u-base64url (2.1)"
+        },
+        "requesterPair": {
+          "type": "string",
+          "pattern": "^did:key:z6Mk[1-9A-HJ-NP-Za-km-z]{44}$"
+        },
+        "cardDigest": {
+          "type": "string",
+          "pattern": "^u[A-Za-z0-9_-]{46}$",
+          "description": "sha2-256 multihash (0x12 0x20 + 32 hash bytes) over JCS of the complete card document including its proof, u-base64url (2.1)"
+        }
+      }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proofValue"
+      ],
+      "properties": {
+        "proofValue": {
+          "type": "string",
+          "pattern": "^z[1-9A-HJ-NP-Za-km-z]{64,88}$"
+        }
+      }
+    }
+  },
+  "title": "RLTP introduction-reply@1 (rltp-visibility@0.15)"
+}

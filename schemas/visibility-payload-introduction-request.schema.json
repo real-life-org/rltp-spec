@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "introduction",
+    "card"
+  ],
+  "properties": {
+    "introduction": {
+      "$ref": "visibility-introduction-request.schema.json"
+    },
+    "card": {
+      "$ref": "contact-card-0.25.schema.json",
+      "description": "Encounter contact card (wire rltp-card/0.25); JCS digest MUST equal introduction.body.cardDigest"
+    }
+  },
+  "title": "RLTP payload introduction-request (rltp-visibility@0.15)"
+}

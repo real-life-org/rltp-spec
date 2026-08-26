@@ -3,43 +3,37 @@
 **Real Life Trust Protocol — Layer 3: Access**
 
 - **Status:** Editor's Draft
-- **Version:** 0.25.0-draft (twenty-fifth casting)
+- **Version:** 0.52.0-draft (fifty-second casting — the
+  **receipt cut**, the loop's fourth architectural cut, on the
+  editor's decision 2026-08-26: the acceptance-receipt and
+  generation-statement machinery — demoted by the freeze
+  withdrawal to evidence that confers no standing — is removed;
+  the two-way acceptance anchor (7.3) carries alone, the CAS
+  acceptance commit stays, and the no-target window is a named
+  residual)
 - **Editors:** Anton Tranelis
-- **Date:** 2026-08-12
+- **Date:** 2026-08-26
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
-- **Conformance profile:** `rltp-access@0.25` (draft). The **wire
-  versions of every artifact stay at `0.24`**: this casting changes
-  receiver-side obligations and the keying of local state, and no
-  byte of any wire form (Section 11).
-- **Position:** Layer 3 of RLTP, above the Encounter Layer 0.19 and
-  the Identity layer, carried by the Delivery Contract 0.17 where
-  operations or keys must reach parties outside the replica; the
-  Membership Tasks 0.11 register the task types that transport this
+- **Conformance profile:** `rltp-access@0.52` (draft). Wire
+  versions are unchanged: the `0.24` family,
+  `service-registration/0.26`, and the session-plane evidence
+  forms `…/1` (3.6); the vouch (`vouch@2`, 5.3) is a W3C VC in
+  DTG form and carries no `v` constant. The service-acceptance
+  forms `…/2` are withdrawn never-instantiated (Section 11).
+  Section 11 is the compatibility statement; no shipped wire
+  byte changes.
+- **Position:** Layer 3 of RLTP, above the Encounter Layer 0.28
+  (wire 0.25) and
+  the Identity layer (0.12), carried by the Delivery Contract
+  (0.22, jointly cast in this loop) where operations or keys must
+  reach parties outside the replica; the Membership Tasks (0.16,
+  jointly cast) register the task types that transport this
   layer's admission documents and are a normative companion.
-- **Supersedes:** versions 0.24 through 0.4 (archived as
-  `archive/access-layer-0.24-vierundzwanzigstguss.md`,
-  `archive/access-layer-0.23-dreiundzwanzigstguss.md`,
-  `archive/access-layer-0.22-zweiundzwanzigstguss.md`,
-  `archive/access-layer-0.21-einundzwanzigstguss.md`,
-  `archive/access-layer-0.20-zwanzigstguss.md`,
-  `archive/access-layer-0.19-neunzehntguss.md`,
-  `archive/access-layer-0.18-achtzehntguss.md`,
-  `archive/access-layer-0.17-siebzehntguss.md`,
-  `archive/access-layer-0.16-sechzehntguss.md`,
-  `archive/access-layer-0.15-fuenfzehntguss.md`,
-  `archive/access-layer-0.14-vierzehntguss.md`,
-  `archive/access-layer-0.13-dreizehntguss.md`,
-  `archive/access-layer-0.12-zwoelftguss.md`,
-  `archive/access-layer-0.11-elftguss.md`,
-  `archive/access-layer-0.10-zehntguss.md`,
-  `archive/access-layer-0.9-neuntguss.md`,
-  `archive/access-layer-0.8-achtguss.md`,
-  `archive/access-layer-0.7-siebtguss.md`,
-  `archive/access-layer-0.6-sechstguss.md`,
-  `archive/access-layer-0.5-fuenftguss.md`, and
-  `archive/access-layer-0.4-viertguss.md`); version 0.3.0-draft
-  (wot-spec `rltp/access-layer.md`, archived there with its
-  reviews); on adoption, the group/membership portions of wot-spec
+- **Supersedes:** 0.51 (archived,
+  `archive/access-layer-0.51-redaktionsguss.md`; every earlier
+  casting alongside); version 0.3.0-draft (wot-spec
+  `rltp/access-layer.md`, archived there with its reviews); on
+  adoption, the group/membership portions of wot-spec
   `03-wot-sync/005-gruppen.md`.
 
 ## Abstract
@@ -77,49 +71,40 @@ revocable by construction. That difference is why the layers exist.
 
 ## Status of This Document
 
-This is an **Editor's Draft**, the twenty-fifth casting of this
-layer. It is developed
-through the same adversarial convergence process as the Encounter
-Layer, the Delivery Contract, and the Membership Tasks (casting,
-independent adversarial review, full recast — never a patch). The
-fourth casting — the first on the enforcement port — drew 22
-blockers; **rounds 20 and 21, judging the twenty-third and
-twenty-fourth castings, found zero blocker-level defects and
-stated the convergence criterion of the loop met**, with every
-named residual (Section 15, the TOFU and re-registration classes,
-the cooperation and darkness residuals, the consent-staleness
-window) confirmed as an honestly bounded design limit rather than
-an open defect.
+This is an **Editor's Draft**, the fifty-second casting of this
+layer — the **receipt cut** (editor's decision, 2026-08-26): the
+acceptance-receipt and generation-statement machinery of castings
+0.47–0.50, demoted by the freeze withdrawal to evidence that
+confers no standing, is removed entirely. The two-way acceptance
+anchor (7.3: the live session, or the `previousRegistration`
+chain into a session-attested generation) carries alone; the CAS
+acceptance commit stays; the no-target window is a named
+residual. A post-convergence substance casting — its adversarial
+confirmation is recorded in the design journal. The fifty-first
+casting was the editorial one: substance frozen at the converged
+0.50, genealogy moved to the design journal, sections 3.6 and 7.3
+re-paragraphed.
 
-Every round up to that point judged this layer against a **frozen**
-companion. The round that followed was the first to hold **this
-document and its Membership Tasks companion open at the same time**,
-and it looked for defects **at the seam** — the class the sequential
-process is structurally blind to. It found two that only this
-document can answer, and this casting is the **surgical seam cast**
-that answers exactly those two and touches nothing else: the
-first-materialization gate of Section 10.1 now carries the
-**current-member condition** it always implied but never stated, so
-a subject removed in a later epoch cannot complete a bootstrap on a
-commitment-correct re-welcome (this closes an internal contradiction
-with Section 5.3's eviction rule as much as a seam gap); and every
-operational **slot, window and throttle** this document defines is
-keyed by the **genesis digest** rather than by the group DID, which
-is what Section 3.2 has required of all group state from the start.
-No wire form, no schema, and no other requirement changes.
+The layer is converged, three loops deep. Its own adversarial
+loop (castings 0.4–0.25) met the convergence criterion — two
+consecutive blocker-free review rounds — and held it through the
+Membership seam. The **M-DID loop** (castings 0.26–0.30: the
+per-group member anchor, `member-mapping@1`, the `vouch@2` DTG
+adoption) converged on 2026-08-25 jointly with Encounter 0.28 and
+Membership Tasks 0.16. The **replication-seam loop** (castings
+0.31–0.50, jointly with the Replication Contract and the Delivery
+Contract) converged on 2026-08-26: joint rounds 24 and 25 were
+blocker-free. Every named residual (Section 15; the TOFU and
+re-registration classes, the cooperation and darkness residuals,
+the consent-staleness window) stands confirmed as an honestly
+bounded design limit rather than an open defect. The
+round-by-round record — findings, triage, and the genealogy of
+every casting — lives in the design journal
+(`design/access-review*.md`, `design/mdid-joint-review*.md`,
+`design/replication-review*.md`).
 
-That confirmation round has since been held. Judging this
-twenty-fifth casting against the Membership Tasks 0.11, with the
-Encounter Layer and the Delivery Contract frozen, it found **no
-defects at any severity** and stated the seam **closed in both
-directions**. This casting is therefore **converged**, and the
-convergence criterion of this loop now holds on both sides of the
-boundary this document shares with its companion. What remains
-open is collected in Section 15 as design boundaries, not defects;
-the member-facing product decisions taken across the loop have the
-editors' sign-off, and publication to the public repository is the
-next step. Feedback is welcome via the issues of the publication
-repository (github.com/real-life-org/rltp-spec).
+Feedback is welcome via the issues of the publication repository
+(github.com/real-life-org/rltp-spec).
 
 ## 1. Introduction (informative)
 
@@ -155,7 +140,8 @@ and they are the layer:
 
 ### 1.2 Position and scope
 
-The Identity layer supplies anchors (main DIDs) and key recovery.
+The Identity layer supplies anchors and key recovery; the anchor
+a member acts under is a per-group context anchor (5.1).
 The Encounter layer supplies immutable evidence that people met —
 consumable here as policy inputs (4.2). The Delivery Contract
 carries documents to parties the replica cannot reach; the
@@ -202,6 +188,11 @@ profile states otherwise.
 **Group** — a collective actor with members, a policy, an
 authority log, and documents. Its **identity** is the digest of its
 genesis operation; its **address** is its group DID (3.2).
+**Member anchor (M-DID)** — the per-group context anchor under
+which one member acts in one group (5.1); the DTGWG class name
+M-DID names it throughout. **Self anchor (S-DID)** — a person's
+stable cross-relationship coordinate (Identity §5); it appears in
+no artifact of this layer except inside `member-mapping@1` (5.5).
 **Authority log** — the append-only operation DAG rooted in the
 genesis operation; the sole source of authorization state; its
 content is readable by members only, always (3.1). **Operation** —
@@ -281,7 +272,22 @@ materialized state entitles to it (5.3, 7.1, 10.1).
   binds to a group —
   membership invites (`genesisDigest`, Membership 3.1),
   authorization views (7.3), key deliveries, replica state — is
-  keyed by it. The **group DID** in the envelope is the group's
+  keyed by it. **Whenever this document turns the genesis digest
+  into cryptographic or canonical bytes** — the `group/<digest>`
+  label (5.1), the epoch-secret HKDF info (9.5), the
+  key-distribution and lineage AADs (7.1) — **the canonical `u`
+  rendering of the validated digest is the form that enters the
+  bytes**: a `z`-carried digest (Encounter 2.3 obliges acceptance)
+  is re-encoded first, for that construction only, and the signed
+  artifact is never rewritten. Stateful keying — slots, windows,
+  throttles, registration and view maps — applies Encounter 2.3's
+  decoded-bytes digest equality: a string-backed index MUST
+  canonicalize to `u` before indexing, or two renderings of one
+  group would split state that is one. u/z cross-implementation
+  vectors for the epoch-secret derivation and both AADs ship in
+  `vectors/dtg-credentials.json` (recomputed by the conformance
+  runner: same subkey and byte-identical AADs from either
+  rendering; raw `z` bytes shown to diverge). The **group DID** in the envelope is the group's
   address: the key that self-certifies the genesis (3.4.1) and then
   retires; the root secret MAY be destroyed.
 - Two distinct genesis operations under one DID are therefore not a
@@ -362,7 +368,7 @@ canonical serialization):
   different valid proofs (independently collected evidence), a
   replica MUST hold exactly one **merged proof**. The merged
   proof is, normatively, a **pair of sets**: a signature set and
-  a credential set. It is built entry-wise, and **entry to the
+  a vouch set. It is built entry-wise, and **entry to the
   merge is position-bounded on both sides**: a signature enters
   only if its signer is one of the operation's **eligible
   signers** (3.4.2) — the members of the state materialized from
@@ -373,18 +379,19 @@ canonical serialization):
   of the operation can count — the policy currency, the
   self-authorized author, every §5.4 pending-exit exception, and
   the genesis pair — while staying Sybil-bounded: membership of
-  the ancestor state is not mintable. A credential enters only
+  the ancestor state is not mintable. A vouch enters only
   if it is
-  admissible per 4.3 — it validates (Encounter §7), its
-  `credentialSubject.id` equals the operation's `body.subject`,
-  its **issuer is in the ancestor-position policy currency**
-  (only rules read credentials, and rules read the currency),
+  admissible per 4.3 — it validates as `vouch@2` (5.3), its
+  `subject` equals the operation's `body.subject`, its `accept`
+  digest matches the enclosed admission's accept,
+  its **voucher is in the ancestor-position policy currency**
+  (only rules read vouches, and rules read the currency),
   and
-  the operation's rule key can carry an encounter rule at
-  all (any other operation admits no credential). Within those
+  the operation's rule key can carry a vouch rule at
+  all (any other operation admits no vouch). Within those
   bounds: per signer, the first valid signature seen; per
-  issuer, the first admissible credential seen. Nothing outside
-  the bounds ever occupies an entry — a Sybil signer or issuer
+  voucher, the first admissible vouch seen. Nothing outside
+  the bounds ever occupies an entry — a Sybil signer or voucher
   merges nothing however many valid bytes it signs (anchors are
   freely mintable; currency membership is not), and a variant
   cannot poison an issuer's slot with evidence that proves
@@ -393,25 +400,25 @@ canonical serialization):
   churn of any kind; entries sorted per the canonical form. A
   merged proof carries no authoritative single `mechanism`: the
   label is derived, in exactly one way everywhere —
-  `signature-set` when the credential set is empty;
-  `encounter-presentation` when the credential set is non-empty
+  `signature-set` when the vouch set is empty;
+  `encounter-presentation` when the vouch set is non-empty
   and the signer set is exactly the operation's subject;
   `composite` otherwise — and nothing normative reads
   it. **What
   converges — and all that evaluation ever reads — is the signer
-  and issuer *sets***: any valid signature is equivalent evidence
-  of its signer, any admissible credential of its issuer's edge,
+  and voucher *sets***: any valid signature is equivalent evidence
+  of its signer, any admissible vouch of its voucher's edge,
   so replicas whose proof bytes differ still
   reach identical verdicts, and no digest or identity in this
   layer is ever computed over proof bytes (3.2). Because only
-  subject-bound credentials enter, the merge
+  subject- and accept-bound vouches enter, the merge
   dominates every variant (superset of each variant's
   currency signers and
-  admissible issuer edges — the only entries evaluation ever
+  admissible voucher edges — the only entries evaluation ever
   counts) — so whatever any valid variant
   proved, the merge proves: replicas that collected different
   evidence still reach identical verdicts. And it is bounded
-  by one entry per eligible signer and per currency issuer —
+  by one entry per eligible signer and per currency voucher —
   never more than the membership plus one. **The merge is an
   accumulator, not a wire artifact:** the wire caps of the
   shipped schemas (8192, sized at twice the admission bound —
@@ -477,6 +484,15 @@ complete procedure. It is valid iff:
    needed at genesis); `serviceIdentity` — the founder's derived
    service identity (5.2), seeding the view quorum (7.3);
 5. `author` is the founder.
+
+**The founder's anchor class (5.1):** the founder's anchor MUST be
+a fresh dedicated context anchor minted for this founding act and
+used in no other context — Identity §6's nonce-based pair class,
+a founding being a relationship-creation act. The joiner's
+`group/<genesis digest>` context cannot exist before the genesis
+digest does, so the founder's per-group anchor comes from the
+nonce-based register row instead: the same scoping property, a
+different register row, stated rather than hidden.
 
 Within one group (one genesis digest), the genesis is by
 construction the only operation with empty `prev`; any other
@@ -589,9 +605,15 @@ is informative; the rules themselves are exhaustive and explicit.)
    **materialization outcome is defined**: the group enters the
    **forked state** — a distinguished, deterministic outcome in
    which no operation building on either sibling is canonical, all
-   authorization answers are fail-closed, services holding
-   evidence of both siblings hold their own fail-closed state
-   (7.3), and the condition MUST be surfaced. The forked state
+   authorization answers are fail-closed, and the condition MUST
+   be surfaced. Replicas reach this state by admitting both
+   siblings — which is why sibling evidence MUST keep travelling
+   (the evidence-transport rule, 5.3); **services** — which cannot
+   judge authority entries — reach their own fail-closed state
+   through the view machinery alone: the freshness bound and the
+   divergence obligations of 7.3 (obligations 3 and 5; a forked
+   group cannot issue a fresh canonical view, so the service
+   closes at the current view's expiry at the latest). The forked state
    ends only by reconciliation (OI-1); until OI-1 is resolved,
    conformant operation is single-partition per group for
    enforcement operations — the linear interim adapter's scope
@@ -623,6 +645,344 @@ is informative; the rules themselves are exhaustive and explicit.)
 | `member.leave` ∥ `member.leave` (different subjects) | both merge; obligations per 5.4; emptiness per 5.4 |
 | `service-identity.announce` ∥ anything additive | union; per-anchor scalar (the announced key) takes the value folded last; first-bound-wins across anchors per 5.2 |
 
+**The removal disposition over concurrent authorship.** A canonical `member.remove` disposes as
+**non-canonical** — a whole-DAG disposition of the enforcement-
+prevails family, computed like the forked state over the merged
+materialization, never a revision of position-local validity or
+proof evaluation (3.5 stands untouched):
+
+- (a) every concurrent additive operation whose `author` is the
+  removed subject;
+- (b) every concurrent admission whose consumed accept encloses an
+  invite the removed subject issued;
+- (c) every concurrent additive operation whose proof does not
+  satisfy its rule without the removed subject's signatures — as
+  this disposition, not as a proof shortfall: at its position the
+  proof was sufficient, and stays so on the record;
+- (d) **the closure is transitive over the puppet chain:**
+  removed-disposed further are — recursively — every admission
+  whose consumed accept encloses an invite issued by a subject
+  whose own admission is removed-disposed, and every additive
+  operation whose `author` is such a subject (Mallory→X→Y→… ends
+  here — MLS-inspired: a commit that removes a member kills their
+  open proposals; the transitive, already-materialized chain is
+  RLTP's own additional duty). For each
+  disposed admission the same-subject consequences apply (the
+  subject is not a member of the merged state; the accept is
+  consumed as in the `member.add ∥ member.remove` pairing). This
+  is a whole-DAG disposition recomputed on merge — nothing is
+  re-validated, so no suppression cascade returns.
+
+**Rule (c)'s evaluation point (decidable):** (c) is evaluated
+against the policy version in force at the operation's position
+and the operation's **current canonically merged proof
+accumulator**, re-evaluated on every accumulator change; what is
+set aside is exactly the removed subject's signatures and proof
+material. The transitions `removed-disposed ↔ canonical` are
+therefore closed and deterministic: a later third-party signature
+that satisfies the position's policy without the removed subject
+heals the operation to `canonical`; a removal admitted later can
+dispose it again.
+
+**The total disposition order.** Where classifications overlap —
+an operation that is both a fork-sibling descendant and in the
+removal set — the disposition is total and ordered:
+**`forked` ≻ `removed-disposed` ≻ `canonical`**. Transitions are
+closed under the order: `removed-disposed → forked` when an
+enclosing fork arises; `forked → removed-disposed | canonical`
+when a reconciliation (OI-1) resolves the fork, re-evaluated
+against the reconciled DAG; `removed-disposed ↔ canonical` per
+rule (c) above. **d′ as a fixpoint (decidable, terminating — the formal
+operator):** for a canonical removal R, define F_R over two
+disjoint domains — the set D of **admission operation-ids** and
+the set E of **other additive operation-ids**. Seed: the
+admissions of (b) into D, the operations of (a)/(c) into E. Step:
+an admission op-id enters D iff its consumed accept encloses an
+invite whose issuer is **admission-orphaned in D** — every
+admission op-id that legitimizes that issuer's membership already
+lies in D; an additive op-id enters E iff its author is
+admission-orphaned in D. **Genesis is its own legitimization
+root and is never disposable by d′** — a founder is never
+admission-orphaned, so founder-issued invites never enter through
+this step (a founder is reached only by an explicit removal, rule
+(a)–(c)). The removal-disposition set is **one least fixpoint of the
+global operator F whose seed is the union of the seeds of all
+canonical removals** — never a union of per-removal fixpoints
+(two removals may each dispose one of an issuer's admissions;
+only the joint fixpoint orphans them). `Legitimizes` is causally
+bound: the admissions that count for an issuer at an artifact
+are exactly those carrying the issuer's membership **at that
+artifact's causal position** — a later re-admission never heals
+an earlier puppet act. F is monotone on the finite powerset of
+held operation-ids (its step only ever adds ids), so the least
+fixpoint exists and the computation terminates on a finite held
+DAG; a healing under rule (c) re-runs it, so downstream
+operations heal with their cause, deterministically. **Re-welcome under
+disposition:** the re-welcome duty (below) binds only for
+`accepted ∧ canonical` admissions whose subject is a member of
+the final materialization; a `removed-disposed` admission
+disposes its open re-welcome duty and any derived pending exit
+non-effectingly — keys already delivered before the disposition
+are the honest knowledge residual (7.2). This outcome is
+MLS-inspired (a commit that removes a member kills their open
+proposals), not MLS-identical: RLTP additionally disposes an
+already-materialized admission chain and its duties, which MLS
+never has to. **The atomic send-point recheck (all key-bearing
+duties):** production, the final entitlement recheck, and the
+handoff to the irreversible send adapter are serialized under one
+**materialization-generation token** — a value that changes
+monotonically with **every authorization-relevant change of the
+helper's materialization**: canonical application, any
+disposition change (fork detection and removal disposition
+included), membership change, epoch change, and terminality —
+never only canonical application (a whole-DAG redisposition with
+no new application still invalidates in-flight material). The helper
+verifies, at production: the recipient is a current member of the
+token's snapshot, the admission that entitles them is
+`canonical`, and no membership-ending operation lies in that
+snapshot's ancestry for them; the produced material is bound to
+exactly that snapshot's epoch. At the handoff to the send
+adapter the helper re-reads the token **atomically with the
+handoff** (compare-and-handoff — no window between the read and
+the irreversible send): **changed → the material is discarded and
+the slot re-evaluated against the new generation** — a snapshot
+is never re-used across the race the token exists to close. A membership-ending operation disposes every open
+re-welcome duty and key-service slot for its subject
+non-effectingly — a slot is never discharged *to* a former member
+(the MLS lesson: no welcome is issued from a commit the group has
+not accepted). Entitlement checked only at request receipt is
+checked too early; the recheck at the send point is the normative
+one.
+
+The rationale is the MLS doctrine — a commit that removes a member
+kills their open proposals — and the concrete attack it closes is
+the back-dated admission: without this rule a removed member could
+position a `member.add` of a puppet before their own removal and
+regain post-removal epoch access through the re-welcome duty.
+Deterministic and arrival-time-free by construction; under the
+interim single-partition scope (9.6) the situation cannot arise,
+so this rule's first live use is a precondition of OI-1.
+
+**Evidence transport (the fork's reach).** Entries that are
+admitted but not canonically applicable — sibling transitions of
+the forked state and their descendants, and operations under the
+removal disposition above — **continue to replicate as
+non-effecting evidence**, under its own **evidence
+authorization** — defined so the forked state cannot starve its
+own cure: the peers entitled to evidence are **the members of the
+maximal unforked prefix's materialization** (3.6's forked-state
+prefix; equivalently, under an undisputed removal: the current
+members). A member canonically removed within that prefix stays
+excluded — to a removed peer nothing causally new travels after
+the removal, evidence included (5.3) — while the fork's
+fail-closed answers govern authority, reads, and writes, **never**
+the evidence plane; without this separation, fork evidence could
+reach nobody exactly when everybody needs it.
+
+**The evidence
+session (executable, bilateral):** two replicas MAY establish a
+session authenticated by the ordinary challenge-possession
+mechanism — judged, for exactly this session class, against a
+**presented prefix claim** instead of the (fail-closed) current
+head: the initiator presents the **canonical prefix claim**
+(`rltp-access-evidence-claim/1` — signed over exactly the one
+unified evidence field set below; no other claim form exists). The claimed prefix
+is computed over the **conflict DAG**: the union of the ancestor
+closures of the evidence root **and of every conflict artifact of
+the exchange** — for a disputed transition, both siblings; for a
+disposed operation, the operation and its disposing removal; for
+a target root, `closure(the target's frontier heads)` (a target
+is no authority entry; its domain is its attested closure).
+**Completeness is verifier-enforced, never initiator-chosen** (a
+merge base is computed from the repository, not from the
+requester's selection), and the enforcement is a closed wire
+step: a verifier holding conflict artifacts the claim's set
+misses answers — before any standing — with the fourth closed
+artifact, **`rltp-access-evidence-supplement/1`** (the unified
+field set below; its `body`: the complete verifier-side conflict
+set and the `snapshotDigest`). **The snapshot is a projection,
+not the whole DAG:** for authority roots, `snapshotDigest` = the
+multihash over the JCS array of the sorted operation-ids of the
+**conflict-relevant projection** — every enforcement sibling and
+disposition cause the verifier holds for the named root,
+together with their authority ancestor closures; for target
+roots, the same construction, typed: targets are projected by
+the digest of their **sig-less target signature input**,
+registrations **exclusively by their `registrationCoreDigest`**
+(never the sig-bearing input — one registration must never yield
+two projection identities). A
+change outside the projection never supersedes a turn. The initiator
+then issues exactly **one** fresh claim over the union; a
+supplement or claim against a changed projection yields
+`superseded-snapshot`.
+
+**The session result algebra is closed and four-valued:**
+`standing-granted | invalid-bundle |
+superseded-snapshot (retriable) | evidence-saturated` —
+`unknown-baseline` and `missing-registration-core` are **response
+variants inside a response body**, never session results (a
+session containing them still ends in one of the four) — an
+exchange carries **at most 16 parts and 4096 artifacts in
+total**; past the cap it ends `evidence-saturated`, and any
+retry is a **new transcript**. A bundle whose conflict set is incomplete relative to
+the answering verifier's snapshot is **invalid as a whole** — an
+initiator cannot regain standing by omitting the branch that
+defeats it, and invented "siblings" convict themselves at
+admission (only valid enforcement artifacts count).
+
+Over that DAG the claimed prefix MUST be — word for word the
+forked-materialization form — **the maximal causally closed
+sub-DAG of accepted entries containing no member of any
+enforcement-sibling pair of the full conflict DAG and no
+descendant of such a member** (the pairs are judged over the
+whole conflict DAG, never over the candidate sub-DAG — a lone
+branch tip is not "pair-free"): for P → {T₁, T₂}
+exactly P results, never a branch tip (a root's own closure
+cannot see its sibling — that is why the conflict DAG, not the
+root closure, is the domain). Root, the **complete** conflict artifact set (after
+verifier-side supplementation the exchange re-runs on the union —
+both sides converge on one set), and the resulting prefix
+frontier are bound in one digest inside the claim. An older prefix never suffices: under an
+undisputed removal the conflict DAG contains the removal, so a
+removed member is no member of any claimable prefix for any later
+root (the time-machine stays closed), while for a genuinely
+disputed sibling the prefix ends below the fork and the
+counter-vector stands (B holds P → T₁ removing A, A holds
+P → {T₁, T₂} and claims P for root T₂; B accepts and receives
+T₂).
+
+**The
+handshake is one atomic bundle:** claim, evidence request, and
+whatever claim closure the verifier lacks travel together and are
+verified as a whole; **no session standing of any kind exists
+before the whole bundle verifies** — a verifier missing closure
+verifies it from the bundle, never grants first and checks
+later.
+
+The session carries exactly one request type, the
+**evidence request**, with a **total response function**
+`evidenceResponse(root)`: for a disputed transition — both
+siblings; for a disposed operation — the operation and the
+removal that disposes it; for a target digest —
+**branched by source class, each with its own scope** (a replica
+target attests `admitted` scope and has neither chain nor
+generation: its response is the current in-session span, root
+and baseline of the same session, the baseline partition total: `null` →
+the full root-session span back to seq 1; a known same-session
+**ancestor** of the root → the span down to it; everything else —
+a foreign or unknown session, and equally a known same-session
+**non-ancestor** — the named variant
+`foreign-session-baseline | non-ancestor-baseline`, answered
+with the full root-session span; a service target
+attests `stored` scope); for a service chain the target chain
+from the named target back to `lastKnownTargetDigest` (`digest | null`; null → back to the
+chain's `seq = 1`; a non-ancestor or foreign-generation digest →
+the closed error variant `unknown-baseline`, answered with the
+full chain of the current generation; a chain restart inside the
+span → the chain back to the restart marker, which carries its
+own continuity statement) — **and, for a service chain, the full registration artifact of
+every generation a returned target commits to** — deduplicated,
+ordered by `registrationGeneration`, **each g+1 registration
+accompanied by its authorization-root view plus the recursive
+view-dependency closure down to evidence the verifier already
+verified holds (7.3 — standing requires the verifier's own
+session anchor and the `previousRegistration` chain into it;
+without that anchor the bundle is `invalid-bundle`)** (a held skeleton entry, the anchor, or the
+seq-0 root — a sole-tip artifact alone suffices only where its
+parent chain is already held verified; without the closure,
+effective `m` and signer membership are uncheckable and the
+registration is no verification root). A service MUST retain, or
+reproducibly serve, this closure for as long as it holds targets
+of the generation; where it conformantly cannot, the closed
+variant is `missing-registration-authorization-evidence` — never
+a silently unverifiable root. This class is part of the response
+closure inventory and counts against its bounds (a digest is a commitment,
+not a verification root, and historical targets verify against
+*their* generation, not the serving one; "current" governs
+serving standing only). Each received registration MUST match
+the returned targets' core digests and signature chain; a
+response that cannot supply a committed generation is the closed
+outcome `missing-registration-core` — which is why a service
+MUST retain the full registration artifact of every generation
+whose targets it still holds (7.3). In every authority variant the
+response closure is **the union of the authority ancestor
+closures of every returned artifact** — the sibling and the
+disposing removal bring their own branch-specific authority
+chains (a verifier cannot accept a conflict artifact whose
+authorization path it cannot check).
+
+**The four artifacts are
+closed and versioned** — `rltp-access-evidence-claim/1`,
+`rltp-access-evidence-request/1`,
+`rltp-access-evidence-response/1`,
+`rltp-access-evidence-supplement/1` — and share **one and only
+one** signature
+input form — every earlier or shorter claim form is withdrawn —
+the JCS serialization of `{ "v", "genesisDigest",
+"session", "challenge", "initiator", "responder", "rootKind":
+"transition" | "disposition" | "target", "evidenceRoot",
+"prefixFrontier", "body" }` with `sig` omitted, signed by the
+issuing side's session principal (`initiator` and `responder`
+are both always present and bound in all four — the supplement
+included, same issuer rules; the claim's
+`body` carries the complete conflict-set digest and — where a
+supplement preceded — the supplement's snapshot digest, the
+request's the variant parameters — for targets
+`lastKnownTargetDigest: digest | null` and, where registration
+closures are expected, the view cursor
+`lastKnownAuthorizationViewDigest: digest | null` (total: a held
+ancestor view → only the missing suffix is served; unknown or
+non-ancestor → the closed variant `unknown-view-cursor`, answered
+with the closure from the seq-0 root or the last shared anchor) —
+and the response's the artifact-list digest; the `conflict-supplement` uses the same
+form with its own `rootKind`-bound `body`).
+
+**The transcript
+profile (total):** a bundle carries at most 256 artifacts (the
+closureBound pattern of 7.3); a longer exchange continues under
+one transcript of parts numbered **1..n**: every part envelope
+is `{ "v": "rltp-access-evidence-part/1", "transcriptId",
+"part", "prevPartDigest" (null iff part = 1), "artifacts",
+"final" (true on the last part only), "count" (the total number
+of parts, final part only), "transcriptDigest" (final part
+only), "sig" }`. **`partDigest`** = the multihash over the JCS
+serialization of the part envelope with `sig` omitted **and —
+on the final part — `transcriptDigest` omitted** (the named
+exception that avoids hash recursion); `transcriptDigest` = the
+multihash over the JCS array of all part digests in order
+1..n; the signature covers the full envelope,
+`transcriptDigest` included. **No standing of any kind exists
+until the final part's transcript digest verifies over the
+complete sequence** — truncation, reordering, duplication, and
+a false final all leave the exchange standing-less (vectors,
+§14).
+
+**Closure progress is monotone across transcripts:** view
+artifacts fully verified inside a transcript are admitted into
+the verifier's ordinary view-evidence DAG (obligation 5, under
+its own quotas and compaction) whatever the transcript's outcome
+— evidence *standing* is withheld, view *knowledge* is never
+discarded, so each retry roots in a farther verified anchor and
+an over-cap closure shrinks monotonically instead of saturating
+forever (the shallow-deepening rule).
+
+These are session-plane forms, normative as JCS
+field sets; their schema shipment follows the first adapter
+registration (the Replication RO-3 pattern), and Section 11
+names them as the profile's session-plane forms. Nothing outside
+`evidenceResponse(root)` is ever served — no unqualified frontier difference, no authority
+standing, no general content read or write, no eviction effect.
+The ordinary current-head session rule stands for everything
+else.
+Every receiver runs its own admission and reaches the same
+disposition, and nothing about the transport asserts canonicality
+or triggers effect. This is what
+commit-before-forward (5.3) does **not** restrict — it gates
+forwarding-as-authority, not the travel of proof; without this
+rule the forked state could never reach the replicas that need to
+fail closed, and divergence would be silent (the replication
+contract's send set runs on exactly this admitted closure).
+
 **Post-merge validation.** After folding concurrent branches the
 materializer MUST validate the merged state:
 
@@ -637,10 +997,9 @@ materializer MUST validate the merged state:
   different subjects, each valid at 4095 members, union to 4097.
   This document does **not** repair that at the merge — not with
   an arbitration, not with a cap. Capacity is not a
-  who-question, and successive castings have shown that **every**
+  who-question, and **every**
   merge rule that decides which valid admission takes effect —
-  displacement, a queue, a lapse, or the sixteenth casting's
-  fold-order cap — inherits the same two defects: it hands an
+  displacement, a queue, a lapse, or a fold-order cap — inherits the same two defects: it hands an
   envelope-grinding rival influence over *who* belongs in any
   mixed (honest plus Sybil) flood, and it makes canonicality of
   a delivered admission revisable by later merges, which both
@@ -682,16 +1041,14 @@ materializer MUST validate the merged state:
   mechanized because every mechanism examined was worse than
   the state it prevented.
 
-**Merge-finality (the cascade is gone).** Earlier castings
-carried a suppression cascade that re-validated descendants of
-operations a merge had rendered ineffective. Round 14 proved
-what that machinery costs: it is itself a merge rule that
-revises membership — an admission valid under a same-base
-`policy.change` that lost an id-grindable fold race was revoked
-after its welcome was conformantly delivered, the exact
-two-evaluations defect this section rejects for capacity. The
-eighteenth casting removes the cascade's **causes** instead of
-scoping it: `policy.change` is an enforcement operation (4.5),
+**Merge-finality (no suppression cascade).** A suppression
+cascade that re-validates descendants of operations a merge has
+rendered ineffective is itself a merge rule that revises
+membership — an admission valid under a same-base `policy.change`
+that lost an id-grindable fold race would be revoked after its
+welcome was conformantly delivered, the exact two-evaluations
+defect this section rejects for capacity. This document removes
+the cascade's **causes** instead of scoping it: `policy.change` is an enforcement operation (4.5),
 so a concurrent constitutional claim is a sibling epoch —
 forked state, never a raced loser — and the post-merge
 anti-deadlock reversal is gone with it. One shrinkage channel
@@ -716,7 +1073,7 @@ enforcement-prevails matrix pairings (`member.add` ∥
 subject: an **authorized removal** prevailing over a concurrent
 additive claim about the same subject is the enforcement class
 doing its job on a genuine member of its ancestry, never a
-tie-break — round 15's parked-remove construction lands here,
+tie-break — the parked-remove construction lands here,
 as an ordinary removal, because same-subject admission
 concurrency voids nothing, 5.3) — plus 5.4's
 terminality-by-emptiness verdict, which is a property of the
@@ -800,20 +1157,33 @@ types are unsatisfiable (degradation direction, Section 11).
 - **`threshold`** — `{ "type": "threshold", "k": n }`: signatures
   of `k` distinct identities in the policy currency, `k ≥ 1`,
   evaluated at the operation's declared position.
-- **`encounter`** — `{ "type": "encounter", "count": n }`:
-  satisfied when the operation's **subject** proves encounter
-  edges to `n` distinct identities in the policy currency. An edge
-  counts iff the subject presents an encounter credential **issued
-  by that member about the subject** (incoming evidence, Encounter
-  4.2); grades do not exist at Layer 2 and are not invented here.
-  Proof form: `encounter-presentation` (4.3). Verifiers MUST
-  evaluate presented credentials only; no registry resolution.
-  **Subject-bound:** an encounter rule (also inside a composition)
+- **`vouch`** — `{ "type": "vouch", "count": n }` with `n` an
+  integer, `1 ≤ n ≤ 16` (the transported variant proof's
+  credential cap, 5.3 — a rule demanding more vouches than any
+  admission can carry is structurally invalid, 4.4): satisfied
+  when the operation's **subject** presents vouches from `n`
+  distinct identities in the policy currency. A vouch counts iff the
+  subject presents a `vouch@2` artifact (5.3 — a conformant **DTG
+  EndorsementCredential**) **issued by that
+  member about the subject** — the deliberate human act "I vouch
+  for this admission", made cryptographic; it is deliberately not
+  an Encounter credential, whose issuer and subject are fresh
+  pair anchors by construction (Encounter §4.4) and can never
+  meet this rule. Proof form: `encounter-presentation` (4.3 — the
+  wire constant keeps its registered 0.24 spelling; a naming
+  residue carried honestly, since no verification step branches
+  on the label). Verifiers MUST evaluate presented vouches only;
+  no registry resolution.
+  **Subject-bound:** a vouch rule (also inside a composition)
   is assignable only to rule keys whose operations have a defined
   subject distinct from the proof's signers — in this catalog,
-  exactly `member.add`. A `policy.change` introducing an encounter
+  exactly `member.add`. A `policy.change` introducing a vouch
   rule elsewhere is structurally invalid (4.4).
-  *(Minimal-disclosure presentation: OI-5.)*
+  *(A cryptographic encounter grounding of the vouch — proving
+  a real met edge without naming pair anchors — is the
+  zero-knowledge future of the forward-compatibility rule; it
+  enters as a mechanism registration, never a recast.
+  Minimal-disclosure presentation: OI-5.)*
 
 Rules MAY be composed: `{ "type": "all", "of": [rule…] }` and
 `{ "type": "any", "of": [rule…] }` with the obvious semantics;
@@ -830,31 +1200,41 @@ rule.
 **Evaluation reads sets, never labels.** A proof's material is
 two sets — the **signer set** (from `proof.signatures`, each
 signature over the envelope serialization, 3.3) and the
-**admissible credential set** (from `proof.credentials`) — and
+**admissible vouch set** (from `proof.credentials` — the wire
+member keeps its 0.24 name; it carries `vouch@2` artifacts) — and
 rule satisfaction is a function of these sets alone (4.4's proof
-space is exactly this pair). A credential is **admissible** iff
-it validates per Encounter §7 **and** its `credentialSubject.id`
-(Encounter §7.2) equals the operation's `body.subject` **and**
-the operation's rule key can carry an encounter rule at all
-(4.2's subject binding — in this catalog exactly `member.add`;
-a `member.remove` also has a `body.subject`, but its rules can
-never contain an encounter rule, so no credential is admissible
-on it). Inadmissible credentials are ignored for satisfaction
-and never merge (3.3). The component checks per rule type:
+space is exactly this pair). A vouch is **admissible** iff it
+validates as `vouch@2` (5.3) — its DataIntegrityProof verifies
+under `issuer` (W3C DI-EDDSA, the Encounter-2.3 profile), `issuer`
+is of the policy currency at the operation's
+declared position, `credentialSubject.id` equals the operation's
+`body.subject`, `credentialSubject.endorsement.accept` equals the
+document digest of the
+operation's enclosed `admission.accept` (the intent binding —
+5.3; digest equality over decoded multihash bytes, Encounter
+2.3), and `credentialSubject.endorsement.genesisDigest` is this
+group's identity
+(3.2) — **and** the operation's rule key can carry a vouch rule
+at all (4.2's subject binding — in this catalog exactly
+`member.add`; a `member.remove` also has a `body.subject`, but
+its rules can never contain a vouch rule, so no vouch is
+admissible on it). Inadmissible vouches are ignored for
+satisfaction and never merge (3.3). The component checks per rule
+type:
 
 - for signature components: signer qualification under the
   applicable rule at the operation's declared position,
   signature validity, distinctness, arity;
-- for encounter components: admissibility as above, issuer
-  currency and distinctness, count — plus the **subject's own
-  signature over the envelope** in the signer set, which is what
-  binds the immutable credentials to exactly this operation (no
-  freshness is claimed or needed).
+- for vouch components: admissibility as above, voucher
+  distinctness, count — plus the **subject's own signature over
+  the envelope** in the signer set, which is what binds the
+  immutable vouches to exactly this operation (no freshness is
+  claimed or needed).
 
 **`mechanism` is a shape descriptor, not an input.** On the wire
 each envelope's proof declares the shape it carries —
 `signature-set` (signatures only), `encounter-presentation`
-(credentials plus the subject's envelope signature), `composite`
+(the vouch set plus the subject's envelope signature), `composite`
 (both, for composed rules) — and the shipped schema checks
 shape-consistency (a `signature-set` proof carries no
 `credentials`). No verification step branches on the label; a
@@ -865,13 +1245,16 @@ transport, the replica emits the merged material under the
 derived label of 3.3 (one derivation, everywhere) — always
 schema-consistent by construction. Future mechanisms (e.g. a
 FROST threshold signature, OI-2) register new shape descriptors
-satisfying the same contract: material in, sets out.
+satisfying the same contract: material in, sets out — a
+zero-knowledge membership or linkage proof of the DTGWG line
+enters the same way, as a registration, never a recast (the
+forward-compatibility rule of the M-DID loop).
 
 ### 4.4 The policy algebra
 
 **The proof space.** A **proof situation** over an evaluation
 state *S* is a pair *(A, P)*: *A* a set of signers, *P* a
-presentation — a set of (issuer, credential) edges about the
+presentation — a set of (voucher, vouch) edges about the
 operation's subject (empty where the operation has none). All
 satisfaction sets live in this one product space:
 
@@ -881,7 +1264,7 @@ satisfaction sets live in this one product space:
   policy currency }
 - `Sat(actors A₀, k)` = { (A, P) : A contains ≥ k distinct of the
   policy currency listed in A₀ }
-- `Sat(encounter n)` = { (A, P) : P proves edges from ≥ n distinct
+- `Sat(vouch n)` = { (A, P) : P proves vouches from ≥ n distinct
   of the policy currency, and A contains the subject }
 - `Sat(all[…])` = intersection; `Sat(any[…])` = union — ordinary
   set operations, well-defined because every set is a set of
@@ -896,8 +1279,8 @@ procedure reproduces (and the vector suite tests):
 `actors({a,b}, 2) ≥ actors({a}, 1)`, and
 `all[actors({a},1), actors({b},1)] ≥ threshold(2)` where a, b are
 in the policy currency. For an operation without a subject, every
-encounter set is empty, hence maximal under ⊆ — one more reason
-encounter rules are subject-bound (4.2).
+vouch set is empty, hence maximal under ⊆ — one more reason
+vouch rules are subject-bound (4.2).
 
 **`strongest`** is a meta-rule valid only inside a policy. Its
 resolution, per operation: (1) discard **all** meta-rules from the
@@ -920,8 +1303,8 @@ components conjoined still demand thousands of signatures.
 Define, recursively, the **satisfaction cost** of a rule as a
 pair (signatures, credentials): `any-member` → (1, 0);
 `threshold k` → (k, 0); `actors A, k` → (k, 0);
-`encounter n` → (1, n) (the subject's envelope signature plus
-n credentials); `all[…]` → the componentwise **sum**;
+`vouch n` → (1, n) (the subject's envelope signature plus
+n vouches); `all[…]` → the componentwise **sum**;
 `any[…]` → the componentwise **maximum** — deliberately not the
 minimum, which round 14 refuted: a cheap branch's minimum says
 nothing in a state where only the expensive branch is
@@ -945,7 +1328,7 @@ replica and carry no such cap) and
 **satisfiable**: every rule, after meta-resolution, against the
 post-operation policy currency — `threshold(k)` requires
 `k ≤ |currency|`, `actors(A,k)` requires `|A ∩ currency| ≥ k`,
-`encounter(n)` requires `n ≤ |currency|` excluding a candidate
+`vouch(n)` requires `n ≤ |currency|` excluding a candidate
 subject — **and, for the rule assigned to (or resolving under
 `strongest` for) the `policy.change` rule key, two constitution
 guards: (1) it MUST NOT contain an `actors` component, at any
@@ -1022,20 +1405,49 @@ change together or not at all — the atomicity the port enforces
 
 ### 5.1 Identity
 
-Members are anchors — main DIDs of the Identity layer; the native
-profile is `did:key` with mnemonic recovery. Device-level signing
-is an Identity-layer concern. *(Method agnosticism and identity
-scoping: OI-7.)*
+Members are anchors — and **a member's anchor is a per-group
+context anchor (its M-DID), never a cross-group coordinate**. The
+native profile is `did:key` with mnemonic recovery; device-level
+signing is an Identity-layer concern. Normative is the **scoping
+property**: a member anchor MUST be an anchor created for exactly
+this group and MUST NOT be used in any other context, group, or
+relationship. Two register rows of Identity §6 supply it: a
+**joiner** derives the `group/<genesis digest>` context — the
+invite carries the genesis digest (Membership §3.1), so the anchor
+exists before admission. **The digest-to-label transition is
+canonical:** a received genesis digest may arrive in either
+accepted encoding (Encounter 2.3, `u`/`z`); before forming the
+`group/<digest>` label, the validated digest MUST be re-encoded to
+its canonical `u` form **for the derivation only** — Identity §6
+accepts exactly that form, and the same multihash yields the same
+member anchor whichever rendering carried it. The signed artifact
+is never rewritten (the comparison-versus-bytes separation of
+Encounter 2.3, applied to derivation). This is the member-anchor
+counterpart of the service-identity rule, which already
+canonicalizes its digest the same way (Identity §7); the **founder**, for whom that context
+cannot exist before the genesis digest does, mints a fresh
+dedicated context of the nonce-based pair class for the founding
+act (3.4.1). The member's **self anchor (S-DID)** appears in no
+artifact of this layer except inside `member-mapping@1` (5.5):
+joining discloses a group-scoped identifier to the roster, never
+the coordinate that links a person across groups — crossing that
+boundary is the deliberate act of 5.5. *(Method agnosticism and
+identity scoping: OI-7; the DTGWG-aligned class names R/M/P/S-DID
+follow the network-visibility layer §2.)*
 
 ### 5.2 Derived service identities
 
 - For every service interaction an actor MUST use a **derived
   service identity** and MUST NOT present its main anchor to a
-  service. The native derivation: an Ed25519 key derived from the
-  actor's recovery seed via HKDF with info
-  `rltp/v1/service-identity/<genesis digest>` — deterministic,
-  per-group, re-derivable after total device loss (nothing
-  authority-bearing lives only on a device).
+  service. The native derivation is **Identity §7's, incorporated
+  byte-exactly, never paraphrased**: an Ed25519 key from
+  HKDF-SHA-256(IKM = the root IKM of Identity §4 (the 64-byte
+  BIP-39 seed), salt = empty, info = the UTF-8 bytes of
+  `rltp/v1/service-identity/` followed by the genesis digest in
+  canonical `u` form (3.2), L = 32) — deterministic, per-group,
+  re-derivable after total device loss (nothing authority-bearing
+  lives only on a device); any divergence between this sentence
+  and Identity §§4/7 is a defect here, and Identity governs.
 - The binding member ↔ derived identity lives **inside the
   encrypted log**: the founder's identity in the genesis body,
   every other member's via `service-identity.announce` — additive,
@@ -1057,7 +1469,11 @@ scoping: OI-7.)*
   compromise rides the `epoch.rotate` that such a compromise
   warrants anyway. Toward
   services the derived identities appear bare; the mapping to
-  anchors never leaves the log.
+  anchors never leaves the log. *(A future unification of this
+  derivation with the Identity registry's label classes is
+  recorded as a debt — deliberately not taken while Identity 0.11
+  is converged; the derivation above is self-contained and
+  deployed nowhere.)*
 
 ### 5.3 Admission and removal
 
@@ -1069,7 +1485,8 @@ defined there.
 
 An admitting `member.add`'s body carries:
 
-- `subject` — the admitted anchor;
+- `subject` — the admitted **member anchor** (the subject's
+  `group/<genesis digest>` context, 5.1);
 - `admission` — the full consent evidence:
   `{ "invite": <complete membership-invite document>,
      "accept": <complete membership-accept document>,
@@ -1118,6 +1535,60 @@ travels in purpose-built compact artifacts (key material via
 `key-delivery`, 10.1; the removal notice as the compact profile
 of 10.2).
 
+**The vouch (`vouch@2`) and the candidacy — the vouch path's
+flow:** where the `member.add` rule contains a vouch component,
+its inputs are **DTG EndorsementCredentials** (WD01) with this
+layer's `AdmissionVouch` endorsement vocabulary — the community-
+defined structure WD01 delegates to us. A vouch is one closed VC:
+
+`{ "@context": ["https://www.w3.org/ns/credentials/v2",
+"https://firstperson.network/credentials/dtg/v1",
+"https://real-life.org/rltp/v1"], "type": ["VerifiableCredential",
+"DTGCredential", "EndorsementCredential", "AdmissionVouch"],
+"issuer": <the vouching member's anchor>, "validFrom":
+<RFC 3339 UTC Z>, "credentialSubject": { "id": <the candidate's
+member anchor>, "endorsement": { "type": "AdmissionVouch",
+"genesisDigest": <the group's identity, 3.2>, "accept": <document
+digest of the membership-accept this vouch supports — the
+voucher's intent is bound to exactly one consented candidacy, so
+a later re-admission of the same anchor needs fresh consent AND
+fresh vouches; no standing vouch exists>, "provenance": "met" |
+"introduced" } }, "proof": <DataIntegrityProof eddsa-jcs-2022
+under `issuer`, incl. the mandatory proof-`@context` copy —
+Encounter 2.3's profile> }`
+
+`AdmissionVouch` is the WD01 non-authoritative hint type beside
+the concrete `EndorsementCredential` subtype (the PHC pattern);
+`validUntil` is absent — the accept binding, not a clock, ends a
+vouch's usability (schema `schemas/access-vouch.schema.json`;
+admissibility is 4.3's). `provenance` is **self-asserted by the voucher** — an
+honest input to the humans a policy puts in charge, never a
+verified claim: the verified chain fact stays holder-local
+(Visibility §8.6). Vouches are issued **about the candidate's
+member anchor** — a disclosure the candidate consents to in
+asking for the vouch — so the log learns the member anchor and
+nothing else; they travel to whoever assembles the admission over
+existing channels (the evidence relay of Membership §3.4 MAY
+carry them alongside the pair), and enclosed vouches count
+against the transported variant proof's caps (5.3: within the 16
+per admission, at most 2048 bytes JCS each). *(Naming seam,
+recorded: a vouch is the narrowest case of the architecture
+map's identified attestation surface — fixed semantics, one
+audience, this group's log; when the presentable attestation
+layer is designed, `vouch@2` can be re-told as its profile. It
+is deliberately usable before that layer exists.)* The flow — a
+*trust ceremony* in the DTGWG sense — inverts the roster lookup:
+the candidate never needs to know who is a member. The inviter
+surfaces the **candidacy** (the consent pair and the candidate's
+display profile at its member anchor) into the group space as
+Layer-4 content (Membership §3.4's evidence made visible;
+authority remains solely this section's materialization), and
+members act on it themselves: vouch over an existing relationship
+channel, meet first and then vouch, or introduce the candidate to
+further members (Visibility §8). A group wanting a non-vouch
+fallback writes it into its policy as `any[vouch(n), …]` — a
+constitutional option, deliberately not the default.
+
 **Materialization accepts an admitting `member.add` only if, at
 its causal position:**
 
@@ -1137,23 +1608,47 @@ its causal position:**
    so rather than pretending causal ordering against wall-clock
    documents, 12);
 1. both enclosed documents validate against their schemas and
-   their proofs verify — the invite under `invite.inviter`, the
-   accept under `accept.subject`;
-2. all cross-bindings hold: `accept.ref` = document digest of the
-   enclosed invite; `accept.subject` = `invite.invitee` =
-   `body.subject`; `accept.group` = `invite.group` =
+   their proofs verify — the invite credential's
+   DataIntegrityProof under its `issuer`, the
+   accept under `accept.subject`. *Path convention for rules 1–4
+   (Membership 3.4): `invite` names the enclosed invite
+   **credential** — the `payload.invite` of the enclosed invite
+   document — and the enclosing delivery document is always named
+   explicitly; `accept` names the enclosed accept document's
+   payload object. The invite document's own `id`, `issuedAt`, and
+   `ceremony` are unauthenticated wrapper metadata and carry no
+   authority (Membership Section 2; a present `ceremony.enactment`
+   must still recompute, Delivery §3 — validity, not authority)*;
+2. all cross-bindings hold: `accept.ref` = the **credential
+   digest** of the
+   enclosed invite (the multibase multihash over the JCS of the
+   complete `payload.invite` including its proof — Membership
+   Section 2: consent binds to the credential, so byte-different
+   wrappers around the same credential are one invitation; digest
+   equality over decoded multihash bytes, Encounter 2.3);
+   `accept.subject` =
+   `invite.credentialSubject.id` =
+   `body.subject`; `accept.group` =
+   `invite.credentialSubject.group` =
    `operation.group` and the invite's `genesisDigest` = this
-   group's genesis digest (3.2); `invite.inviter` = the enclosed
-   invite's `issuer`; card ownership per Membership 3.1/3.2; the
-   enclosed invite's `recipient` = `invite.invitee`; the enclosed
-   accept's `recipient` = the enclosed invite's `issuer`; both
-   documents share the invite's `threadId`; `invite.validUntil` ≥
-   the invite's `issuedAt`;
-3. the time window holds: the accept's `issuedAt` and
+   group's genesis digest (3.2); the invite credential's `issuer`
+   = the enclosing
+   invite document's `issuer`; card ownership per Membership
+   3.1/3.2; the
+   enclosed invite document's `recipient` =
+   `invite.credentialSubject.id`; the enclosed
+   accept's `recipient` = the invite's `issuer`; both enclosed
+   documents share the enclosed invite document's `threadId` (= the
+   invite's
+   `taskContext`); `invite.validUntil` ≥
+   the invite's `validFrom`;
+3. the time window holds: the enclosed accept document's
+   `issuedAt` and its
    `proof.created` ≤ `invite.validUntil` + `membership-skew` (an
    honest-clock bound; the effective gate on stale consent is the
    human admission decision);
-4. `invite.inviter` is authorized to invite at the operation's
+4. the invite's `issuer` is authorized to invite at the
+   operation's
    causal position, per the applicable `member.add` rule;
 5. **consumption and arbitration, merge-stable.** *Causal step —
    same accept only:* a
@@ -1219,8 +1714,9 @@ founder: the genesis card) for as long as they are members. On
 receiving a request, a member holding the current epoch keys MUST
 first evaluate **entitlement at its own current materialized
 state**: the requesting anchor is a member there, and the named
-operation is **a canonical admission of that anchor** (any of
-them serves — no admission is distinguished, 5.3) whose
+operation is **a canonical admission of that anchor — or, for
+the founder, the genesis** (any of them serves — no admission is
+distinguished, 5.3) whose
 membership has not since ended — a
 request from an anchor whose membership has been overtaken by
 a removal or a discharged exit MUST be refused; a former member's
@@ -1304,6 +1800,16 @@ has. Authority operations after that commit MUST NOT be
 replicated to them. And so that a lagging replica cannot leak
 around its own lag: **commit-before-forward** — a replica MUST
 NOT forward an operation it has not itself canonically applied.
+(**Scope, precisely:** this gates forwarding as authority — the
+ordinary replication of canonically applied operations. It does
+not gate the **evidence transport** of 3.6: admitted entries that
+cannot be canonically applied — fork siblings, their descendants,
+operations under the removal disposition — travel as non-effecting
+evidence exactly so that every replica reaches the same
+fail-closed judgment; a replica MUST NOT withhold them from the
+evidence-authorized peers of 3.6 — the membership of the maximal
+unforked prefix — and the eviction rule above is untouched: to the
+removed peer, nothing, evidence included.)
 Application is ancestor-first (7.1), so a batch containing a
 removal and its descendants is materialized — eviction included —
 before any of those descendants moves on; the window in which a
@@ -1429,6 +1935,80 @@ pending.
   view per 7.3. Disposition of documents follows the Layer-4
   `dataPolicy` declared at attach time.
 
+### 5.5 `member-mapping@1` — the deliberate crossing of the group boundary
+
+Joining under a member anchor makes co-membership pseudonymous;
+this artifact is the **one** way the pseudonym is lifted — per
+co-member, deniably. It follows the network-visibility layer's
+class-V discipline (its §3: a link between two contexts of one
+person is designated-verifier, never transferable) and its §6
+construction, with the anchor classes swapped.
+
+Body: `{ "type": "member-mapping@1", "member": <the sender's own
+member anchor in this group>, "memberOp": <oid: of a canonical
+admission of `member` — or the genesis, where `member` is the
+founder>, "self": <the sender's S-DID>, "to": <the addressee's
+member anchor in the same group>, "toOp": <oid: of a canonical
+admission of `to` — or the genesis>, "card": <a self-card@1 per
+Visibility §6.2>, "revision": <int-string>, "issuedAt":
+<timestamp> }`, wire conventions per Visibility §2.1. The two
+`oid:` references make the key choice deterministic: several
+canonical admissions of one anchor may enclose different cards
+(5.3 distinguishes none), so the mapping **names** the admission
+whose card supplies each side's key-agreement key.
+Proof: `mac1` under `HKDF(ECDH(memberX_sender, memberX_addressee),
+"rltp/access/mac/member-map1")` and `mac2` under
+`HKDF(ECDH(selfX_sender, memberX_addressee),
+"rltp/access/mac/member-map2")`, both over the canonical body
+bytes. The key-agreement keys are exactly those of the cards
+enclosed in the operations `memberOp` and `toOp` name (the
+genesis card for a founder side).
+
+The addressee MUST accept only if, in order: (1) envelope and
+schema valid, `type` implemented; (2) `to` equals the addressee's
+own member anchor of this group, and `toOp` names a canonical
+admission whose subject is `to` — or the genesis whose
+`body.members[0]` is `to` — and whose enclosed card is the
+addressee's own; (3) `memberOp` names a canonical admission whose subject is
+`member` — or the genesis, **whose `body.members[0]` is
+`member`** — in this group's log, **and `member`
+is a current member of the addressee's materialized state** (a
+former member's mapping offer is refused, exactly as their key
+requests are, 5.3); (4) the card verifies as `self-card@1` under
+its own anchor and `card.anchor == self`; (5) `mac1`'s keys are
+the key-agreement keys of the cards named by `memberOp` and
+`toOp`, and `mac2`'s addressee-side key is the `toOp` card's;
+(6) both ECDH outputs are non-zero and both MACs verify;
+(7) `revision` per the generic revision rule of Visibility §6.4,
+**scoped per (member, to)** — the scope this document registers
+for its own revisioned type (higher wins; equal and
+JCS-identical idempotent; equal and different an equivocation
+error; lower rejected). With
+these in place, foreign self anchors are unclaimable, the
+addressee can forge the whole artifact (deniability preserved),
+and third parties — co-members included — can verify nothing.
+
+**Carrier and audience:** the mapping travels on the **existing
+relationship channel** between discloser and addressee — the
+trust act presupposes one — registered as a Delivery task
+(Delivery §4); it MUST NOT be published into the group space: a
+group-space carrier would leak the disclosure edge itself as
+group-visible metadata. The UI surface is the **Trust** act. On
+verification, the addressee merges holder-locally per Visibility
+§6a.1's convergence net — roster entry and contact become one
+person locally; nothing changes on any wire.
+
+**Mechanism registration (forward compatibility):** the proof
+above is the `dv-double-dh` mechanism — the first registered
+mechanism of this artifact class. Future mechanisms — a
+zero-knowledge linkage proof of the DTGWG line foremost — enter
+as new registrations under a new version of this type, under the
+same acceptance contract (material in, verified link out), never
+as a recast of the consumers. Schema:
+`schemas/member-mapping.schema.json`
+(`rltp-access-member-mapping/0.24` — the one new shape this
+casting adds to the 0.24 family).
+
 ## 6. Actions and the Implicit Capability
 
 Three actions are defined — **`relay`**, **`read`**, **`write`** —
@@ -1503,7 +2083,8 @@ The body section `transition` contains:
   makes its own** (Membership §4): (1) HKDF info
   **`rltp/v1/keydist`**; (2) non-empty AAD — **the UTF-8 bytes of
   the JCS serialization of**
-  `{ "genesis": <the group identity string>, "newEpoch": <integer>,
+  `{ "genesis": <the group identity string, canonical `u` — 3.2>,
+  "newEpoch": <integer>,
   "recipient": <anchor DID string> }`; (3) the plaintext is not a
   delivery document but the **keydist object**
   `{ "v": "rltp-access-keydist/0.24", "adapter": "<registered id>",
@@ -1523,7 +2104,8 @@ The body section `transition` contains:
 - `lineage`: an object `{ "opens": <epoch number>, "ct": … }` —
   the content key of epoch `opens`, AEAD-encrypted under the new
   epoch's content key with AAD = the UTF-8 bytes of the JCS
-  serialization of `{ "genesis": <the group identity string>,
+  serialization of `{ "genesis": <the group identity string,
+  canonical `u` — 3.2>,
   "newEpoch": <integer>, "opens": <integer> }`, **the ciphertext
   embedded** (one key — small; embedding removes any availability
   question). **Present by default, with `opens` = the previous
@@ -1714,11 +2296,26 @@ Services learn a group's authorization state only through
 - **Registration (bootstrap).** At first contact a group
   presents a **registration** — a versioned wire artifact
   (`schemas/access-registration.schema.json`):
-  `{ "v": "rltp-access-registration/0.24",
+  `{ "v": "rltp-access-registration/0.26",
   "type": "service-registration", "group", "genesisDigest",
   "identity", "service", "m": 1, "stalenessBound",
-  "terminalRetention",
-  "divergenceQuota", "sig" }`. `identity` is the seq-0 derived
+  "terminalRetention", "divergenceQuota",
+  "attestationKey", "registrationGeneration",
+  "previousRegistration", "authorizationRoot", "sig" }`. Four
+  fields carry the generation machinery: `attestationKey` is
+  the service's **target-attestation key** (the key under which
+  this service signs convergence targets, Replication Contract §4
+  — the group binds it here so no out-of-band assertion ever
+  substitutes); `registrationGeneration` is an integer ≥ 1;
+  `previousRegistration` is the superseded registration's
+  **`registrationCoreDigest`** (its identity for every chain
+  purpose — defined under the generation rule below), or null iff
+  the generation is 1; `authorizationRoot` is the signature-input
+  digest of the sole-tip view this registration was authorized
+  against (null iff the generation is 1) — **bound inside the
+  registrationCoreDigest and the quorum's signed input**, so the
+  root a quorum authorized against can never be substituted (the
+  signed object binds its checkpoint — the CT rule). `identity` is the seq-0 derived
   service identity: `sig` MUST verify under it over the JCS
   serialization with `sig` omitted, and the seq-0 view MUST be
   signed by exactly it — the chain's root signer is a named
@@ -1740,11 +2337,155 @@ Services learn a group's authorization state only through
   use the profile subset below; the
   quota is an integer in **[16, 4096]**. A value outside its
   range, a missing field, or a failing
-  signature makes the registration invalid. (Replay at the
-  *same* service after a terminal discard rebinds only the
-  group's own true chain, which the replayer cannot extend —
-  the TOFU residual already stated.) **Profile durations:**
-  `stalenessBound` and `terminalRetention` use exactly the
+  signature makes the registration invalid.
+
+  **Generations and
+  the service rebind:** a service's registration
+  state is a chain of generations. Generation 1 is the TOFU
+  bootstrap and is self-signed as above. Every registration with
+  `registrationGeneration` = g+1 MUST additionally carry
+  `authorization`: signatures by the **effective quorum of the
+  sole tip of the service's held view chain** (obligation 5(d)'s
+  value; signers ∈ that view's `identities`) — while the view DAG
+  holds more than one tip, a g+1 presentation waits, retriable,
+  until a reconciliation view (obligation 5) restores the sole
+  tip: no winner is ever picked for a rebind.
+
+  **The impossibility
+  exit (closed, exactly quantified):** reconciliation is
+  unconstructible iff `|⋂ identities(tips)| <
+  max effectiveM(tips)` (obligation 5(d) values over the held
+  tips). That condition alone never ends anything irreversibly —
+  later view extensions can restore the cut, and momentary local
+  absence of views proves nothing. The binding ends only through
+  a **quorum-authorized abandon**: a g+1 registration carrying
+  the OPTIONAL **`abandon` block** (generation > 1 only)
+  `{ "abandonedRoot": <the signature-input digest of the last
+  pre-divergence sole-tip view (the same digest form the view
+  skeleton holds)>, "abandonedTipsDigest": <the multihash over
+  the UTF-8 bytes of the JCS array of the abandoned tips'
+  signature-input digest strings, sorted by unsigned bytewise
+  order> }` — the block
+  is part of the registration core (and therefore of the
+  `registrationCoreDigest` and the quorum's signed input), and
+  its `authorization` is signed by the effective quorum of that
+  named pre-divergence root. **Only a registration whose core
+  contains the abandon block ends a divergence irreversibly; an
+  ordinary g+1 rebind signed beforehand is byte-distinct and is
+  never reinterpreted as an abandon.** Root and tip set MUST
+  verify exactly against the service's held view DAG;
+  **concurrent distinct abandons of one generation are a
+  registration equivocation** (fail-closed, both retained — the
+  named abandon counter-vector). The tombstone then
+  freezes the named root and a further g+1 presentation verifies
+  against exactly it. Where that quorum can
+  no longer sign, the honest outcome is a **new service
+  identifier** — waiting forever is not an outcome, and neither
+  is a service-local irreversible verdict (the same residual
+  class as whole-quorum removal). The quorum signs,
+  domain-separated, the **complete unsigned registration** — the
+  JCS serialization of the artifact with `sig` and
+  `authorization` omitted, `authorizationRoot` **included** — so
+  every security parameter (`stalenessBound`,
+  `terminalRetention`, `divergenceQuota`, `m` included) and the
+  authorization root itself are quorum-bound; the verifier's
+  closure check runs against exactly the named root, and a
+  registration whose closure proves a *different* root is
+  invalid; the identity of a
+  registration is its **`registrationCoreDigest`** = the multihash
+  over `JCS(registration with sig AND authorization omitted)` —
+  one digest for every purpose: generation identity, equivocation
+  judgment, `previousRegistration` linkage, and the tombstone.
+  Two artifacts of one generation whose core digests differ are a
+  **registration equivocation**: fail-closed, both retained as
+  evidence; proof bytes never create chain identity (signers are
+  distinct and sorted by unsigned bytewise order, a semantic
+  conformance check with vectors). The service verifies against its own
+  held view chain before superseding — the named
+  `authorizationRoot` MUST be its current sole tip — so a
+  stranger who merely knows the prior digest can never re-root
+  the chain.
+
+  **Standing needs acceptance evidence — and acceptance is
+  anchored in the present** (the CT freeze lesson: "newest" is not
+  a locally verifiable property, and no checkpoint a presenter
+  selects can prove its own maximality — witness rules, RO-8 of
+  the Replication Contract, are the only road to more): toward any
+  third party, a g+1 generation is a verification root only with
+  evidence the service accepted it, and a generation's acceptance
+  is provable exactly two ways — **(a) the live session** with the
+  exact-byte service, which attests the current generation, and
+  **(b) the successor chain into it**: every generation bound by
+  the `previousRegistration` core chain into a session-attested
+  generation is thereby proven accepted (the chain into the
+  present is the independent anchor). For the newest generation
+  there is no way but (a). Standing for any service-target root
+  exists only through the verifier's **own** exact-byte service
+  session, a generation attested inside it, and the full
+  `previousRegistration` chain from the root's generation into
+  that anchor — absent the anchor, **every** bundle is
+  `invalid-bundle`. **No acceptance artifact exists** — no
+  receipt, no statement: no artifact could prove its own
+  acceptance (the CT/MLS rule), and none is needed where the
+  chain into the present is the anchor.
+
+  **The acceptance commit is a linearizable compare-and-swap**
+  (the `update-ref` rule): registration acceptance, tombstone
+  advance, and the new target chain's initial state are **one
+  durable service commit**, and the expected prior generation,
+  `previousCore`, tombstone status, and sole tip MUST still hold
+  inside the commit, or nothing advances — two concurrently
+  pre-validated candidates yield one acceptance, never two
+  (parallel-acceptance vector, §14).
+
+  **The no-target window, named:** between the acceptance of g+1
+  and its first issued target, no artifact outside the service
+  proves the acceptance; a service SHOULD issue the first target
+  of a new generation promptly upon acceptance — from then on
+  the g+1 targets themselves (signed under the new key,
+  `registrationCore`-bound) are the transportable acceptance
+  evidence. A substituted never-accepted generation has no
+  successor binding and no session attestation, however valid
+  its closure looks (the view chain itself continues unbroken —
+  **only generation 1 has a seq-0 view; a g+1
+  registration restarts only the target chain**). A registration with
+  `registrationGeneration` = g+1 and `previousRegistration` =
+  the digest of the accepted generation-g registration, so
+  authorized, **supersedes** it — this is the group-authorized act that
+  re-binds a service whose attestation-key continuity ended
+  (state loss, key compromise, key loss; Replication Contract
+  §4.1): it carries the fresh `attestationKey`, and the target
+  chain it roots is a new chain whose standing begins here. A
+  registration whose generation is not exactly one above the
+  accepted one, or whose `previousRegistration` digest does not
+  match, is rejected; generations never decrease.
+
+  **The generation tombstone
+  (durable, tiny):** per `(genesisDigest, service)` the service
+  retains — through every discard, the terminal grace discard
+  included — the highest accepted generation, its digest, and its
+  status (`active | superseded | terminal`), **plus the last
+  authorization root**: the digest skeleton of the last sole-tip
+  view (its `identities`, effective `m`, and signature-input
+  digest) — the material a post-discard g+1 verification needs.
+  After a terminal discard, generation 1 is never TOFU-eligible
+  again for that pair — a return happens only as g+1 under quorum
+  authorization against the retained root; a tombstone without a
+  root closes the pair permanently (a fresh start requires a new
+  service identifier).
+  **A replayed old registration therefore cannot re-open a
+  superseded generation or its keys** — and after a rebind, targets under
+  the superseded attestation key retain evidence value
+  (equivocation proofs included) but no serving standing.
+  (Replay at the *same* service after a terminal discard rebinds
+  only the group's own true chain, which the replayer cannot
+  extend — the TOFU residual already stated.)
+
+  **Profile durations:**
+  `stalenessBound` is **whole days only, `P1D` through `P30D`** —
+  the joint profile cap with the Replication Contract, one
+  validity boundary on both sides of the port, enforced by the
+  schema exactly as stated. `terminalRetention` uses exactly the
   day/time subset of ISO-8601 — `P<d>D`, optionally with
   `T<h>H<m>M<s>S` components in descending order, at least one
   component, each value 1–3 digits, no years, months, or weeks —
@@ -1760,7 +2501,9 @@ Services learn a group's authorization state only through
   persists `stalenessBound`, `terminalRetention` (the terminal
   grace window of obligation 5; RECOMMENDED default `P30D`), and
   `divergenceQuota` (the full-artifact evidence bound of
-  obligation 5; RECOMMENDED default 64). **`m` timing, exactly:** the quorum
+  obligation 5; RECOMMENDED default 64).
+
+  **`m` timing, exactly:** the quorum
   size that an ordinary view *n* must satisfy is **the effective
   quorum size of its parent** (obligation 5(d) defines that value
   recursively for every view, reconciliations included); a view
@@ -1820,7 +2563,7 @@ Services learn a group's authorization state only through
      terminal view included — forks at or above the anchor and
      enters as ordinary divergence evidence, so obligation 5's
      fail-closed duty and the terminal grace window keep their
-     force (round 15 showed that ratcheting on the live head
+     force (ratcheting on the live head
      itself would silently discard exactly that evidence).
      What the chain has converged on **and built beyond** is
      decided for this service — the chain analogue of epoch
@@ -1919,11 +2662,10 @@ Services learn a group's authorization state only through
      otherwise-acceptable evidence — smallest `seq` first, ties
      broken by the unsigned bytewise order of the
      signature-input digest** (fully deterministic in the held
-     DAG — round 17 M4) —
+     DAG) —
      so quota headroom is a deterministic function of the held
-     DAG, never of a local retention choice (round 16 showed
-     that a MAY here let two honest services diverge on the
-     same evidence). Then the rule: a presentation — a single
+     DAG, never of a local retention choice (a MAY here would let
+     two honest services diverge on the same evidence). Then the rule: a presentation — a single
      view or a bundle of views with a reconciliation, judged
      **as an atomic whole** — is accepted iff every named
      parent is held or supplied within the bundle, and either
@@ -1937,7 +2679,7 @@ Services learn a group's authorization state only through
      tip-reduction clause is the exemption's whole
      justification: reconciliation is exempt from saturation
      because it shrinks the divergence, so a "reconciliation"
-     that does not shrink it — round 14's spam of ever-new
+     that does not shrink it — spam of ever-new
      joins over long-since-joined historical parents — has no
      claim to the exemption. And the exit is guaranteed in
      every shape, the disjoint one included: a join of a
@@ -1948,14 +2690,14 @@ Services learn a group's authorization state only through
      quota (incrementally per (iii)); the global join lands as
      tip-reducing. Two services saturated on disjoint evidence
      therefore converge through exactly this sequence — local
-     joins, eviction, cross-admission, global join — and round
-     16's permanent-divergence construction is closed by the
+     joins, eviction, cross-admission, global join — and the
+     permanent-divergence construction is closed by the
      eviction MUST. Because parents and closure travel in the
      bundle (within (iii)'s bound, incrementally where longer),
      the exit is independent of what the flood's arrival order
      left standing; the transient overshoot of an atomic
      acceptance is bounded by the **bundle size — `closureBound`
-     (256), not the parent cap** (round 17 M3: a tip-reducing
+     (256), not the parent cap** (a tip-reducing
      bundle may stage a full never-seen closure), a service
      provisions staging for exactly that bound per presentation,
      and the overshoot is reclaimed on acceptance.
@@ -1995,8 +2737,8 @@ Services learn a group's authorization state only through
      ancestor of any held tip set and qualifies — no divergence
      this machine can hold lacks a qualifying predecessor, and
      no fixed bound ever makes one permanent. **The predecessor
-     is an ancestry witness and nothing more** — since round
-     17, neither the quorum size nor the signer set of a
+     is an ancestry witness and nothing more** — neither the
+     quorum size nor the signer set of a
      reconciliation is drawn from it (both come from the named
      parents, rule (d) below). Ancestry of the predecessor is
      checked against held skeleton plus presenter-supplied
@@ -2010,10 +2752,10 @@ Services learn a group's authorization state only through
      **`m` distinct identities, where `m` is the maximum of the
      effective quorum sizes over the named parents.** The
      **effective quorum size** of a view is defined recursively,
-     over the whole DAG rather than along a single chain (round
-     18 B1: a reconciliation carrying `m: null` has several
-     incomparable parent chains, and "the latest non-null `m` on
-     its chain" named nothing): it is the view's own `m` where
+     over the whole DAG rather than along a single chain (a
+     reconciliation carrying `m: null` has several incomparable
+     parent chains, so "the latest non-null `m` on its chain"
+     would name nothing): it is the view's own `m` where
      that is non-null; otherwise, for a reconciliation view, the
      **maximum** of the effective sizes of its named parents;
      otherwise the effective size of its single parent. The
@@ -2026,9 +2768,9 @@ Services learn a group's authorization state only through
      present in **the `identities` of
      every named parent** and in the reconciliation view's own
      `identities` — the uncontested continuity cut, and the rule
-     that makes a takeover impossible: round 16 showed that
-     drawing the quorum from the historical `predecessor` alone
-     let an expelled quorum fork at the anchor and join its own
+     that makes a takeover impossible: drawing the quorum from
+     the historical `predecessor` alone would let an expelled
+     quorum fork at the anchor and join its own
      fork over the very view that removed it; under the
      intersection rule a signer excluded by **any** named parent
      can never sign the join, so whoever a contested branch
@@ -2038,8 +2780,7 @@ Services learn a group's authorization state only through
      re-presentation, per the evidence contract). Where the
      intersection holds fewer than `m` identities, no
      reconciliation is constructible and the binding ends in
-     re-registration — and the scope of that outcome is exact
-     (round 17 M2): within one epoch the identity set of one
+     re-registration — and the scope of that outcome is exact: within one epoch the identity set of one
      log is grow-only, and replacements bind at transitions, so
      two divergent views can list diverging identity sets only
      if the quorum equivocated (→ the binding was forfeit by
@@ -2222,7 +2963,9 @@ does replication that keeps serving a removed member's peers
 after the removal commit — **replica eviction is part of the
 enforcement artifact**, and forwarding is gated on the
 forwarder's own prior canonical application
-(commit-before-forward, 5.3). (P2
+(commit-before-forward, 5.3 — whose scope note applies: the
+non-effecting evidence transport of 3.6 is not forwarding in this
+sense and is never gated on canonical application). (P2
 atomizes the *committed* key world; that a malicious author can
 commit envelopes only he can't be decrypted is a delivery failure
 with a normative repair — the key service duty, 5.3 — not an
@@ -2304,7 +3047,7 @@ no others. **Everything else is a domain-separated derivation,
 never a transported secret:** the adapter's per-epoch working key
 is `HKDF-SHA256(salt = empty, IKM = the raw content-key bytes,
 info = the UTF-8 bytes of "rltp/v1/epoch-secret/" followed by the
-genesis digest string, L = 32)`. It is a *subkey* of the content
+genesis digest string in canonical `u` form (3.2), L = 32)`. It is a *subkey* of the content
 key, honestly so: it adds domain separation, not independent
 secrecy — in `open` mode, epochs whose content key is published
 have no adapter-internal secrets either, which is consistent
@@ -2338,8 +3081,9 @@ This layer requires, and does not define:
 
 - **Delivery port:** authenticated end-to-end-encrypted delivery
   to derived identities with durable buffering and explicit
-  disposition — satisfied by the Delivery Contract 0.17, whose
-  task types for this layer are the Membership Tasks 0.11 plus the
+  disposition — satisfied by the Delivery Contract (0.22), whose
+  task types for this layer are the Membership Tasks (0.16,
+  jointly cast) plus the
   type registered below.
 - **Replication port:** convergent replication of the encrypted
   authority log and documents; deterministic merge; offline
@@ -2413,9 +3157,13 @@ per the Delivery Contract §§3–6.
   named operation's `keyDist` with exactly this sealed envelope's
   digest, and `epoch` = that transition's `newEpoch`; for
   `re-welcome` and `refresh`: the named operation is a canonical
-  admission whose subject is the document `recipient` (any
-  canonical admission of that anchor serves — none is
-  distinguished, 5.3),
+  admission whose subject is the document `recipient` — or, for
+  the founder, **the genesis**, whose body's founder is the
+  recipient (any canonical admission of that anchor serves — none
+  is distinguished, 5.3) — **and, where the recipient already
+  holds a materialized state, the recipient is a current member
+  of it** (a former member adopts nothing on this path; only the
+  expressly provisional bootstrap below stands apart),
   and — checked by the recipient at adoption — `epoch` = the
   unsealed material's `epoch` = the current epoch of the
   recipient's materialized (or freshly bootstrapped) state, whose
@@ -2553,7 +3301,7 @@ per the Delivery Contract §§3–6.
   hands a re-welcome whose material is honestly derived, and
   therefore commitment-correct, for the epoch current after the
   removal: canonicality and commitment both pass, and a removed
-  member re-enters. Membership Tasks 0.11 §3.3 requires the
+  member re-enters. The Membership Tasks companion §3.3 requires the
   condition **at this gate**, and this is where it binds; a
   bootstrap that fails on (ii) fails exactly like a failure on
   (i) or (iii) — that candidate's provisional state is wiped,
@@ -2697,25 +3445,47 @@ so the type is dispatchable today, not `unknown-type`:
 - Every wire artifact carries its version (`rltp-access/0.24`,
   `rltp-access-view/0.24`, `rltp-access-material/0.24`,
   `rltp-access-keydist/0.24`,
-  `rltp-access-registration/0.24`,
+  `rltp-access-registration/0.26`,
   `rltp-access-removal-notice/0.24`,
-  `key-delivery/0.1`).
+  `rltp-access-member-mapping/0.24`,
+  `key-delivery/0.1`); the vouch (`vouch@2`, 5.3) is a W3C VC in
+  DTG form and carries no `v` constant — its version lives in the
+  `AdmissionVouch` hint type and this profile's schema.
 - **Wire version and profile version are distinct, and this
   casting moves only one of them.** A wire version advances when a
   wire shape changes; the profile version advances with every
-  casting of this document. Profile `rltp-access@0.25` therefore
-  produces and accepts exactly the `…/0.24` wire forms above: 0.25
-  changed a receiver-side gate (10.1) and the keying of local,
-  unshipped state (3.2) — nothing serialized. **This paragraph is
-  the compatibility statement Membership Tasks 0.11 §10 asks for.**
+  casting of this document. Profile `rltp-access@0.52` therefore
+  produces and accepts exactly the `…/0.24` wire forms above — with the named exceptions `service-registration/0.26` (7.3) and the four session-plane evidence forms `rltp-access-evidence-claim/1` · `…-request/1` · `…-response/1` · `…-supplement/1` plus the part envelope `…-evidence-part/1` (3.6, normative as JCS field sets, schemas with the first adapter registration): the
+  M-DID castings changed which anchor class fills the member
+  fields — values and verdicts, never shapes — and added two new
+  shapes (`member-mapping@1` in the 0.24 family, 5.5; the vouch as
+  a DTG-formed VC without a family constant, 5.3);
+  additionally, **one registered policy rule-type string is
+  renamed** (`encounter` → `vouch`, 4.2) — a policy-body value in
+  group-internal logs, of which no deployed instance exists; the
+  mechanism constant `encounter-presentation` keeps its 0.24
+  spelling as a named residue. No existing serialized byte of any
+  artifact moved. **The service-acceptance forms**
+  (`rltp-access-acceptance-receipt`,
+  `rltp-access-generation-statement`; interim `/1`, then `/2`)
+  **are withdrawn never-instantiated** — no schema ever shipped
+  and no instance existed; under this profile they are neither
+  produced nor interpreted (the acceptance anchor needs no
+  artifact, 7.3). **This paragraph is
+  the compatibility statement the Membership Tasks companion's §10
+  asks for.**
   That profile pins this layer twice, in prose and through the `v`
   constants of the Access schemas it transcribes under mobile
   `$id`s, and states that an Access wire bump would break its
   fixtures hard and require a Membership recast. No such bump
-  occurs here: the six schemas of Section 14 are byte-unchanged,
-  Membership 0.11's fixtures continue to pass, and its section
-  references into this document hold — 10.1's gate acquired the
-  condition Membership 0.11 §3.3 already required there, so the
+  occurs here: the transcribed Access schemas are byte-unchanged.
+  The Membership companion itself moved in this joint loop —
+  `membership-accept/0.2` adds the required `candidacy` field, a
+  Membership-side type bump carried by its own casting (0.15),
+  not by any Access wire change — and its section references into
+  this document hold — 10.1's gate acquired the
+  condition the Membership companion's §3.3 already required
+  there, so the
   two documents agree more closely at 0.25 than they did at 0.24.
   A group pinning a minimum profile version in policy (below) may
   pin 0.25 to require the current-member gate.
@@ -2939,6 +3709,16 @@ so the type is dispatchable today, not `unknown-type`:
   (5.3 rule 3, honest-clock), each against a declared skew bound.
   Log validity never consults a clock.
 
+- **Member-anchor scoping and the mapping's deniability:** a
+  member anchor reused across groups voids its own pseudonymity —
+  5.1's scoping rule is normative, not advice. A leaked
+  `member-mapping@1` proves nothing to third parties (class V:
+  the addressee could have forged it), so a cross-group link
+  exists as knowledge, never as transferable evidence; and the
+  vouching credential's subject is the member anchor, so the log
+  never carries the coordinate that would join a person across
+  groups.
+
 ## 13. Privacy Considerations
 
 - **Toward services:** a service sees derived pseudonymous
@@ -2968,11 +3748,24 @@ so the type is dispatchable today, not `unknown-type`:
   (internal accountability), encrypted to members (external
   invisibility). The permanence cost of admission enclosure —
   both cards, both proofs, forever in the log — is stated in
-  Membership §8 and capped by its size budget.
-- **Encounter predicates** disclose to the verifying members that
-  the subject holds edges to specific members — bounded,
-  addressee-directed disclosure; the subject's wider graph stays
-  undisclosed (OI-5 minimizes further).
+  Membership §8 and capped by its size budget — and it now prices
+  in **group-scoped identifiers, not cross-group coordinates**:
+  the M5 correlation surface of the visibility review (roster
+  readers and colluding insiders joining a person across groups)
+  is removed **as a default**: without the person's own
+  `member-mapping@1` disclosures, no cryptographic join key
+  exists anywhere. After voluntary disclosures toward members of
+  several groups, those members can join her as **knowledge** —
+  class V denies them the transferable proof, never the knowledge
+  (Section 12); disclosure is and remains a per-recipient
+  decision of the person. Residue, stated honestly: display
+  profiles, behavior, and timing can still identify a person
+  socially — this layer removes the cryptographic join key, not
+  human recognizability.
+- **Vouch presentations** disclose to the group that specific
+  members vouch for the subject — bounded, deliberate,
+  group-directed disclosure by each voucher; the subject's wider
+  graph stays undisclosed (OI-5 minimizes further).
 - **Open mode opens content, never the log** (3.1, 8):
   membership, admission evidence, and policy stay sealed in every
   visibility mode. Its retroactive form, `history.expose`, is a
@@ -2987,17 +3780,21 @@ so the type is dispatchable today, not `unknown-type`:
   `schemas/access-material.schema.json` ·
   `schemas/authorization-view.schema.json` ·
   `schemas/access-registration.schema.json` ·
-  `schemas/payload-removal-notice.schema.json` — plus, by
+  `schemas/payload-removal-notice.schema.json` ·
+  `schemas/member-mapping.schema.json` ·
+  `schemas/access-vouch.schema.json` — plus, by
   reference,
   Membership's document schemas, `sealed-envelope.schema.json`,
   and `contact-card.schema.json`.
-- **Profile** `rltp-access@0.25`, whose wire forms remain those of
-  `0.24` (Section 11 — no wire shape changed); normatively
-  references
-  `rltp-membership@0.11` (document shapes, welcome seal, admission
-  transport) and `rltp-delivery@0.17` (document profile, sealed
-  envelope, dispositions — also for `key-delivery/0.1`); where
-  encounter rules are used, `rltp-encounter@0.19`.
+- **Profile** `rltp-access@0.52`, whose wire forms remain those of
+  `0.24` (Section 11 — two new shapes, one renamed policy-body
+  value, no changed shape);
+  normatively references the **Membership Tasks (0.16) and
+  Delivery Contract (0.22) of the current joint state** (document
+  shapes, welcome seal, admission transport; document profile,
+  sealed envelope, dispositions — their profile strings are
+  pinned on their side, M2-style); where Encounter artifacts are
+  consumed (cards), `rltp-encounter@0.28` (wire 0.25).
 - **Classes:** *member agent* (log, materialization including
   conflict matrix, merge-finality outcome rules, retained-set
   computation, and
@@ -3007,6 +3804,71 @@ so the type is dispatchable today, not `unknown-type`:
   obligations and the §13 floor) · *service* (7.3 obligations
   only).
 - **Vector plan:**
+  - **abandon equivocation:** two validly quorum-signed but
+    distinct abandon cores for one `(genesisDigest, service,
+    generation)` → both retained, no supersession,
+    registration equivocation, fail-closed (7.3);
+  - **evidence transcript (positive):** a two-part and an n-part
+    exchange (n ≤ 16, parts 1..n, `prevPartDigest` null at 1,
+    `count` and `transcriptDigest` on the final part only) →
+    standing after the final verification, not before;
+  - **evidence transcript (negative):** truncation (final part
+    withheld) · part reordering · part duplication · a false
+    `final` with wrong `transcriptDigest` → each leaves the
+    exchange standing-less; integer domains: `part` ∈ [1, 16],
+    artifacts per exchange ≤ 4096 (3.6);
+  - **freeze honesty (mandatory):** a truncated chain prefix,
+    however internally consistent, confers nothing — acceptance
+    follows only from the live session or the successor chain
+    into it; outside both, `invalid-bundle` (7.3);
+  - **parallel acceptance (CAS):** two concurrently pre-validated
+    R(g+1)/R′(g+1) → exactly one commits, the other fails the
+    expected-old comparison (7.3);
+  - **acceptance-commit atomicity (mandatory):** crash before
+    the atomic acceptance commit → nothing advances anywhere;
+    crash after → registration, tombstone, and chain state all
+    reproduce (7.3);
+  - **service root in a peer session:** presented in any session
+    not directly bound to the exact-byte service itself → never
+    `standing-granted`; `invalid-bundle` (3.6/7.3);
+  - **acceptance anchoring (mandatory):** a candidate generation
+    whose only "acceptance" evidence is signed under its own
+    `attestationKey` → no standing (self-signed acceptance is
+    void); any evidence set **without** the verifier's own
+    session anchor → `invalid-bundle`; the positive case is
+    exactly: direct exact-byte service session + session-attested
+    end generation + full `previousRegistration` chain → standing;
+    a stolen old attestation key never revives superseded
+    standing (7.3);
+  - **root substitution (mandatory):** an old quorum signer
+    forges a g+1 registration against a superseded weaker view;
+    with `authorizationRoot` quorum-bound the closure check runs
+    against the named root, the service's sole-tip rule rejects
+    it live, and toward third parties it fails the acceptance
+    evidence — never a verification root (7.3);
+  - **transcript progress:** an over-cap closure saturates, the
+    verified views persist in the view DAG, the retry completes
+    from the farther anchor (3.6);
+  - **historical registration roots:** a fresh verifier receives
+    a g-generation target chain with registrations and their
+    recursive view-dependency closures → verifiable to the seq-0
+    root; after permissible compaction the service serves the
+    closure reproducibly or answers
+    `missing-registration-authorization-evidence` — never an
+    unrooted sole tip as a "root" (3.6);
+  - **replica baseline partition:** root T5, baseline T7 of the
+    same session (known, non-ancestor) → `non-ancestor-baseline`,
+    full root-session span (3.6);
+  - **evidence session end-to-end:** claim with incomplete
+    conflict set → supplement (projection-bound) → one fresh
+    union claim → `standing-granted`; a projection-relevant
+    change between turns → `superseded-snapshot`; an irrelevant
+    additive admission → no supersession; past 16 parts/4096
+    artifacts → `evidence-saturated`; a service chain spanning
+    two registration generations → both preimages served,
+    historical targets verify against their own generation; a
+    missing committed generation → response variant
+    `missing-registration-core` (3.6);
   - genesis: valid single-founder incl. card; `op` ≠
     `group.genesis`, missing/duplicate-key countersignature,
     group DID = founder anchor, missing card or foreign card
@@ -3021,7 +3883,7 @@ so the type is dispatchable today, not `unknown-type`:
     envelope fields pass the shipped schema, unknown body fields
     fail the closed profile; duplicate-id envelopes →
     canonical proof merge (union of signers and issuers,
-    first-valid entry per signer/issuer; the signer and issuer
+    first-valid entry per signer/voucher; the signer and issuer
     **sets** identical across arrival orders — signature bytes
     may differ and nothing reads them; merge dominates every
     variant; bounded by one entry per signer and issuer) with
@@ -3152,7 +4014,7 @@ so the type is dispatchable today, not `unknown-type`:
     state fails immediately and never pends; `ct` below the
     80-character minimum schema-rejected;
   - *(round-5 additions)* proof merge replaces variant retention:
-    storage bounded by one entry per signer/issuer, the evaluated
+    storage bounded by one entry per signer/voucher, the evaluated
     sets identical across arrival orders, evaluation
     over the merged signer set; replica eviction in the removal commit
     (post-removal operations unreachable to the evicted peer —
@@ -3167,7 +4029,7 @@ so the type is dispatchable today, not `unknown-type`:
     genesis digest; reconciliation
     state machine (seq, epoch, tip replacement, quorum source)
     stepwise to one tip;
-  - *(round-6 additions)* credential merge per issuer (one per
+  - *(round-6 additions)* vouch merge per voucher (one per
     issuer; an issuer minting many credentials gains nothing);
     merged mechanism label derived, nothing normative reads it
     (3.3); caps at the wire ceilings (8192, 3.6); commitment
@@ -3221,9 +4083,10 @@ so the type is dispatchable today, not `unknown-type`:
     key holders all removed, departed, or the void author alone)
     → span dark under the recovery form AND under a garbage-`ct`
     default form alike — the skip adds no darkening power,
-    no false repair promise; credential admissibility exact:
-    `credentialSubject.id` = `body.subject` compared, and a
-    credential on a rule key that cannot carry an encounter rule
+    no false repair promise; vouch admissibility exact:
+    `subject` = `body.subject` and `accept` = the enclosed
+    admission's accept digest compared, and a
+    vouch on a rule key that cannot carry a vouch rule
     (`member.remove`) inadmissible even with matching subject;
     proof evaluation label-free (same sets under different
     labels → same verdict; merged emission always
@@ -3254,7 +4117,7 @@ so the type is dispatchable today, not `unknown-type`:
     pending exit authors `lineage.repair` validly (the third
     exception, at the validity gate AND the merge);
     label derivation single-form:
-    pure encounter merge (credentials + subject-only signer) →
+    pure vouch merge (credentials + subject-only signer) →
     `encounter-presentation`, credentials-empty →
     `signature-set`, else `composite`, identical from 3.3 and
     4.3;
@@ -3332,7 +4195,7 @@ so the type is dispatchable today, not `unknown-type`:
     accepted; case-, port-, or slash-variant strings rejected
     (no normalization);
   - *(round-14 additions)* cost `any` = maximum:
-    `any[threshold(65), encounter(17)]` on `member.add` →
+    `any[threshold(65), vouch(17)]` on `member.add` →
     structurally invalid (the round-14 counterexample; the
     minimum would have passed an unreachable pair); every
     branch of a valid `any` independently within the caps;
@@ -3564,6 +4427,31 @@ so the type is dispatchable today, not `unknown-type`:
   confidentiality audit criteria of 9.1 — exercised with
   controlled state and clock.
 
+- **Vector plan, M-DID-loop additions:**
+  member-mapping@1 positive (both MACs against the cards named by
+  `memberOp`/`toOp`, founder side via genesis) · foreign-self
+  negative (card.anchor ≠ self → step 4) · wrong-group negative
+  (`to` not the addressee's member anchor → step 2) · `memberOp`
+  naming a non-admission or foreign admission → step 3 · `member`
+  no longer a current member → step 3 · two admissions with
+  different cards: mapping verifies only under the named one
+  (determinism vector) · revision equivocation per (member, to) →
+  step 7 · a member anchor appearing in a second group's log →
+  scoping-rule vector (nonconformant at issuance) · **vouch@2
+  positive** (sig under voucher, currency at position, subject =
+  body.subject, genesisDigest binding) · vouch by a non-member →
+  inadmissible · vouch about a different subject → inadmissible ·
+  an Encounter credential presented in the vouch slot →
+  inadmissible under 4.3 (its subject is a pair anchor) · vouch
+  self-vouch (voucher = subject) → inadmissible (currency
+  excludes a candidate subject, 4.4) · duplicate vouchers →
+  counted once (distinctness) · founder `refresh` via genesis
+  (M8) → entitled and served · founder anchor equal to any
+  `group/<digest>` context of the same genesis → genesis invalid
+  (3.4.1) · candidacy carrier: authority never from Layer-4
+  content (a member.add citing only the candidacy surface fails
+  materialization).
+
 ## 15. Open Issues
 
 - **OI-1 Sibling-epoch merge** — now explicitly also the
@@ -3581,9 +4469,11 @@ so the type is dispatchable today, not `unknown-type`:
 - **OI-3 Group identifier migration** (legacy UUID spaces →
   genesis digests; alias discipline).
 - **OI-5 Encounter-presentation minimal disclosure.**
-- **OI-7 Member-identity model** (method agnosticism; main DID
-  vs. per-group derived member identity with a verifiable Layer-2
-  link) — to be settled by the Identity layer casting.
+- **OI-7 Member-identity model** — **settled by the M-DID loop:**
+  per-group member identity (5.1), the founding occasion
+  registered in Identity 0.12, and the verifiable link is
+  `member-mapping@1` (5.5) — designated-verifier by design.
+  Method agnosticism beyond `did:key` remains open.
 - **OI-10 Shrink-robust policy forms** (relative thresholds;
   recovery from constitutional lock above emptiness).
 - **OI-12 Grantable capabilities and their exercise.** Grants,
@@ -3651,17 +4541,20 @@ so the type is dispatchable today, not `unknown-type`:
   acceptance. Until then this layer
   requires of its own implementers: key all group state by
   genesis digest. Resolved elsewhere: delivery envelope by the
-  Delivery Contract 0.17; policy-proof transport and
+  Delivery Contract (0.22); policy-proof transport and
   leave/dissolve notices are Membership MO-2 and MO-3.)*
 
 ## References
 
 [RFC2119] · [RFC8174] BCP 14 · [RFC8785] JCS · [RFC9420] MLS
-(epoch terminology) · **RLTP Encounter Layer 0.19** (securing
+(epoch terminology) · **RLTP Encounter Layer 0.28**, wire 0.25 (securing
 profile 2.3, contact card §6, credentials §7, evidence direction
-§4.2) · **RLTP Delivery Contract 0.17** (document profile §3,
-sealed envelope §5, dispositions §6) · **RLTP Membership Tasks
-0.11** (document shapes §3, welcome seal §4, timing §5) · W3C
+§4.2) · **RLTP Delivery Contract** and **RLTP Membership Tasks**
+(the companions of this loop's joint casting: document profile,
+sealed envelope, dispositions; document shapes §3, welcome seal
+§4, timing §5) · **RLTP Network Visibility 0.15** (§2.1 wire
+conventions, §3 audience classes, §6 mapping construction, §6a
+convergence net, §8 introduction act) · W3C
 Verifiable Credentials Data Model 2.0 · Keyhive / BeeKEM design
 documents (causal encryption; ePrint 2026/1434) · p2panda-auth
 documentation (resolver model)

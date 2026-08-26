@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "introduction"
+  ],
+  "properties": {
+    "introduction": {
+      "$ref": "visibility-introduction-ack.schema.json"
+    }
+  },
+  "title": "RLTP payload introduction-ack (rltp-visibility@0.15)"
+}

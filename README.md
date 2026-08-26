@@ -20,23 +20,34 @@ been exercised at festivals and community gatherings since 2026.
 | [`spec/delivery-contract.md`](spec/delivery-contract.md) | **RLTP Delivery Contract** — how documents travel: private Trust Task types (`encounter-bundle`, `delivery-ack`, `encounter-credential-delivery`), the sealed envelope, staged dispositions, delivery promises |
 | [`spec/membership-tasks.md`](spec/membership-tasks.md) | **RLTP Membership Tasks** — how membership changes travel: invitation, explicit consent (`membership-invite`, `membership-accept`, `membership-evidence`), the `access-operation` carrier narrowed to the one operation that crosses the replica boundary — the admitting `member.add` delivered to its own subject — with the admission chain (provable invitation provenance), and the welcome seal |
 | [`spec/access-layer.md`](spec/access-layer.md) | **RLTP Access Layer** — how a group holds shared authority over its membership, data, and itself: the authority log (a causally linked DAG whose genesis digest *is* the group's identity), policies as group-defined decision rules, epochs that make revocation real, chained quorum-signed authorization views toward services, and the enforcement port that keeps the replication/key-agreement substrate replaceable |
+| [`spec/identity-layer.md`](spec/identity-layer.md) | **RLTP Identity Layer** — one root seed, every identity derived: the self context, per-relationship pair anchors, per-group member anchors, derived service identities; contexts never link without their holder's deliberate act |
+| [`spec/replication-contract.md`](spec/replication-contract.md) | **RLTP Replication Contract** — the service contract behind the Access Layer's replication port: sixteen promises over individually signed, causally linked entries — attested convergence targets, one ingest admission for every road, immutable verdicts under merge-revisable canonicality dispositions, key-blind by construction; the substrate that moves the bytes stays outside the trusted computing base |
+| [`spec/network-visibility.md`](spec/network-visibility.md) | **RLTP Network Visibility** — who may learn that an edge exists: visibility grades, stars, anchor mappings, introductions, and the audience discipline the other layers build on |
+| [`spec/personhood-predicates.md`](spec/personhood-predicates.md) | **RLTP Personhood Predicates** — verifier-relative witnessing predicates over encounter credentials: what "a human vouched for a human" can and cannot prove |
+| [`spec/succession.md`](spec/succession.md) | **RLTP Succession** (parked draft) — recovering a person's anchor by the act of several people when the seed is lost |
 | [`schemas/`](schemas/) | Normative JSON Schemas for every wire artifact |
 | [`contexts/`](contexts/) | The pinned RLTP JSON-LD context |
-| [`vectors/seal.json`](vectors/seal.json) | Deterministic seal test vector — implementations MUST reproduce it byte-for-byte |
+| [`vectors/`](vectors/) | Deterministic test vectors (seal, identity derivation, encounter cards, DTG credentials, visibility) — implementations MUST reproduce them byte-for-byte |
+| [`conformance/`](conformance/) | Conformance runner — recomputes every cryptographic claim of the shipped vectors and validates every schema claim; negatives must fail at their declared stage |
 | [`interop/ceremonies/`](interop/ceremonies/) | RLTP ceremonies expressed in the ToIP DTGWG ceremony-definition format |
 | [`simulator/`](simulator/) | Interactive browser simulator of the full ceremony (both paths, fault injections) + a Node reference engine |
 | [`scripts/validate.mjs`](scripts/validate.mjs) | Publication checks: schema compilation, vector recomputation, and conformance fixtures that MUST fail |
 
 ## Status
 
-All four documents are **Editor's Drafts**, developed through an
+All documents are **Editor's Drafts**, developed through an
 adversarial convergence process: each casting is reviewed by an
 independent adversarial reviewer, findings are triaged, and the
-document is fully recast — never patched — until a review round
-returns **no blocker-level findings**. All four have reached that
-criterion: **Encounter 0.22** · Delivery Contract 0.17 · Membership
-Tasks 0.11 · **Access Layer 0.25**, each confirmed by a final round
-with no findings.
+document is fully recast — never patched — until the convergence
+criterion (consecutive review rounds without blocker-level
+findings) is met. Current converged state: **Encounter 0.28** ·
+**Identity 0.12** · **Access Layer 0.52** · **Delivery Contract
+0.22** · **Membership Tasks 0.16** · **Replication Contract 0.26**
+· Network Visibility 0.15 · Personhood Predicates 0.12
+(Succession 0.2 is parked). The Access Layer and the Replication
+Contract converged jointly on 2026-08-26 after twenty-five
+adversarial rounds, followed by editorial castings and the
+receipt cut, each adversarially confirmed.
 
 The Access Layer's convergence took twenty-two review rounds
 (22 blockers in its first ported casting, zero in the last two).

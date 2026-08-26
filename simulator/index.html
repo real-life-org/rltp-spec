@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
+<script type="module">
+  // rltp-core: THE shared validator (single source, simulator/rltp-core.mjs)
+  // bound to the generated schema bundle. The receive gates below are
+  // fail-closed: if this module did not load, nothing is accepted.
+  import { makeValidator } from './rltp-core.mjs'
+  import { SCHEMAS } from './rltp-schemas.mjs'
+  window.RLTP = makeValidator(SCHEMAS)
+</script>
 </head>
 <body>
 <x-dc>
@@ -24,7 +32,7 @@
     <div>
       <div style="font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:oklch(70% 0.01 247);font-family:ui-monospace,'SF Mono',Menlo,monospace;">Real Life Trust Protocol</div>
       <h1 style="margin:6px 0 4px;font-size:26px;font-weight:700;letter-spacing:-0.01em;">Ceremony Simulator</h1>
-      <div style="font-size:13px;color:oklch(70% 0.01 247);max-width:800px;text-wrap:pretty;">Two app instances, one delivery channel. Encounter Layer 0.19 — the one ceremony <span style="font-family:ui-monospace,monospace;">encounter-scan@0.19</span> with a connected and an optical leg — over Delivery Contract 0.17.</div>
+      <div style="font-size:13px;color:oklch(70% 0.01 247);max-width:800px;text-wrap:pretty;">Two app instances, one delivery channel. Encounter Layer 0.28 (wire 0.25, DTG-typed credentials) — the one ceremony <span style="font-family:ui-monospace,monospace;">encounter-scan@0.25</span> under fresh-always pair anchors, with a connected and an optical leg — over Delivery Contract 0.21.</div>
     </div>
     <div style="display:flex;align-items:center;gap:9px;">
       <span style="font-family:ui-monospace,monospace;font-size:11px;padding:6px 9px;border-radius:6px;background:oklch(25% 0.02 265);border:1px solid oklch(32% 0.02 265);color:{{ cryptoColor }};">{{ cryptoBadge }}</span>
@@ -220,14 +228,15 @@
 
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1480,&quot;height&quot;:1200}}">
+const tsec = (v) => Math.floor((typeof v === 'number' ? v : Date.parse(v)) / 1000) * 1000; // Encounter 2.3 whole-second normalization
 class Component extends DCLogic {
   state = { tick: 0 };
 
   // ---------- constants ----------
-  C1 = 'encounter-scan@0.19';        // the ONE ceremony (Encounter 5.8)
-  C2 = 'two-way-scan@0.9';           // legacy label, used only by the 'foreign' fault
-  CARDV = 'rltp-card/0.19';
-  CREDF = 'rltp-encounter-credential/0.19';
+  C1 = 'encounter-scan@0.25';        // the ONE ceremony (Encounter 5.8, wire 0.25)
+  C2 = 'encounter-scan@0.24';        // the real legacy label (pre-DTG generation), used only by the 'foreign' fault
+  CARDV = 'rltp-card/0.25';
+  CREDF = 'rltp-encounter-credential/0.25';
   MAX_AGE = 5 * 60 * 1000;
   SKEW = 5 * 60 * 1000;
   ISSUANCE = 24 * 60 * 60 * 1000;
@@ -235,6 +244,7 @@ class Component extends DCLogic {
   TT = 'https://real-life.org/trust-tasks/';
 
   componentDidMount() {
+    window.__sim = this; // Test-/Godview-Handle (nur Simulator)
     this.channel = [];
     this.logs = [];
     this.open = {};
@@ -338,12 +348,15 @@ class Component extends DCLogic {
     const hd = await this.sha256(new TextEncoder().encode(this.jcs(doc)));
     return new Uint8Array([...hc, ...hd]);
   }
-  async sign(dev, doc) {
-    const id = dev.anchor.slice('did:key:'.length);
+  async sign(dev, ctx, doc) {
+    const id = ctx.anchor.slice('did:key:'.length);
     const cfg = { type: 'DataIntegrityProof', cryptosuite: 'eddsa-jcs-2022', created: this.iso(this.now(dev)),
-      verificationMethod: dev.anchor + '#' + id, proofPurpose: 'assertionMethod' };
+      verificationMethod: ctx.anchor + '#' + id, proofPurpose: 'assertionMethod' };
+    // W3C DI-EDDSA: a present document @context is copied into the proof
+    // configuration AND the returned proof (Encounter 0.27 repair)
+    if (doc['@context']) cfg['@context'] = doc['@context'];
     const msg = await this.proofMsg(cfg, doc);
-    const sig = new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, dev.sign.kp.privateKey, msg));
+    const sig = new Uint8Array(await crypto.subtle.sign({ name: 'Ed25519' }, ctx.sign.kp.privateKey, msg));
     return { ...cfg, proofValue: 'z' + this.b58(sig) };
   }
   // The proof binds to the anchor the DOCUMENT claims (expectedAnchor):
@@ -430,9 +443,21 @@ class Component extends DCLogic {
     const kaKey = this.multikey(ka.raw, 0xec, 0x01);
     const dev = { id, name, sign, ka, anchor, kaKey, skew: 0, online: true, screen: 'ready', ceremony: this.C1,
       card: null, ch: null, qr: '', sentCard: null, records: [], issued: [], received: [], sent: {}, cache: {},
-      consumed: [], keyStore: {}, peer: null, work: null, err: null, ackDeadline: 0, fallbackBanner: false, buffered: [] };
-    dev.keyStore[kaKey] = ka.kp.privateKey;
+      consumed: [], keyStore: {}, ctxs: {}, peer: null, work: null, err: null, ackDeadline: 0, fallbackBanner: false, buffered: [] };
+    // dev.anchor stays the device's SELF identity (display only). Enacting
+    // anchors are per-enactment pair contexts (fresh always, Encounter 4.4).
     return dev;
+  }
+  // fresh-always: one pair context per enactment attempt. The browser build
+  // mints fresh WebCrypto key pairs; the seed-derivation fidelity (Identity
+  // §6 pair class from a root IKM) lives in the Node engine + vectors.
+  async mkCtx(dev) {
+    const sign = await this.genSign();
+    const ka = await this.genKA();
+    const ctx = { sign, ka, anchor: 'did:key:' + this.multikey(sign.raw, 0xed, 0x01), kaKey: this.multikey(ka.raw, 0xec, 0x01) };
+    dev.ctxs[ctx.anchor] = ctx;
+    dev.keyStore[ctx.kaKey] = ka.kp.privateKey;
+    return ctx;
   }
   async checkVector() {
     const V = {
@@ -459,11 +484,13 @@ class Component extends DCLogic {
 
   // ---------- cards ----------
   async newChallenge(dev, backdateMs) {
+    const ctx = await this.mkCtx(dev);              // fresh-always: fresh pair anchor per display
+    dev.displayCtx = ctx;
     dev.ch = { value: this.fresh(), issuedAt: this.iso(this.now(dev) - (backdateMs || 0)) };
     // mandatory retention (5.3): rotation changes what is displayed, never what is retained
     dev.openCh = dev.openCh || {};
-    dev.openCh[dev.ch.value] = { issuedAt: dev.ch.issuedAt, aged: false };
-    dev.card = await this.mkCard(dev, dev.ch, null, null);
+    dev.openCh[dev.ch.value] = { issuedAt: dev.ch.issuedAt, aged: false, ctx };
+    dev.card = await this.mkCard(dev, ctx, dev.ch, null, null);
     this.mkQr(dev);
   }
   // challenge resolution (Encounter 5.3): recorded > open > unknown; the
@@ -473,16 +500,16 @@ class Component extends DCLogic {
     if (rec) return { state: 'recorded', rec };
     const o = (dev.openCh || {})[value];
     if (o && !o.aged) {
-      if (this.now(dev) > Date.parse(o.issuedAt) + this.MAX_AGE + this.SKEW) { o.aged = true; return { state: 'unknown' }; }
-      return { state: 'open', issuedAt: o.issuedAt };
+      if (tsec(this.now(dev)) > tsec(o.issuedAt) + this.MAX_AGE + this.SKEW) { o.aged = true; return { state: 'unknown' }; }
+      return { state: 'open', issuedAt: o.issuedAt, ctx: o.ctx };
     }
     return { state: 'unknown' };
   }
-  async mkCard(dev, ch, sentTo, boundTo) {
-    const body = { version: this.CARDV, anchor: dev.anchor, keyAgreement: dev.kaKey, name: dev.name,
+  async mkCard(dev, ctx, ch, sentTo, boundTo) {
+    const body = { version: this.CARDV, anchor: ctx.anchor, keyAgreement: ctx.kaKey, name: dev.name,
       challenge: { value: ch.value, issuedAt: ch.issuedAt } };
     if (sentTo) { body.sentTo = sentTo; body.boundTo = boundTo; }
-    return { ...body, proof: await this.sign(dev, body) };
+    return { ...body, proof: await this.sign(dev, ctx, body) };
   }
   mkQr(dev) {
     const Q = window.qrcode;
@@ -652,12 +679,18 @@ class Component extends DCLogic {
       const card = peer.sentCard;
       const body = { ...card }; delete body.proof;
       const ok = await this.verify(card.anchor, body, card.proof);
-      if (!ok || card.sentTo !== dev.anchor || card.version !== this.CARDV || !card.boundTo) {
-        dev.err = { title: 'Card not usable', code: !ok ? 'card proof invalid' : (card.sentTo !== dev.anchor ? 'sentTo mismatch' : (!card.boundTo ? 'boundTo missing' : 'unknown card version')), text: 'A sent card must verify, name this device as its recipient, and say which challenge it answers (boundTo).' };
+      if (!ok || card.version !== this.CARDV || !card.boundTo) {
+        dev.err = { title: 'Card not usable', code: !ok ? 'card proof invalid' : (!card.boundTo ? 'boundTo missing' : 'unknown card version'), text: 'A sent card must verify, name this device as its recipient, and say which challenge it answers (boundTo).' };
         dev.screen = 'error'; this.bump(); return;
       }
-      // boundTo selects the own challenge under the resolution rule (5.3)
+      // boundTo selects the own challenge under the resolution rule (5.3);
+      // fresh-always: the resolved context is who "this device" is here
       const res = this.resolveCh(dev, card.boundTo);
+      const resA = res.state === 'recorded' ? res.rec.ownCtx.anchor : res.state === 'open' ? res.ctx.anchor : null;
+      if (resA && card.sentTo !== resA) {
+        dev.err = { title: 'Card not usable', code: 'sentTo mismatch (not the resolved context)', text: 'A sent card must name the enacting pair anchor it answers.' };
+        dev.screen = 'error'; this.bump(); return;
+      }
       if (res.state === 'unknown') {
         this.gateExpired = true; // now — and only now — a fresh enactment (E2) is the sanctioned last resort
         dev.err = { title: 'gate-expired', code: 'boundTo resolves unknown (aged out — latched — or never this device’s)', text: 'This enactment cannot complete. Last resort: a fresh enactment — the merge rule keeps it one edge.' };
@@ -674,13 +707,13 @@ class Component extends DCLogic {
         dev.screen = 'error'; this.bump(); return;
       }
       const n = this.now(dev);
-      if (Date.parse(res.issuedAt) > n + this.SKEW) {
+      if (tsec(res.issuedAt) > tsec(n) + this.SKEW) {
         dev.err = { title: 'gate-future', code: 'own challenge future-dated beyond skew', text: 'The explicit future check refused record creation.' };
         dev.screen = 'error'; this.bump(); return;
       }
       const bind = await this.binding(this.C1, card.boundTo, card.challenge.value);
       dev.records.push({ ceremony: this.C1, counterparty: card.anchor, counterpartyCard: card,
-        ownChallenge: card.boundTo, ownChallengeIssuedAt: res.issuedAt, peerChallenge: card.challenge.value,
+        ownChallenge: card.boundTo, ownChallengeIssuedAt: res.issuedAt, ownCtx: res.ctx, peerChallenge: card.challenge.value,
         enactmentBinding: bind, recordedAt: this.iso(n) });
       delete dev.openCh[card.boundTo]; // open → recorded, atomic supersession
       dev.consumed.push(card.boundTo);
@@ -717,36 +750,37 @@ class Component extends DCLogic {
     const peer = this.other(dev);
     const w = dev.work;
     const ceremony = this.C1; // the ONE ceremony — what varies is the carrier, never the ceremony
+    const ownCtx = await this.mkCtx(dev);         // fresh-always: the scanner's side of the tuple
     const ownCh = { value: this.fresh(), issuedAt: this.iso(this.now(dev)) };
-    dev.sentCard = await this.mkCard(dev, ownCh, peer.anchor, w.peerCh.value); // boundTo = the challenge this enactment answers
+    dev.sentCard = await this.mkCard(dev, ownCtx, ownCh, w.peerCard.anchor, w.peerCh.value); // boundTo = the challenge this enactment answers
     // scanner-side gate: trivially fresh; explicit future check (gate-future)
-    const t = Date.parse(ownCh.issuedAt), n = this.now(dev);
+    const t = tsec(ownCh.issuedAt), n = tsec(this.now(dev));
     if (t > n + this.SKEW) {
       dev.err = { title: 'gate-future', code: 'own challenge future-dated beyond skew', text: 'The explicit future check refused record creation.' };
       dev.screen = 'error'; this.bump(); return;
     }
     const bind = await this.binding(ceremony, ownCh.value, w.peerCh.value);
-    const rec = { ceremony, counterparty: peer.anchor, counterpartyCard: w.peerCard,
-      ownChallenge: ownCh.value, ownChallengeIssuedAt: ownCh.issuedAt, peerChallenge: w.peerCh.value,
+    const rec = { ceremony, counterparty: w.peerCard.anchor, counterpartyCard: w.peerCard,
+      ownChallenge: ownCh.value, ownChallengeIssuedAt: ownCh.issuedAt, ownCtx, peerChallenge: w.peerCh.value,
       enactmentBinding: bind, recordedAt: this.iso(n) };
     dev.records.push(rec);
     dev.consumed.push(ownCh.value);
     this.log(dev.id, 'enactment record created · gate open · binding ' + bind.slice(0, 12) + '…', 'ok');
 
-    const subj = { id: peer.anchor, format: this.CREDF, ceremony,
+    const subj = { id: w.peerCard.anchor, format: this.CREDF, ceremony,
       challenge: w.peerCh.value, enactmentBinding: bind, channel: 'in-person' };
-    const body = { '@context': ['https://www.w3.org/ns/credentials/v2', 'https://real-life.org/rltp/v1'],
-      type: ['VerifiableCredential', 'EncounterCredential'], issuer: dev.anchor, validFrom: this.iso(n), credentialSubject: subj };
+    const body = { '@context': ['https://www.w3.org/ns/credentials/v2', 'https://firstperson.network/credentials/dtg/v1', 'https://real-life.org/rltp/v1'],
+      type: ['VerifiableCredential', 'DTGCredential', 'RelationshipCredential', 'EncounterCredential'], issuer: ownCtx.anchor, validFrom: this.iso(n), credentialSubject: subj };
     if (this.f.foreign) body.credentialSubject.ceremony = this.C2;
-    const cred = { ...body, proof: await this.sign(dev, body) };
+    const cred = { ...body, proof: await this.sign(dev, ownCtx, body) };
     if (this.f.tamper) { cred.credentialSubject = { ...cred.credentialSubject, channel: 'video' }; this.log(dev.id, 'credential altered after signing (fault)', 'w'); }
-    dev.issued.push({ credential: cred, digest: await this.mdigest(cred), subject: peer.anchor });
+    dev.issued.push({ credential: cred, digest: await this.mdigest(cred), subject: w.peerCard.anchor });
     this.log(dev.id, 'human confirmed (C4) · EncounterCredential issued about ' + peer.name, 'ok');
 
-    const doc = { id: crypto.randomUUID(), type: this.TT + 'encounter-bundle/0.1', issuer: dev.anchor,
-      recipient: peer.anchor, threadId: crypto.randomUUID(), issuedAt: this.iso(n),
+    const doc = { id: crypto.randomUUID(), type: this.TT + 'encounter-bundle/0.1', issuer: ownCtx.anchor,
+      recipient: w.peerCard.anchor, threadId: crypto.randomUUID(), issuedAt: this.iso(n),
       ceremony: { ceremony, enactment: bind, step: 'bundle' }, payload: { card: dev.sentCard, credential: cred } };
-    await this.send(dev, peer, doc);
+    await this.send(dev, peer, doc, this.rkOf(w.peerCard));
     dev.ackDeadline = Date.now() + this.ACK_WAIT;
     dev.screen = 'waiting'; dev.work = null;
     this.bump();
@@ -764,21 +798,21 @@ class Component extends DCLogic {
     const rec = dev.records.find(r => r.enactmentBinding === dev.promptBinding)
       || dev.records.find(r => r.counterparty === peer.anchor);
     const n = this.now(dev);
-    const subj = { id: peer.anchor, format: this.CREDF, ceremony: rec.ceremony,
+    const subj = { id: rec.counterparty, format: this.CREDF, ceremony: rec.ceremony,
       challenge: rec.peerChallenge, enactmentBinding: rec.enactmentBinding, channel: 'in-person' };
-    const body = { '@context': ['https://www.w3.org/ns/credentials/v2', 'https://real-life.org/rltp/v1'],
-      type: ['VerifiableCredential', 'EncounterCredential'], issuer: dev.anchor, validFrom: this.iso(n), credentialSubject: subj };
-    const cred = { ...body, proof: await this.sign(dev, body) };
-    dev.issued.push({ credential: cred, digest: await this.mdigest(cred), subject: peer.anchor });
+    const body = { '@context': ['https://www.w3.org/ns/credentials/v2', 'https://firstperson.network/credentials/dtg/v1', 'https://real-life.org/rltp/v1'],
+      type: ['VerifiableCredential', 'DTGCredential', 'RelationshipCredential', 'EncounterCredential'], issuer: rec.ownCtx.anchor, validFrom: this.iso(n), credentialSubject: subj };
+    const cred = { ...body, proof: await this.sign(dev, rec.ownCtx, body) };
+    dev.issued.push({ credential: cred, digest: await this.mdigest(cred), subject: rec.counterparty });
     this.log(dev.id, 'counter-step issued · binding unchanged, this is the mutual moment', 'ok');
-    const doc = { id: crypto.randomUUID(), type: this.TT + 'encounter-credential-delivery/0.1', issuer: dev.anchor,
-      recipient: peer.anchor, threadId: dev.thread || crypto.randomUUID(), issuedAt: this.iso(n),
+    const doc = { id: crypto.randomUUID(), type: this.TT + 'encounter-credential-delivery/0.1', issuer: rec.ownCtx.anchor,
+      recipient: rec.counterparty, threadId: dev.thread || crypto.randomUUID(), issuedAt: this.iso(n),
       ceremony: { ceremony: rec.ceremony, enactment: rec.enactmentBinding, step: 'counter' }, payload: { credential: cred } };
-    await this.send(dev, peer, doc);
+    await this.send(dev, peer, doc, this.rkOf(rec.counterpartyCard));
     // Honest state: mutual only when the counterparty's credential is HELD.
     // After an optical scan of a sent card, their credential is still in
     // transit — the edge is outgoing until it arrives (Encounter 4.2).
-    const mutualNow = dev.received.some(r => r.issuer === peer.anchor);
+    const mutualNow = dev.received.some(r => r.credential.credentialSubject.enactmentBinding === rec.enactmentBinding);
     dev.screen = mutualNow ? 'confirmed' : 'verifiedBack';
     this.bump();
   }
@@ -813,19 +847,19 @@ class Component extends DCLogic {
     dev.ackDeadline = 0; dev.outBundle = null; dev.fallbackQr = '';
     await this.newChallenge(dev); await this.newChallenge(peer);
     dev.screen = 'ready'; peer.screen = 'ready';
-    this.log('CH', 'fresh enactment of encounter-scan@0.19 · new challenges, second enactment, one edge (merge rule 4.2)', 'w');
+    this.log('CH', 'fresh enactment of encounter-scan@0.25 · new challenges, fresh pair anchors, second enactment (merge to one relationship = continuity, Stage B)', 'w');
     this.bump();
   }
   onKeepWaiting(dev) { dev.screen = 'waiting'; dev.ackDeadline = Date.now() + this.ACK_WAIT; this.bump(); }
 
   // ---------- channel ----------
-  async send(from, to, doc) {
+  rkOf(card) { return { kid: card.keyAgreement, raw: this.ub58(card.keyAgreement.slice(1)).slice(2) }; }
+  async send(from, to, doc, rk) {
     const digest = await this.mdigest(doc);
-    const recCard = to.card;
-    const { sealed, plaintext } = await this.seal(doc, to.kaKey, to.ka.raw, null);
+    const { sealed, plaintext } = await this.seal(doc, rk.kid, rk.raw, null);
     const env = { k: ++this.seq, from: from.id, to: to.id, doc, digest, sealed, plaintext, type: doc.type.split('trust-tasks/')[1],
       status: 'accepted', stages: [], at: Date.now(), delivered: false, gen: this.gen };
-    from.sent[digest] = { status: 'accepted', type: env.type, threadId: doc.threadId, recipient: doc.recipient };
+    from.sent[digest] = { status: 'accepted', type: env.type, threadId: doc.threadId, recipient: doc.recipient, sender: doc.issuer };
     from.thread = doc.threadId;
     if (env.type.startsWith('encounter-bundle')) from.outBundle = env;
     this.channel.unshift(env);
@@ -896,15 +930,16 @@ class Component extends DCLogic {
               && doc.issuedAt && !Number.isNaN(Date.parse(doc.issuedAt)) && !('expiresAt' in doc)
               && doc.payload && typeof doc.payload === 'object';
             if (!push('5 document profile · required members, no expiresAt', prof)) disp = 'failed(malformed)';
-            else if (!push('5 recipient = own anchor', doc.recipient === dev.anchor)) disp = 'failed(wrong-recipient)';
+            else if (!push('5 recipient = one of this device\u2019s pair anchors', !!dev.ctxs[doc.recipient])) disp = 'failed(wrong-recipient)';
             else {
               const type = doc.type.replace(this.TT, '');
               const known3 = ['encounter-bundle/0.1', 'delivery-ack/0.1', 'encounter-credential-delivery/0.1'].includes(type);
               if (!push('6 type known · ' + type, known3)) disp = 'failed(unknown-type)';
               else {
-                const pOk = type === 'delivery-ack/0.1' ? (doc.payload.meaning === 'received' && !!doc.payload.ref)
-                  : type === 'encounter-bundle/0.1' ? (!!doc.payload.card && !!doc.payload.credential) : !!doc.payload.credential;
-                if (!push('7 payload schema', pOk)) disp = 'failed(malformed)';
+                const pSchema = type === 'delivery-ack/0.1' ? 'payload-delivery-ack.schema.json'
+                  : type === 'encounter-bundle/0.1' ? 'payload-encounter-bundle.schema.json' : 'payload-encounter-credential-delivery.schema.json';
+                const pOk = !!window.RLTP && window.RLTP.validate(doc.payload, window.RLTP.SCHEMAS[pSchema], window.RLTP.SCHEMAS[pSchema]).length === 0;
+                if (!push('7 payload schema · full validation against ' + pSchema.replace('.schema.json', ''), pOk)) disp = 'failed(malformed)';
                 else {
                   const r = await this.stage8(dev, doc, type, st);
                   if (!r.ok) disp = r.disp;
@@ -942,7 +977,7 @@ class Component extends DCLogic {
       // come from exactly the anchor we sent that document to (Contract 4.2)
       let sentKey = null, sent = null;
       for (const k in dev.sent) { if (this.sameDigest(k, doc.payload.ref)) { sentKey = k; sent = dev.sent[k]; break; } }
-      const authentic = !!sent && sent.threadId === doc.threadId && doc.issuer === sent.recipient && doc.recipient === dev.anchor;
+      const authentic = !!sent && sent.threadId === doc.threadId && doc.issuer === sent.recipient && doc.recipient === sent.sender;
       st.push({ label: '8 ack is from the recipient we sent to, same thread' + (authentic ? '' : ' — forged/misrouted'), ok: authentic });
       if (!sig || !authentic) return { ok: false, disp: 'failed(validation-failed)' };
       doc.__ackKey = sentKey;
@@ -969,19 +1004,25 @@ class Component extends DCLogic {
       const card = doc.payload.card;
       const abody = { ...card }; delete abody.proof;
       const asig = await this.verify(card.anchor, abody, card.proof);
-      st.push({ label: '8 sent card proof verifies · sentTo = own anchor', ok: asig && card.sentTo === dev.anchor && card.anchor === doc.issuer });
       const btOk = card.boundTo === cred.credentialSubject.challenge;
       st.push({ label: '8 card.boundTo = credential’s bound challenge (outer/inner)', ok: btOk });
       const cerOk = cred.credentialSubject.ceremony === this.C1;
-      st.push({ label: '8 ceremony label = encounter-scan@0.19 (grounded, not copied)', ok: cerOk });
+      st.push({ label: '8 ceremony label = encounter-scan@0.25 (grounded, not copied)', ok: cerOk });
       if (this.f.consumed && !dev.records.some(r => r.ownChallenge === cred.credentialSubject.challenge)) {
         dev.records.push({ ceremony: this.C1, counterparty: 'did:key:z6MkSomeoneElseEntirely', counterpartyCard: { fake: true },
-          ownChallenge: cred.credentialSubject.challenge, ownChallengeIssuedAt: this.iso(this.now(dev)), peerChallenge: 'x',
+          ownChallenge: cred.credentialSubject.challenge, ownChallengeIssuedAt: this.iso(this.now(dev)), ownCtx: { anchor: 'did:key:z6MkFakeCtx' }, peerChallenge: 'x',
           enactmentBinding: 'u-fake', recordedAt: this.iso(this.now(dev)) });
         this.log(dev.id, 'challenge pre-bound to a foreign enactment record (fault)', 'w');
       }
-      // resolution selects the branch (5.3): recorded > open > unknown
+      // resolution selects the branch (5.3): recorded > open > unknown —
+      // fresh-always: the resolved challenge NAMES the enacting context, and
+      // sentTo/subject must equal exactly that context's anchor
       const res = this.resolveCh(dev, cred.credentialSubject.challenge);
+      const ownA = res.state === 'recorded' ? res.rec.ownCtx.anchor : res.state === 'open' ? res.ctx.anchor : null;
+      st.push({ label: '8 sent card proof verifies · sentTo = the resolved context’s anchor', ok: asig && (ownA ? card.sentTo === ownA : false) && card.anchor === doc.issuer });
+      const subjOk = ownA ? cred.credentialSubject.id === ownA : false;
+      st.push({ label: '8 credential subject = the resolved context’s anchor', ok: subjOk });
+      if (!(asig && btOk && cerOk && (ownA ? (card.sentTo === ownA && subjOk) : true))) { /* fallthrough to branch checks below */ }
       if (res.state === 'recorded') {
         const rec = res.rec;
         const cpOk = rec.counterparty === doc.issuer;
@@ -992,21 +1033,22 @@ class Component extends DCLogic {
         const bOk2 = rec.enactmentBinding === cred.credentialSubject.enactmentBinding;
         st.push({ label: '8 binding verified against the record (optical leg completed first)', ok: bOk2 });
         doc.__viaRecord = cardSame && bOk2;
-        return (asig && card.sentTo === dev.anchor && btOk && cerOk && cardSame && bOk2 && csig && outer) ? { ok: true } : { ok: false, disp: 'failed(validation-failed)' };
+        return (asig && card.sentTo === ownA && subjOk && btOk && cerOk && cardSame && bOk2 && csig && outer) ? { ok: true } : { ok: false, disp: 'failed(validation-failed)' };
       }
       const chOk = res.state === 'open';
       st.push({ label: '8 resolution: ' + res.state + (chOk ? ' (held, within age bound)' : ' — aged/foreign/rotated-away, latched'), ok: chOk });
       if (!chOk) { if (!(csig && outer && asig && btOk && cerOk)) return { ok: false, disp: 'failed(validation-failed)' }; return { ok: false, disp: 'failed(validation-failed)' }; }
       doc.__own = { value: cred.credentialSubject.challenge, issuedAt: res.issuedAt };
+      doc.__ownCtx = res.ctx;
       const bind = await this.binding(cred.credentialSubject.ceremony, doc.__own.value, card.challenge.value);
       const bOk = bind === cred.credentialSubject.enactmentBinding;
       st.push({ label: '8 enactment binding recomputes from {resolved own, sent} challenges', ok: bOk });
-      const t = Date.parse(res.issuedAt), n = this.now(dev);
+      const t = tsec(res.issuedAt), n = tsec(this.now(dev));
       const lo = t - this.SKEW, hi = t + this.MAX_AGE + this.ISSUANCE + this.SKEW;
-      const vf = Date.parse(cred.validFrom), pc = Date.parse(cred.proof.created);
+      const vf = tsec(cred.validFrom), pc = tsec(cred.proof.created);
       const wOk = vf >= lo && vf <= hi && pc >= lo && pc <= hi && pc >= vf - this.SKEW;
       st.push({ label: '8 issuance window (t_ch from the resolution)' + (wOk ? '' : ' — stale'), ok: wOk });
-      extra = asig && card.sentTo === dev.anchor && btOk && cerOk && chOk && bOk && wOk;
+      extra = asig && card.sentTo === ownA && subjOk && btOk && cerOk && chOk && bOk && wOk;
       if (!wOk) { if (!(csig && outer)) return { ok: false, disp: 'failed(validation-failed)' }; return { ok: false, disp: 'failed(stale-issuance)' }; }
     } else {
       const cerOk = !doc.ceremony || !doc.ceremony.enactment || doc.ceremony.enactment === cred.credentialSubject.enactmentBinding;
@@ -1034,14 +1076,14 @@ class Component extends DCLogic {
         if (acc.ok || acc.code === 'idempotent (same digest)') {
           if (acc.ok) dev.received.push({ credential: cred, digest: await this.mdigest(cred), direction: 'incoming', issuer: cred.issuer });
           const ack = await this.mkAck(dev, doc, digest);
-          dev.cache[digest] = { disposition: 'unique', ack };
+          dev.cache[digest] = { disposition: 'unique', ack, rk: doc.payload && doc.payload.card ? this.rkOf(doc.payload.card) : (dev.records.find(r => r.counterparty === doc.issuer) ? this.rkOf(dev.records.find(r => r.counterparty === doc.issuer).counterpartyCard) : null) };
           st.push({ label: '9 credential accepted via existing record · ack enqueued', ok: true });
           const mutual = this.isMutualEnactment(dev, cred.issuer, cred.credentialSubject.enactmentBinding);
           if (mutual && (dev.screen === 'prompt' || dev.screen === 'opticalPrompt' || dev.screen === 'ready' || dev.screen === 'oneSided' || dev.screen === 'verifiedBack')) dev.screen = 'confirmed';
           // credential now HELD: an optical prompt is no longer "pending"
           else if (dev.screen === 'opticalPrompt' && cred.credentialSubject.enactmentBinding === dev.promptBinding) dev.promptPending = false;
           this.log(dev.id, 'network bundle arrived after optical completion · credential accepted, edge ' + (mutual ? 'mutual' : 'incoming'), 'ok');
-          await this.send(dev, this.dev[env.from], ack);
+          await this.send(dev, this.dev[env.from], ack, this.rkOf(doc.payload.card));
           return 'unique';
         }
         st.push({ label: '9 acceptance via record failed: ' + acc.code, ok: false });
@@ -1050,7 +1092,7 @@ class Component extends DCLogic {
       // authoritative resolution selected the record-creating effect (open);
       // the expiry side is structural — only the future check remains
       const own = doc.__own;
-      const t = Date.parse(own.issuedAt), n = this.now(dev);
+      const t = tsec(own.issuedAt), n = tsec(this.now(dev));
       const future = t > n + this.SKEW;
       st.push({ label: '9 explicit future check on the open value' + (future ? ' — gate-future' : ''), ok: !future });
       if (future) return 'failed(gate-future)';
@@ -1058,20 +1100,20 @@ class Component extends DCLogic {
       const card = doc.payload.card;
       const bind = cred.credentialSubject.enactmentBinding;
       dev.records.push({ ceremony: this.C1, counterparty: cred.issuer, counterpartyCard: card,
-        ownChallenge: own.value, ownChallengeIssuedAt: own.issuedAt, peerChallenge: card.challenge.value,
+        ownChallenge: own.value, ownChallengeIssuedAt: own.issuedAt, ownCtx: doc.__ownCtx, peerChallenge: card.challenge.value,
         enactmentBinding: bind, recordedAt: this.iso(n) });
       delete dev.openCh[own.value]; // open → recorded, atomic supersession
       dev.consumed.push(own.value);
       dev.received.push({ credential: cred, digest: await this.mdigest(cred), direction: 'incoming', issuer: cred.issuer });
       const ack = await this.mkAck(dev, doc, digest);
-      dev.cache[digest] = { disposition: 'unique', ack };
+      dev.cache[digest] = { disposition: 'unique', ack, rk: doc.payload && doc.payload.card ? this.rkOf(doc.payload.card) : (dev.records.find(r => r.counterparty === doc.issuer) ? this.rkOf(dev.records.find(r => r.counterparty === doc.issuer).counterpartyCard) : null) };
       st.push({ label: '9 one transaction: record + accepted credential + cache entry + ack enqueued', ok: true });
       dev.peer = this.other(dev);
       dev.promptBinding = bind; dev.promptPending = false; // credential is HELD — real recognition
       dev.thread = doc.threadId;
       dev.screen = 'prompt';
       this.log(dev.id, 'bundle accepted · credential is accepted, no later check can fail it', 'ok');
-      await this.send(dev, this.dev[env.from], ack);
+      await this.send(dev, this.dev[env.from], ack, this.rkOf(card));
       await this.newChallenge(dev);
       return 'unique';
     }
@@ -1079,9 +1121,10 @@ class Component extends DCLogic {
     const cred = doc.payload.credential;
     dev.buffered.push(cred);
     const ack = await this.mkAck(dev, doc, digest);
-    dev.cache[digest] = { disposition: 'unique', ack };
+    dev.cache[digest] = { disposition: 'unique', ack, rk: doc.payload && doc.payload.card ? this.rkOf(doc.payload.card) : (dev.records.find(r => r.counterparty === doc.issuer) ? this.rkOf(dev.records.find(r => r.counterparty === doc.issuer).counterpartyCard) : null) };
     st.push({ label: '9 effect: durable buffering + ack enqueued (acceptance runs separately)', ok: true });
-    await this.send(dev, this.dev[env.from], ack);
+    const rkRec = dev.records.find(r => r.counterparty === doc.issuer);
+    await this.send(dev, this.dev[env.from], ack, this.rkOf(rkRec ? rkRec.counterpartyCard : doc.payload.credential ? { keyAgreement: this.dev[env.from].card.keyAgreement } : null));
     const acc = await this.accept56(dev, cred);
     st.push({ label: '  Encounter 5.6 acceptance → ' + (acc.ok ? 'accepted' : acc.code) + ' (never acknowledged, never signalled back)', ok: acc.ok });
     if (acc.ok) {
@@ -1096,17 +1139,21 @@ class Component extends DCLogic {
   }
 
   async accept56(dev, cred) {
+    // 5.6 step 1: the document validates against the shipped credential
+    // schema — fail-closed: no loaded validator, no acceptance
+    if (!window.RLTP) return { ok: false, code: 'ERR_VERSION (validator unavailable)' };
+    if (window.RLTP.validate(cred, window.RLTP.SCHEMAS['encounter-credential-0.25.schema.json'], window.RLTP.SCHEMAS['encounter-credential-0.25.schema.json']).length) return { ok: false, code: 'ERR_VERSION (schema)' };
     if (cred.credentialSubject.format !== this.CREDF) return { ok: false, code: 'ERR_VERSION' };
     const body = { ...cred }; delete body.proof;
     if (!(await this.verify(cred.issuer, body, cred.proof))) return { ok: false, code: 'ERR_SIG' };
-    if (cred.credentialSubject.id !== dev.anchor) return { ok: false, code: 'ERR_ADDRESSEE' };
     const rec = dev.records.find(r => r.ownChallenge === cred.credentialSubject.challenge);
     if (!rec) return { ok: false, code: 'ERR_NO_RECORD' };
+    if (cred.credentialSubject.id !== rec.ownCtx.anchor) return { ok: false, code: 'ERR_ADDRESSEE' };
     if (rec.counterparty !== cred.issuer) return { ok: false, code: 'ERR_NO_RECORD' };
     if (rec.ceremony !== cred.credentialSubject.ceremony) return { ok: false, code: 'ERR_CEREMONY' };
-    const t = Date.parse(rec.ownChallengeIssuedAt);
+    const t = tsec(rec.ownChallengeIssuedAt);
     const lo = t - this.SKEW, hi = t + this.MAX_AGE + this.ISSUANCE + this.SKEW;
-    const vf = Date.parse(cred.validFrom), pc = Date.parse(cred.proof.created);
+    const vf = tsec(cred.validFrom), pc = tsec(cred.proof.created);
     if (!(vf >= lo && vf <= hi && pc >= lo && pc <= hi && pc >= vf - this.SKEW)) return { ok: false, code: 'ERR_STALE_ISSUANCE' };
     if (cred.credentialSubject.enactmentBinding !== rec.enactmentBinding) return { ok: false, code: 'ERR_BINDING' };
     const dig = await this.mdigest(cred);
@@ -1116,14 +1163,15 @@ class Component extends DCLogic {
   }
 
   async mkAck(dev, doc, digest) {
-    const body = { id: crypto.randomUUID(), type: this.TT + 'delivery-ack/0.1', issuer: dev.anchor, recipient: doc.issuer,
+    const ctx = dev.ctxs[doc.recipient];          // the ack is signed under the addressed pair anchor
+    const body = { id: crypto.randomUUID(), type: this.TT + 'delivery-ack/0.1', issuer: ctx.anchor, recipient: doc.issuer,
       threadId: doc.threadId, issuedAt: this.iso(this.now(dev)), payload: { ref: digest, meaning: 'received' } };
-    return { ...body, proof: await this.sign(dev, body) };
+    return { ...body, proof: await this.sign(dev, ctx, body) };
   }
   async resendAck(dev, known) {
     const to = this.dev[dev.id === 'A' ? 'B' : 'A'];
     this.log(dev.id, 'stored ack re-sent byte-identical (duplicate-known)', 'w');
-    await this.send(dev, to, known.ack);
+    await this.send(dev, to, known.ack, known.rk);
   }
 
   // ---------- heartbeat ----------
@@ -1133,6 +1181,18 @@ class Component extends DCLogic {
     ['A', 'B'].forEach(id => {
       const d = this.dev[id];
       if (!d.qr && d.card && window.QRCode) { this.mkQr(d); }
+      // the DISPLAY must never outlive the age bound: at PT5M the shown
+      // challenge rotates by itself (fresh pair anchor + fresh challenge;
+      // 5.3 retention keeps every open challenge resolvable). The 'expired'
+      // fault backdates deliberately — it suspends auto-rotation.
+      if (d.ch && !d.rotating && !this.f.expired && tsec(this.now(d)) > tsec(d.ch.issuedAt) + this.MAX_AGE) {
+        d.rotating = true;
+        this.newChallenge(d).then(() => {
+          d.rotating = false;
+          this.log(d.id, 'displayed challenge reached max age PT5M · rotated automatically — what is shown is always resolvable; retention unchanged', 'w');
+          this.bump();
+        });
+      }
       if (d.ackDeadline && Date.now() > d.ackDeadline && d.screen === 'waiting') {
         d.ackDeadline = 0; d.screen = 'fallback'; this.mkFallbackQr(d); dirty = true;
         this.log(d.id, 'ack-wait elapsed · same enactment continues optically: the sent card becomes a QR code (adapter switch, not a ceremony switch) — the credential follows over the network, delivery time is unbounded', 'w');
@@ -1156,15 +1216,15 @@ class Component extends DCLogic {
     const ageMs = dev.ch ? this.now(dev) - Date.parse(dev.ch.issuedAt) : 0;
     const ageS = Math.max(0, Math.round(ageMs / 1000));
     const left = dev.ackDeadline ? Math.max(0, Math.ceil((dev.ackDeadline - Date.now()) / 1000)) : 0;
-    const enact = dev.records.filter(r => r.counterparty === peer.anchor).length;
+    const enact = dev.records.length; // two-device sim: every record is with the peer
     // mutual is per-enactment (Encounter 4.2): issued and received must share a binding
     const mutual = dev.issued.some(i => dev.received.some(r =>
-      r.issuer === peer.anchor && r.credential.credentialSubject.enactmentBinding === i.credential.credentialSubject.enactmentBinding));
+      r.credential.credentialSubject.enactmentBinding === i.credential.credentialSubject.enactmentBinding));
     const w = dev.work;
     return {
       name: dev.name, anchorShort: dev.anchor.slice(0, 20) + '…' + dev.anchor.slice(-6),
       clock: new Date(this.now(dev)).toLocaleTimeString('en-GB'),
-      statusRight: (dev.online ? '' : 'offline · ') + (dev.skew ? (dev.skew > 0 ? '+' : '') + Math.round(dev.skew / 60000) + ' min' : 'in sync'),
+      statusRight: dev.name + ' · ' + (dev.online ? '' : 'offline · ') + (dev.skew ? (dev.skew > 0 ? '+' : '') + Math.round(dev.skew / 60000) + ' min' : 'in sync'),
       onlineLabel: dev.online ? 'online' : 'offline', onlineBg: dev.online ? 'transparent' : 'oklch(35% 0.09 55)',
       skewLabel: 'clock ' + (dev.skew === 0 ? '±0' : (dev.skew > 0 ? '+' : '') + Math.round(dev.skew / 60000) + 'm'),
       skewBg: dev.skew === 0 ? 'transparent' : 'oklch(35% 0.09 55)',

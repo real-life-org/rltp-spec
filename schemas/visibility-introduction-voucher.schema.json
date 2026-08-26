@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "body",
+    "proof"
+  ],
+  "properties": {
+    "body": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "act",
+        "requesterPair",
+        "targetPair"
+      ],
+      "properties": {
+        "type": {
+          "const": "introduction-voucher@1"
+        },
+        "act": {
+          "type": "string",
+          "pattern": "^u[A-Za-z0-9_-]{43}$"
+        },
+        "requesterPair": {
+          "type": "string",
+          "pattern": "^did:key:z6Mk[1-9A-HJ-NP-Za-km-z]{44}$"
+        },
+        "targetPair": {
+          "type": "string",
+          "pattern": "^did:key:z6Mk[1-9A-HJ-NP-Za-km-z]{44}$"
+        }
+      }
+    },
+    "proof": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mac"
+      ],
+      "properties": {
+        "mac": {
+          "type": "string",
+          "pattern": "^u[A-Za-z0-9_-]{43}$"
+        }
+      }
+    }
+  },
+  "title": "RLTP introduction-voucher@1 (rltp-visibility@0.15)"
+}
