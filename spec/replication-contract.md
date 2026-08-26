@@ -1824,10 +1824,13 @@ become an adapter without changing this contract.
   anchoring, freeze honesty, parallel acceptance, crash edges)
   are specified with their vectors in Access §§3.6, 7.3, and 14
   and bind through Section 6. **Assurance boundary, stated:** the
-  repository's executable conformance suite does not yet execute
-  the CAS/anchoring/`invalid-bundle` families — they exist as
-  textual vectors; executable coverage is named post-convergence
-  work.
+  registration-generation family — core identity, quorum
+  authorization, the two-way acceptance anchor, freeze honesty,
+  registration equivocation, and the CAS commit with its crash
+  edges — is executable (`vectors/acceptance-anchoring.json`,
+  conformance suite); the conflict-DAG evidence-session family
+  (prefix claims, supplements, transcripts) remains textual, its
+  executable coverage named follow-on work.
 
 ## 14. Open Issues and Coordination Debts
 

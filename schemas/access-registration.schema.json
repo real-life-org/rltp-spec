@@ -88,7 +88,7 @@
     },
     {
      "type": "string",
-     "pattern": "^[uz][1-9A-HJ-NP-Za-km-zA-F0-9=_-]{40,120}$"
+     "pattern": "^(u[A-Za-z0-9_-]{40,120}|z[1-9A-HJ-NP-Za-km-z]{40,120})$"
     }
    ]
   },
@@ -127,12 +127,12 @@
    "properties": {
     "abandonedRoot": {
      "type": "string",
-     "pattern": "^[uz][1-9A-HJ-NP-Za-km-zA-F0-9=_-]{40,120}$",
+     "pattern": "^(u[A-Za-z0-9_-]{40,120}|z[1-9A-HJ-NP-Za-km-z]{40,120})$",
      "description": "Signature-input digest of the last pre-divergence sole-tip view (the view-skeleton digest form)."
     },
     "abandonedTipsDigest": {
      "type": "string",
-     "pattern": "^[uz][1-9A-HJ-NP-Za-km-zA-F0-9=_-]{40,120}$",
+     "pattern": "^(u[A-Za-z0-9_-]{40,120}|z[1-9A-HJ-NP-Za-km-z]{40,120})$",
      "description": "Multihash over the UTF-8 bytes of the JCS array of the abandoned tips' signature-input digest strings, sorted by unsigned bytewise order."
     }
    }
@@ -145,7 +145,7 @@
     },
     {
      "type": "string",
-     "pattern": "^[uz][1-9A-HJ-NP-Za-km-zA-F0-9=_-]{40,120}$"
+     "pattern": "^(u[A-Za-z0-9_-]{40,120}|z[1-9A-HJ-NP-Za-km-z]{40,120})$"
     }
    ]
   }

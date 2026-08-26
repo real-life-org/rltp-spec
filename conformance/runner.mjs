@@ -376,6 +376,91 @@ section('dtg-credentials.json — DTG forms, u/z equivalence, canonical-u constr
   check(digestU({ '@context': CTX }) === 'uEiAcUXifIYaRyCmLiB5Bt5OV0EMhRj07Xn3P5aJEgTmzGg', 'context file digest matches the pinned value (semantic corruption gate)')
 }
 
+// ── suite: acceptance-anchoring.json — generations, anchor, CAS ─────────
+section('acceptance-anchoring.json — registration generations, acceptance anchor, CAS commit')
+{
+  const A = J('vectors/acceptance-anchoring.json')
+  const regs = A.registrations
+  const coreOf = (reg) => { const { sig, authorization, ...core } = reg; return digestU(core) }
+  const idSigOK = (reg) => { const { sig, ...toSign } = reg; return verifyRaw(reg.identity, Buffer.from(jcs(toSign), 'utf8'), sig) }
+  const quorumOK = (reg) => {
+    if (!reg.authorization) return true
+    const { sig, authorization, ...unsigned } = reg
+    const bytes = Buffer.from(jcs(unsigned), 'utf8')
+    return reg.authorization.every((a) => verifyRaw(a.signer, bytes, a.sig))
+  }
+
+  // artifacts: schema + core digest + identity signature + quorum
+  for (const [name, reg] of Object.entries(regs)) {
+    schemaOK(reg, 'access-registration.schema.json', `registration ${name}`)
+    check(coreOf(reg) === A.intermediate.coreDigests[name], `registration ${name}: registrationCoreDigest reproduces`)
+    check(idSigOK(reg), `registration ${name}: identity signature verifies over JCS minus sig`)
+    check(quorumOK(reg), `registration ${name}: quorum signatures verify over the complete unsigned registration`)
+  }
+  check(coreOf(regs.gen2) !== coreOf(regs.gen2twin), 'equivocation twin: same generation, distinct core digests')
+
+  // the two-way acceptance anchor: standing iff the root core lies on the
+  // previousRegistration chain from the session-attested generation
+  const byCore = Object.fromEntries(Object.values(regs).map((r) => [coreOf(r), r]))
+  const anchorVerdict = (rootCore, attestedCore) => {
+    if (!attestedCore) return 'invalid-bundle'
+    for (let c = attestedCore; c; c = byCore[c]?.previousRegistration ?? null) {
+      if (c === rootCore) return 'standing'
+      if (!byCore[c]) break
+    }
+    return 'invalid-bundle'
+  }
+  for (const c of A.anchorCases) {
+    const root = A.intermediate.coreDigests[c.root]
+    const attested = c.sessionAttested ? A.intermediate.coreDigests[c.sessionAttested] : null
+    check(anchorVerdict(root, attested) === c.expect, `anchor: ${c.name} → ${c.expect}`)
+    if (c.equivocationWith) {
+      const twin = regs[c.equivocationWith], self = regs[c.root]
+      check(self.registrationGeneration === twin.registrationGeneration && coreOf(self) !== coreOf(twin),
+        `anchor: ${c.name} — equivocation evidence (one generation, two cores) detectable from the artifacts alone`)
+    }
+    if (c.extraArtifact === 'selfAcceptance') {
+      const { sig, ...body } = A.selfAcceptance
+      const selfSigned = verifyRaw('did:key:' + regs[c.root].attestationKey, Buffer.from(jcs(body), 'utf8'), sig)
+      check(selfSigned, `anchor: ${c.name} — the self-signed artifact VERIFIES yet confers nothing (void by construction)`)
+    }
+  }
+
+  // the CAS acceptance commit: expected-old re-checked inside the commit
+  for (const c of A.casCases) {
+    let state = { core: A.intermediate.coreDigests[c.state], generation: regs[c.state].registrationGeneration, status: 'active' }
+    let durable = { ...state }
+    const outcomes = []
+    for (const [op, arg] of c.schedule) {
+      if (op === 'precheck') {
+        const cand = regs[arg]
+        outcomes.push(cand.registrationGeneration === state.generation + 1 && cand.previousRegistration === state.core && state.status === 'active' ? 'ok' : 'refused-expected-old')
+      } else if (op === 'commit') {
+        const cand = regs[arg]
+        if (cand.registrationGeneration === state.generation + 1 && cand.previousRegistration === state.core && state.status === 'active') {
+          state = { core: coreOf(cand), generation: cand.registrationGeneration, status: 'active' }
+          durable = { ...state } // one durable commit: tombstone + chain state together
+          outcomes.push('accepted')
+        } else outcomes.push('refused-expected-old')
+      } else if (op === 'crash') { state = null; outcomes.push('crashed') }
+      else if (op === 'recover') { state = { ...durable }; outcomes.push('recovered') }
+    }
+    const finalCore = A.intermediate.coreDigests[c.expect.finalState]
+    check(jcs(outcomes) === jcs(c.expect.outcomes) && (state ?? durable).core === finalCore,
+      `CAS: ${c.name} → [${c.expect.outcomes.join(', ')}], final ${c.expect.finalState}`)
+  }
+
+  // negatives — every mutation must fail at its declared stage
+  for (const n of A.negative) {
+    const doc = structuredClone(regs[n.registration])
+    for (const [k, v] of Object.entries(n.set ?? {})) doc[k] = v
+    for (const k of n.del ?? []) delete doc[k]
+    if (n.mustFail === 'schema') schemaFails(doc, 'access-registration.schema.json', `negative: ${n.name}`)
+    else if (n.mustFail === 'quorum-signature') check(!quorumOK(doc), `negative: ${n.name}`)
+    else if (n.mustFail === 'identity-signature') check(!idSigOK(doc), `negative: ${n.name}`)
+  }
+}
+
 // ── result ───────────────────────────────────────────────────────────────
 console.log(`\n${pass} passed, ${fail} failed`)
 if (fail) { console.error('conformance: FAILED'); process.exit(1) }

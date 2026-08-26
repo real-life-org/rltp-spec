@@ -151,6 +151,21 @@ export function makeValidator (SCHEMAS) {
         else if (schema.additionalProperties && typeof schema.additionalProperties === 'object') errs.push(...validate(data[k], schema.additionalProperties, root, `${path}.${k}`))
       }
     }
+    if (typeof data === 'number') {
+      if (schema.minimum != null && data < schema.minimum) E('minimum')
+      if (schema.maximum != null && data > schema.maximum) E('maximum')
+      if (schema.exclusiveMinimum != null && data <= schema.exclusiveMinimum) E('exclusiveMinimum')
+      if (schema.exclusiveMaximum != null && data >= schema.exclusiveMaximum) E('exclusiveMaximum')
+      if (schema.multipleOf != null && (data / schema.multipleOf) % 1 !== 0) E('multipleOf')
+    }
+    if (schema.anyOf && !schema.anyOf.some((s2) => validate(data, s2, root, path).length === 0)) E('anyOf unmatched')
+    if (schema.oneOf) { const n = schema.oneOf.filter((s2) => validate(data, s2, root, path).length === 0).length; if (n !== 1) E(`oneOf matched ${n}`) }
+    if (schema.not !== undefined && validate(data, schema.not, root, path).length === 0) E('not matched')
+    if (schema.if !== undefined) {
+      const hit = validate(data, schema.if, root, path).length === 0
+      if (hit && schema.then !== undefined) errs.push(...validate(data, schema.then, root, path))
+      if (!hit && schema.else !== undefined) errs.push(...validate(data, schema.else, root, path))
+    }
     for (const sub of schema.allOf || []) errs.push(...validate(data, sub, root, path))
     return errs
   }
