@@ -3,18 +3,16 @@
 **Real Life Trust Protocol — Layer 3: Access**
 
 - **Status:** Editor's Draft
-- **Version:** 0.52.0-draft (fifty-second casting — the
-  **receipt cut**, the loop's fourth architectural cut, on the
-  editor's decision 2026-08-26: the acceptance-receipt and
-  generation-statement machinery — demoted by the freeze
-  withdrawal to evidence that confers no standing — is removed;
-  the two-way acceptance anchor (7.3) carries alone, the CAS
-  acceptance commit stays, and the no-target window is a named
-  residual)
+- **Version:** 0.53.0-draft (fifty-third casting — prose seam of
+  the **S-DID cut** (Identity 0.13): the "self anchor (S-DID)"
+  terminology becomes the **community anchor** (an ordinary
+  M-DID); `member-mapping@1` keeps every byte — the `self` field
+  name is a frozen wire spelling. The fifty-second casting was the
+  receipt cut (design journal))
 - **Editors:** Anton Tranelis
 - **Date:** 2026-08-26
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
-- **Conformance profile:** `rltp-access@0.52` (draft). Wire
+- **Conformance profile:** `rltp-access@0.53` (draft). Wire
   versions are unchanged: the `0.24` family,
   `service-registration/0.26`, and the session-plane evidence
   forms `…/1` (3.6); the vouch (`vouch@2`, 5.3) is a W3C VC in
@@ -22,15 +20,15 @@
   forms `…/2` are withdrawn never-instantiated (Section 11).
   Section 11 is the compatibility statement; no shipped wire
   byte changes.
-- **Position:** Layer 3 of RLTP, above the Encounter Layer 0.28
+- **Position:** Layer 3 of RLTP, above the Encounter Layer 0.29
   (wire 0.25) and
-  the Identity layer (0.12), carried by the Delivery Contract
-  (0.22, jointly cast in this loop) where operations or keys must
+  the Identity layer (0.28), carried by the Delivery Contract
+  (0.37) where operations or keys must
   reach parties outside the replica; the Membership Tasks (0.16,
   jointly cast) register the task types that transport this
   layer's admission documents and are a normative companion.
-- **Supersedes:** 0.51 (archived,
-  `archive/access-layer-0.51-redaktionsguss.md`; every earlier
+- **Supersedes:** 0.52 (archived,
+  `archive/access-layer-0.52-receiptcut.md`; every earlier
   casting alongside); version 0.3.0-draft (wot-spec
   `rltp/access-layer.md`, archived there with its reviews); on
   adoption, the group/membership portions of wot-spec
@@ -71,8 +69,12 @@ revocable by construction. That difference is why the layers exist.
 
 ## Status of This Document
 
-This is an **Editor's Draft**, the fifty-second casting of this
-layer — the **receipt cut** (editor's decision, 2026-08-26): the
+This is an **Editor's Draft**, the fifty-third casting of this
+layer — the **S-DID seam** (jointly with Identity 0.13: the
+member's cross-relationship coordinate is the community anchor,
+an ordinary M-DID; `member-mapping@1` keeps every byte). The
+fifty-second casting was the **receipt cut** (editor's decision,
+2026-08-26): the
 acceptance-receipt and generation-statement machinery of castings
 0.47–0.50, demoted by the freeze withdrawal to evidence that
 confers no standing, is removed entirely. The two-way acceptance
@@ -190,9 +192,12 @@ authority log, and documents. Its **identity** is the digest of its
 genesis operation; its **address** is its group DID (3.2).
 **Member anchor (M-DID)** — the per-group context anchor under
 which one member acts in one group (5.1); the DTGWG class name
-M-DID names it throughout. **Self anchor (S-DID)** — a person's
-stable cross-relationship coordinate (Identity §5); it appears in
-no artifact of this layer except inside `member-mapping@1` (5.5).
+M-DID names it throughout. **Community anchor** — the anchor
+of a person's personal community: an ordinary group-context anchor
+(M-DID) of Identity §6, serving as the person's chosen
+cross-relationship coordinate (the S-DID class of earlier castings
+is withdrawn — Identity 0.13, the S-DID cut); it appears in no
+artifact of this layer except inside `member-mapping@1` (5.5).
 **Authority log** — the append-only operation DAG rooted in the
 genesis operation; the sole source of authorization state; its
 content is readable by members only, always (3.1). **Operation** —
@@ -1427,12 +1432,33 @@ counterpart of the service-identity rule, which already
 canonicalizes its digest the same way (Identity §7); the **founder**, for whom that context
 cannot exist before the genesis digest does, mints a fresh
 dedicated context of the nonce-based pair class for the founding
-act (3.4.1). The member's **self anchor (S-DID)** appears in no
+act (3.4.1). The member's **community anchor** appears in no
 artifact of this layer except inside `member-mapping@1` (5.5):
 joining discloses a group-scoped identifier to the roster, never
 the coordinate that links a person across groups — crossing that
-boundary is the deliberate act of 5.5. *(Method agnosticism and
-identity scoping: OI-7; the DTGWG-aligned class names R/M/P/S-DID
+boundary is the deliberate act of 5.5.
+
+**The migration residue, stated rather than hidden.** The scoping
+property binds every member anchor **derived** under this casting.
+It is not a re-admission requirement for anchors a roster already
+holds. A group whose materialized membership carries a
+**pre-0.13 legacy anchor** — the one-context world's single
+anchor, admitted before member anchors were per-group (Identity
+§10) — is not made nonconformant by that entry, and the legacy
+member keeps authorizing operations there under it: it is the
+member anchor that group admitted, and it stays a current member
+until an ordinary membership event ends that. What the scoping
+property forbids prospectively is **new** use: no admission may
+enter a legacy anchor into a group whose membership does not
+already carry it, and no new relationship may be formed under it
+(Identity §10's three rules). Migrating a legacy roster entry onto
+a `group/<genesis digest>` member anchor is that group's own
+ordinary membership event — this document fixes the direction,
+not a deadline. Note the asymmetry the residue implies and 5.5
+cannot repair: a legacy anchor is by construction cross-group
+visible, so for its groups the pseudonymity 5.5 lifts deliberately
+was never established. *(Method agnosticism and
+identity scoping: OI-7; the DTGWG-aligned class names R/M/P
 follow the network-visibility layer §2.)*
 
 ### 5.2 Derived service identities
@@ -1471,9 +1497,11 @@ follow the network-visibility layer §2.)*
   services the derived identities appear bare; the mapping to
   anchors never leaves the log. *(A future unification of this
   derivation with the Identity registry's label classes is
-  recorded as a debt — deliberately not taken while Identity 0.11
-  is converged; the derivation above is self-contained and
-  deployed nowhere.)*
+  recorded as a debt — deliberately not taken across the Identity
+  castings up to and including **0.13** (the S-DID cut left this
+  derivation untouched: service identities still derive outside
+  the label registry, under their own info string); the derivation
+  above is self-contained and deployed nowhere.)*
 
 ### 5.3 Admission and removal
 
@@ -1947,7 +1975,8 @@ construction, with the anchor classes swapped.
 Body: `{ "type": "member-mapping@1", "member": <the sender's own
 member anchor in this group>, "memberOp": <oid: of a canonical
 admission of `member` — or the genesis, where `member` is the
-founder>, "self": <the sender's S-DID>, "to": <the addressee's
+founder>, "self": <the sender's community anchor — the field
+name is a frozen wire spelling>, "to": <the addressee's
 member anchor in the same group>, "toOp": <oid: of a canonical
 admission of `to` — or the genesis>, "card": <a self-card@1 per
 Visibility §6.2>, "revision": <int-string>, "issuedAt":
@@ -1984,7 +2013,7 @@ the key-agreement keys of the cards named by `memberOp` and
 for its own revisioned type (higher wins; equal and
 JCS-identical idempotent; equal and different an equivocation
 error; lower rejected). With
-these in place, foreign self anchors are unclaimable, the
+these in place, foreign community anchors are unclaimable, the
 addressee can forge the whole artifact (deniability preserved),
 and third parties — co-members included — can verify nothing.
 
@@ -3081,7 +3110,7 @@ This layer requires, and does not define:
 
 - **Delivery port:** authenticated end-to-end-encrypted delivery
   to derived identities with durable buffering and explicit
-  disposition — satisfied by the Delivery Contract (0.22), whose
+  disposition — satisfied by the Delivery Contract (0.37), whose
   task types for this layer are the Membership Tasks (0.16,
   jointly cast) plus the
   type registered below.
@@ -3454,7 +3483,7 @@ so the type is dispatchable today, not `unknown-type`:
 - **Wire version and profile version are distinct, and this
   casting moves only one of them.** A wire version advances when a
   wire shape changes; the profile version advances with every
-  casting of this document. Profile `rltp-access@0.52` therefore
+  casting of this document. Profile `rltp-access@0.53` therefore
   produces and accepts exactly the `…/0.24` wire forms above — with the named exceptions `service-registration/0.26` (7.3) and the four session-plane evidence forms `rltp-access-evidence-claim/1` · `…-request/1` · `…-response/1` · `…-supplement/1` plus the part envelope `…-evidence-part/1` (3.6, normative as JCS field sets, schemas with the first adapter registration): the
   M-DID castings changed which anchor class fills the member
   fields — values and verdicts, never shapes — and added two new
@@ -3786,15 +3815,15 @@ so the type is dispatchable today, not `unknown-type`:
   reference,
   Membership's document schemas, `sealed-envelope.schema.json`,
   and `contact-card.schema.json`.
-- **Profile** `rltp-access@0.52`, whose wire forms remain those of
+- **Profile** `rltp-access@0.53`, whose wire forms remain those of
   `0.24` (Section 11 — two new shapes, one renamed policy-body
   value, no changed shape);
   normatively references the **Membership Tasks (0.16) and
-  Delivery Contract (0.22) of the current joint state** (document
+  Delivery Contract (0.37) of the current joint state** (document
   shapes, welcome seal, admission transport; document profile,
   sealed envelope, dispositions — their profile strings are
   pinned on their side, M2-style); where Encounter artifacts are
-  consumed (cards), `rltp-encounter@0.28` (wire 0.25).
+  consumed (cards), `rltp-encounter@0.29` (wire 0.25).
 - **Classes:** *member agent* (log, materialization including
   conflict matrix, merge-finality outcome rules, retained-set
   computation, and
@@ -4427,10 +4456,29 @@ so the type is dispatchable today, not `unknown-type`:
   confidentiality audit criteria of 9.1 — exercised with
   controlled state and clock.
 
-- **Vector plan, M-DID-loop additions:**
-  member-mapping@1 positive (both MACs against the cards named by
-  `memberOp`/`toOp`, founder side via genesis) · foreign-self
-  negative (card.anchor ≠ self → step 4) · wrong-group negative
+- **`member-mapping@1` — shipped, and what it does not cover.**
+  `vectors/member-mapping.json` is executable, not planned: a
+  complete positive artifact under this section's body field set,
+  with `mac1` recomputed under
+  HKDF(ECDH(memberX_sender, memberX_addressee)) and `mac2` under
+  HKDF(ECDH(communityX_sender, memberX_addressee)) over the
+  canonical JCS body bytes, the enclosed `self-card@1` verified
+  under its own anchor, and `card.anchor == self` (step 4)
+  checked; the foreign-self negative recomputes both MACs over
+  the mutated body, so steps 1–3 and 5–6 pass and step 4 is the
+  sole failing check. **Its honest limit, stated in the vector
+  file itself:** `memberOp` and `toOp` are documented placeholder
+  digests, not the self-addressing ids of real admission
+  envelopes — the log side of this section (canonical admissions,
+  their enclosed cards, current-membership materialization) is
+  outside that vector, so acceptance steps 2 and 3 are **not**
+  exercised by it. Vectorizing the admission side is the named
+  remaining work below.
+- **Vector plan, M-DID-loop remainder** (the admission-log side
+  and the vouch family):
+  member-mapping@1 against real admissions (both MACs against the
+  cards named by `memberOp`/`toOp`, founder side via genesis) ·
+  wrong-group negative
   (`to` not the addressee's member anchor → step 2) · `memberOp`
   naming a non-admission or foreign admission → step 3 · `member`
   no longer a current member → step 3 · two admissions with
@@ -4471,7 +4519,7 @@ so the type is dispatchable today, not `unknown-type`:
 - **OI-5 Encounter-presentation minimal disclosure.**
 - **OI-7 Member-identity model** — **settled by the M-DID loop:**
   per-group member identity (5.1), the founding occasion
-  registered in Identity 0.12, and the verifiable link is
+  registered in Identity 0.28, and the verifiable link is
   `member-mapping@1` (5.5) — designated-verifier by design.
   Method agnosticism beyond `did:key` remains open.
 - **OI-10 Shrink-robust policy forms** (relative thresholds;
@@ -4541,18 +4589,18 @@ so the type is dispatchable today, not `unknown-type`:
   acceptance. Until then this layer
   requires of its own implementers: key all group state by
   genesis digest. Resolved elsewhere: delivery envelope by the
-  Delivery Contract (0.22); policy-proof transport and
+  Delivery Contract (0.37); policy-proof transport and
   leave/dissolve notices are Membership MO-2 and MO-3.)*
 
 ## References
 
 [RFC2119] · [RFC8174] BCP 14 · [RFC8785] JCS · [RFC9420] MLS
-(epoch terminology) · **RLTP Encounter Layer 0.28**, wire 0.25 (securing
+(epoch terminology) · **RLTP Encounter Layer 0.29**, wire 0.25 (securing
 profile 2.3, contact card §6, credentials §7, evidence direction
 §4.2) · **RLTP Delivery Contract** and **RLTP Membership Tasks**
 (the companions of this loop's joint casting: document profile,
 sealed envelope, dispositions; document shapes §3, welcome seal
-§4, timing §5) · **RLTP Network Visibility 0.15** (§2.1 wire
+§4, timing §5) · **RLTP Network Visibility 0.16** (§2.1 wire
 conventions, §3 audience classes, §6 mapping construction, §6a
 convergence net, §8 introduction act) · W3C
 Verifiable Credentials Data Model 2.0 · Keyhive / BeeKEM design

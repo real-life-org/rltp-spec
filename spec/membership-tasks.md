@@ -11,9 +11,9 @@
 - **Target Trust Tasks framework version:** 0.4
 - **Conformance profile:** `rltp-membership@0.16` (draft)
 - **Position:** a task-type registration on top of the **RLTP Delivery
-  Contract 0.21** (normative reference; its §4.4 registry carries
+  Contract 0.37** (normative reference; its §4.4 registry carries
   these types), carrying operations of the
-  **RLTP Access Layer 0.30** (normative reference; its wire forms
+  **RLTP Access Layer 0.53** (normative reference; its wire forms
   remain `0.24`, so the transcribed schemas of this document stand
   byte-identically): the operation
   envelope of its §3.3 is the payload this specification transports,
@@ -111,7 +111,7 @@ carries a signed `candidacy` boolean, the pre-admission surfacing
 of 3.4 is gated on it, and the candidacy content has a stated
 lifecycle with the honest one-way-door sentence (M10 — the
 opt-in exists precisely because group-space publication cannot be
-recalled). Companion pins moved with the joint castings (now Delivery 0.21 and Access 0.29; the archived 0.13 stood on 0.19/0.27). The
+recalled). Companion pins moved with the joint castings (**then** Delivery 0.21 and Access 0.29 — this is genealogy, not the current pin; §10 carries that). The
 fourteenth casting answers joint round 2: the candidacy lifecycle
 names only **observable** triggers — completed admission and
 invite expiry — and states that a group's refusal is deliberately
@@ -245,7 +245,7 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
 "OPTIONAL" are to be interpreted as described in BCP 14 [RFC2119]
 [RFC8174] when, and only when, they appear in all capitals.
 
-The **interim securing profile** of Encounter 2.3 (Encounter 0.28)
+The **interim securing profile** of Encounter 2.3 (Encounter 0.29)
 applies. The
 **document profile, sealed envelope, staged dispositions, and
 acknowledgement rules** of the Delivery Contract (Sections 3–6) apply
@@ -1023,12 +1023,12 @@ surfaced, attributable lie with no mechanical effect.
 ## 10. Conformance
 
 - **Profile** `rltp-membership@0.16`; normatively references
-  `rltp-delivery@0.21` and `rltp-access@0.30` — whose wire forms
+  `rltp-delivery@0.37` and `rltp-access@0.53` — whose wire forms
   remain `0.24` — (envelope §3.3, member identity §5.1, admission
   and candidacy §5.3, material §9.5, key-delivery §10.1,
   removal-notice §10.2, views §7.3).
 - **The Access coupling, stated explicitly (not hidden).**
-  This profile pins Access **0.30 (wire 0.24)** two ways at once:
+  This profile pins Access **0.53 (wire 0.24)** two ways at once:
   in prose (the reference above, and the
   `rltp-access-material/0.24` pin of §4) **and** transitively,
   through the `v` constant of the transcribed Access schemas —
@@ -1050,9 +1050,11 @@ surfaced, attributable lie with no mechanical effect.
   Access) **or a documented compatibility statement**; an offline
   registry MUST be able to hold several Access schema versions at
   once (a versioned `$id` or a versioned subpath is the mechanism,
-  an Access-side decision). No section number cited against Access
-  0.24 in this document may be read against a later Access without
-  such a recast (joint review M2).
+  an Access-side decision). No section number cited against the
+  Access **wire** `0.24` in this document may be read against a
+  later Access wire without such a recast (joint review M2). The
+  profile pin above moves independently of the wire and has moved:
+  0.53 is the Access casting this document is cast against.
 - **Normative schemas (shipped, offline closure):**
   `schemas/payload-membership-invite.schema.json` ·
   `schemas/payload-membership-accept.schema.json` ·
@@ -1261,9 +1263,9 @@ surfaced, attributable lie with no mechanical effect.
 ## References
 
 [RFC2119] · [RFC8174] BCP 14 · [RFC8785] JCS · [TT] ToIP DTGWG Trust
-Tasks framework 0.4 · **RLTP Delivery Contract 0.21** (normative; §4.4 registry) ·
-**RLTP Encounter Layer 0.28**, wire 0.25 (securing profile 2.3,
-principles 1.3, contact card §6) · **RLTP Access Layer 0.30**, wire
+Tasks framework 0.4 · **RLTP Delivery Contract 0.37** (normative; §4.4 registry) ·
+**RLTP Encounter Layer 0.29**, wire 0.25 (securing profile 2.3,
+principles 1.3, contact card §6) · **RLTP Access Layer 0.53**, wire
 0.24 (normative: operation envelope §3.3, group identity §3.2,
 member identity §5.1, admission, candidacy and key service duty
 §5.3, member-mapping §5.5, material §9.5, `key-delivery/0.1`

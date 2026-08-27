@@ -3,24 +3,22 @@
 **Real Life Trust Protocol — Layer 2: Encounter**
 
 - **Status:** Editor's Draft
-- **Version:** 0.28.0-draft (twenty-eighth casting: the **DTG
-  adoption cast** — the encounter credential becomes a conformant
-  **DTG RelationshipCredential** per the DTGWG Core Credentials
-  WD01 (`design/dtg-credential-adoption-2026-08.md`): the DTG
-  context joins the pinned `@context`, the type array carries the
-  full DTG hierarchy with `EncounterCredential` as the concrete
-  hint (the WD01 PHC pattern), and every RLTP-specific field is a
-  WD01-legal additional subject property. History: the 0.27
-  surgical cast added the W3C proof-`@context` copy; 0.26 closed
-  joint round 3.)
+- **Version:** 0.29.0-draft (twenty-ninth casting — prose seam of
+  the **S-DID cut** (Identity 0.13): three sentences referencing
+  the withdrawn "self anchor" now name the community anchor and
+  the member-anchor-bound card uses; no wire byte, rule, or
+  ceremony step changes. The twenty-eighth casting was the DTG
+  adoption cast (design journal))
 - **Editors:** Anton Tranelis
 - **Date:** 2026-08-23
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
-- **Conformance profile:** `rltp-encounter@0.28` (draft). **This
-  casting is a deliberate wire break:** all wire versions advance to
+- **Conformance profile:** `rltp-encounter@0.29` (draft). **This
+  casting changes no wire byte** — the wire stands where the
+  twenty-eighth casting put it. **That casting was the deliberate
+  wire break**, and under it all wire versions advance to
   `0.25` (`rltp-card/0.25`, `rltp-encounter-credential/0.25`,
-  ceremony `encounter-scan@0.25`) — the DTG adoption changes the
-  credential's `@context` and `type` bytes, and the family moves
+  ceremony `encounter-scan@0.25`) — the DTG adoption changed the
+  credential's `@context` and `type` bytes, and the family moved
   together, exactly as at the 0.24 pair break. No deployed
   implementation of any
   prior RLTP Encounter casting exists; the wot-spec v0.1 generation
@@ -28,7 +26,8 @@
   The M-DID-loop companions consume this wire after their own
   conversion commits (this repository converts them in the same
   move).
-- **Supersedes:** version 0.27 (archived as
+- **Supersedes:** version 0.28 (archived as
+  `archive/encounter-layer-0.28.md`), version 0.27 (archived as
   `archive/encounter-layer-0.27.md`), versions 0.25–0.22 (archived as
   `archive/encounter-layer-0.25.md`, `archive/encounter-layer-0.24.md`,
   `archive/encounter-layer-0.23.md`, `archive/encounter-layer-0.22.md`),
@@ -70,11 +69,11 @@ every casting is reviewed in full by an independent adversarial
 reviewer, findings are triaged, and the document is recast — never
 patched — until a casting is judged blocker-free and compatibly
 implementable. The companion documents have met that criterion — the
-**RLTP Delivery Contract** (0.21), which specifies the transmission
+**RLTP Delivery Contract** (0.27), which specifies the transmission
 leg by normative reference, and above this layer the **RLTP
-Membership Tasks** (0.16) and the **RLTP Access Layer** (0.30).
+Membership Tasks** (0.16) and the **RLTP Access Layer** (0.53).
 
-This twenty-eighth casting is the **DTG adoption cast** (wire 0.25):
+The twenty-eighth casting was the **DTG adoption cast** (wire 0.25):
 the encounter credential is dual-typed as a DTGWG WD01
 RelationshipCredential under three pinned contexts, on the author's
 convergence directive
@@ -182,13 +181,13 @@ capitals, as shown here.
 
 Permanent identifiers are `https://real-life.org/rltp/v1#<Fragment>`.
 
-**Anchor** — a Layer-1 identifier of a person (Identity 0.12). In
+**Anchor** — a Layer-1 identifier of a person (Identity 0.28). In
 this casting, a `did:key` (2.3). **The enacting anchor of a
 ceremony is a freshly derived pair anchor** (Identity §6.1 `pair/`
 context) — fresh at every enactment, re-encounters included (4.4);
 relationship continuity is the visibility layer's post-ceremony
-act. The stable self anchor never
-appears on the ceremony wire; its disclosure is the visibility
+act. No standing anchor appears on the ceremony wire; the
+community anchor's disclosure (Identity 0.28) is the visibility
 layer's per-recipient act.
 
 **Contact card** — a person's signed self-description carrying the
@@ -243,13 +242,13 @@ Referenced: **Credential** (W3C VC 2.0, RLTP-owned type per 7.1),
 **Delivery port /
 RLTP Delivery Contract** *(services)*.
 
-### 2.3 Securing profile (bound to Identity 0.12)
+### 2.3 Securing profile (bound to Identity 0.28)
 
-The Layer-1 specification is cast: **RLTP Identity 0.12** defines
+The Layer-1 specification is cast: **RLTP Identity 0.28** defines
 derivation, the label registry (including the `pair/` contexts this
 casting enacts under), anchor form, and the anchor–key binding rule
 this section applies. The requirements below restate the consumed
-surface normatively — where they and Identity 0.11 disagree,
+surface normatively — where they and Identity 0.28 disagree,
 Identity governs:
 
 - An **anchor** is a **`did:key`** DID whose method-specific
@@ -493,7 +492,7 @@ claim of its own.
 
 This section applies to **cards used in an enactment** and to
 encounter credentials; card uses defined by other layers
-(Membership's and Access's S-DID-bound founder, invite, accept and
+(Membership's and Access's member-anchor-bound founder, invite, accept and
 key-request cards) are governed by those layers and their frozen
 schemas (Section 12).
 
@@ -520,8 +519,9 @@ accumulates on the relationship through its chain**, which is a
 local, per-holder notion — deliberately invisible to third parties
 (Section 8).
 
-A party MUST NOT enact under its self anchor, a group anchor, a
-persona anchor, or **any previously used pair anchor**. A received
+A party MUST NOT enact under a group anchor (its community anchor
+included), a persona anchor, or **any previously used pair
+anchor**. A received
 artifact naming such an anchor is not detectably invalid — the
 receiver cannot distinguish anchor classes, which is the point —
 but issuing it is nonconformant.
@@ -1219,18 +1219,21 @@ Enactments MUST be possible without any service (the offline path, 5.8).
 
 - Every wire artifact carries an explicit format version — cards,
   credentials (`credentialSubject.format`), tasks (their Type URIs).
-- **Wire version and profile version are distinct — and this casting
-  moves both, deliberately.** 0.20–0.22 kept the wire at `0.19`
-  because they changed values and verdicts, never shapes. The pair
-  castings (0.24) changed shapes and semantics — the enacting
-  anchor class (4.4) and one added optional member (7.2) — and
-  **this casting moves the wire again, to `0.25`**: the credential
-  gains the DTG context and the DTG type hierarchy (7.1), so its
-  serialized bytes change; the card and ceremony strings move with
-  the family. All wire strings stand at `0.25`; version handling
+- **Wire version and profile version are distinct — and this
+  casting moves only the profile.** 0.20–0.22 kept the wire at
+  `0.19` because they changed values and verdicts, never shapes.
+  The pair castings (0.24) changed shapes and semantics — the
+  enacting anchor class (4.4) and one added optional member
+  (7.2) — and **the twenty-eighth casting moved the wire again,
+  to `0.25`**: the credential gained the DTG context and the DTG
+  type hierarchy (7.1), so its serialized bytes changed; the card
+  and ceremony strings moved with the family. **This
+  twenty-ninth casting is the prose seam of the S-DID cut: the
+  profile advances to 0.29, the wire does not move.** All wire
+  strings stand at `0.25`; version handling
   remains exact match, so a 0.25 receiver rejects `…/0.24` and
   `…/0.19` artifacts and vice versa — an honest break in a
-  wire nobody has deployed. **The compatibility break this
+  wire nobody has deployed. **The compatibility break that
   casting opened is now resolved on both sides:** the pre-loop
   Delivery and Access castings pinned the archived 0.19/0.22
   generation and held *for it* — and the companions have
@@ -1346,9 +1349,9 @@ Enactments MUST be possible without any service (the offline path, 5.8).
 
 ## 15. Conformance
 
-- **Profile** `rltp-encounter@0.28`, wire forms `…/0.25` (Section 12
+- **Profile** `rltp-encounter@0.29`, wire forms `…/0.25` (Section 12
   — a deliberate break with no deployed predecessor); securing
-  profile bound to `rltp-identity@0.12` (2.3); **normatively
+  profile bound to `rltp-identity@0.28` (2.3); **normatively
   references the Delivery Contract** for the one-scan
   transmission — the Section-12 pin debt is discharged: Delivery
   names `encounter-scan@0.25` since its M-DID-loop recast.
@@ -1587,5 +1590,5 @@ W3C Data Integrity EdDSA Cryptosuites v1.0 · W3C Verifiable
 Credentials Data Model 2.0 · DTG Credential Specification (ToIP DTGWG,
 draft) · ToIP DTGWG Trust Ceremonies ADR 0001 and design note
 (Proposed) · did:key method draft · Multikey / multicodec registry ·
-**RLTP Delivery Contract 0.21 (normative)** · wot-spec v0.1 (superseded
+**RLTP Delivery Contract 0.37 (normative)** · wot-spec v0.1 (superseded
 parts, Appendix B).

@@ -3,26 +3,31 @@
 **Real Life Trust Protocol — cross-cutting: Network Visibility**
 
 - **Status:** Editor's Draft
-- **Version:** 0.15.0-draft (fifteenth casting)
+- **Version:** 0.16.0-draft (sixteenth casting — the **S-DID
+  cut**, jointly with Identity 0.13: the withdrawn "self anchor"
+  role moves to the **community anchor**, an ordinary M-DID of the
+  personal community; every disclosure, mapping, and convergence
+  mechanism keeps its shape — wire type names and field spellings
+  (`self-card@1`, `anchor-mapping@2`, the `self` field) are frozen
+  wire bytes and stay)
 - **Editors:** Anton Tranelis
 - **Date:** 2026-08-24
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
-- **Conformance profile:** `rltp-visibility@0.15` (draft). Wire
+- **Conformance profile:** `rltp-visibility@0.16` (draft). Wire
   artifacts: `star@1` · `grade-declaration@1` · `anchor-mapping@2` ·
   `self-card@1` · `continuity-probe@1` · `continuity-mapping@1` ·
   `introduction-request@1` · `introduction-reply@1` ·
   `introduction-ack@1` · `introduction-voucher@1`.
-- **Companions (pinned):** **Identity 0.11** (`pair/` registry §6.1 —
-  REQUIRED; Identity has since moved to 0.12 by one added pair
-  occasion, upward-compatible) · **Encounter 0.28** (fresh-always
+- **Companions (pinned):** **Identity 0.28** (`pair/` registry
+  §6.1 — REQUIRED; 0.13 is the S-DID cut, jointly cast with this
+  document) · **Encounter 0.29** (fresh-always
   enactment, wire 0.25 — §6a here is the other half of its §4.4) ·
-  Access and Membership were read-only at casting time (0.25/0.11);
-  **their recast — the M-DID loop — has since landed** (Access
-  0.30, Membership 0.16, Delivery 0.21), and Delivery's §4.4
+  Access 0.53, Membership 0.16, Delivery 0.37 (the M-DID loop and
+  the later cuts have landed), and Delivery's §4.4
   registry discharged the registration debt of 8.1, including the
   `ack-delay` publication path (`registry-declaration/0.1`).
-- **Supersedes:** version 0.14 (archived as
-  `archive/network-visibility-0.14.md`) and castings 0.13–0.1,
+- **Supersedes:** version 0.15 (archived as
+  `archive/network-visibility-0.15.md`) and castings 0.14–0.1,
   archived alongside it.
 - **Source material:** `design/visibility-publikumsprinzip-2026-08.md`
   · `design/mdid-bindung-2026-08.md` ·
@@ -47,7 +52,10 @@ Everything else convinces exactly its addressee and no one further.
 
 ## Status of This Document
 
-Fifteenth casting, answering joint round 12 — **the block's first
+Sixteenth casting — the S-DID cut's visibility seam (the
+community anchor takes the withdrawn self anchor's disclosure
+role; wire spellings frozen). The fifteenth casting answered
+joint round 12 — **the block's first
 blocker-free round**: round 12 confirmed the act machine total
 against every arrival permutation and returned a single major.
 This casting is surgical (the precedent is Encounter 0.28): the
@@ -66,7 +74,7 @@ they appear in all capitals.
 ## 1. Introduction (informative)
 
 The founding incident: Hans has one contact, Peter. One trust act
-of Peter's delivered three foreign self anchors to Hans as
+of Peter's delivered three foreign standing anchors to Hans as
 "unknown" contacts — people who never met Hans and never chose him.
 
 An anchor is a capability: a tag test key, a correlation point, a
@@ -79,28 +87,29 @@ The rule this document enforces everywhere:
 
 Consequence, decided for the whole protocol: **there are exactly
 two ways to gain a new contact — a real-life encounter (Encounter
-0.26) or the introduction act (Section 8).** No artifact of this
+0.29) or the introduction act (Section 8).** No artifact of this
 document transports a **standing** anchor of a third party to
 anyone. Fresh anchors created by their own issuers for a new
 relationship are the rule working, not an exception to it.
 
 ## 2. Terminology
 
-- **Anchor** — a context identifier of an identity (Identity 0.11
-  §5, §6): the self context, or a `pair/…`, `group/…`, `persona/…`
-  context.
+- **Anchor** — a context identifier of an identity (Identity 0.28
+  §6): a `pair/…`, `group/…`, or `persona/…` context.
 - **Anchor classes (DTGWG-aligned naming):** **R-DID** =
   pair-context anchor (pairwise, no correlation) · **P-DID** =
-  persona anchor (intentional correlation) · **S-DID** = the self
-  anchor — the stable coordinate across a person's relationships,
-  disclosed selectively per recipient (RLTP's extension to the
-  DTGWG ladder) · **M-DID** names the *class* "per-community member
-  identifier"; at this document's casting time membership still
-  bound the S-DID — the M-DID direction of 9.4 has since been
-  implemented by the Access/Membership recasts (the M-DID loop).
+  persona anchor (intentional correlation) · **M-DID** =
+  group-context anchor ("per-community member identifier") — the
+  DTGWG ladder, adopted without additions. The **community
+  anchor** is the M-DID of a person's personal community, serving
+  as their private cross-relationship coordinate, disclosed
+  selectively per recipient. (Castings up to 0.15 named a fourth
+  class, the "self anchor" S-DID; it is **withdrawn** — Identity
+  0.13, the S-DID cut — and the community anchor carries its
+  disclosure role unchanged.)
 - **Promotion** — the trust act of a holder toward one of their
-  contacts; the UI surface of promotion and of S-DID disclosure is
-  the **Trust** act.
+  contacts; the UI surface of promotion and of community-anchor
+  disclosure is the **Trust** act.
 - **Star** — the artifact by which a sender lets one recipient
   relate the sender's contact set to the recipient's own (Section
   5).
@@ -260,7 +269,7 @@ Principle (register no. 2), total and decidable:
 5. **Transport is not publication.** A delivered artifact is
    governed by its addressee binding, not by this rule.
 
-Applied: a group member's self-anchor tag is published into the
+Applied: a group member's member-anchor tag is published into the
 group space — its resolver class (co-members holding that anchor)
 lies within the group at publication time. World publication of
 that tag is a violation.
@@ -419,12 +428,13 @@ the default UX collapses it (register no. 3).
 
 ### 6.1 Purpose and construction
 
-`anchor-mapping@2` links a pair anchor to the self anchor of the
-same person for exactly one addressee — a **double-DH MAC
+`anchor-mapping@2` links a pair anchor to the community anchor of
+the same person for exactly one addressee — a **double-DH MAC
 construction in the Signal pattern**, entirely in WebCrypto.
 
 Body: `{ "type": "anchor-mapping@2", "pair": <sender's pair anchor
-in this relationship>, "self": <sender's S-DID>, "to": <addressee's
+in this relationship>, "self": <sender's community anchor — the
+field name is a frozen wire spelling>, "to": <addressee's
 pair anchor in this relationship>, "card": <self-card@1 document,
 6.2>, "revision": <int-string>, "issuedAt": <timestamp> }`.
 
@@ -435,10 +445,11 @@ HKDF(ECDH(selfX_sender, pairX_addressee),
 
 ### 6.2 self-card@1 — binding, not link; residue named
 
-`{ "body": { "type": "self-card@1", "anchor": <S-DID>,
+`{ "body": { "type": "self-card@1", "anchor": <community anchor>,
 "keyAgreement": <X25519 multikey> }, "proof": { "proofValue":
-… } }` — signed raw-Ed25519 under `anchor` per 2.1. It binds the
-Ed25519 and X25519 keys of the **same self context**; it links no
+… } }` — signed raw-Ed25519 under `anchor` per 2.1 (the type name
+is a frozen wire spelling). It binds the Ed25519 and X25519 keys
+of the **same community context**; it links no
 two contexts (class boundary, Section 3) — but it is **not
 harmless**: it carries the stable anchor and authentic addressing
 material. After disclosure, the addressee can pass it on; rule §1
@@ -463,7 +474,7 @@ property exists only as their sum:
 7. both ECDH outputs are non-zero; both MACs verify;
 8. `revision` per 6.4.
 
-With 2–7 in place: foreign self anchors are unclaimable (the card
+With 2–7 in place: foreign community anchors are unclaimable (the card
 is unsignable, `k2` uncomputable), the addressee can still forge
 the whole artifact (deniability preserved), and third parties can
 verify nothing.
@@ -526,7 +537,7 @@ pre-selection.
 1. **The probe (6a.2–6a.4) is the normative core** — the default
    path, run on every enactment. It recognizes via shared pair
    history, before and independent of any disclosure decision.
-2. **The S-DID convergence net:** where continuity did not
+2. **The community-anchor convergence net:** where continuity did not
    complete, a later verified `anchor-mapping@2` whose `self`
    equals the `self` held on another relationship merges the two
    chains — a holder-local act of the addressee, no wire artifact.
@@ -671,7 +682,7 @@ third parties cannot verify. On verification of a **record-side**
 mapping, chain per 6.4 and discharge the alignment duty. After a
 verified match, a party MAY re-send its existing
 `anchor-mapping@2` (self disclosure) on the new tuple without a
-fresh user decision: the addressee already holds the self anchor —
+fresh user decision: the addressee already holds the community anchor —
 re-delivery to the same holder, register no. 5.
 
 **Termination:** matching requires only that **some** probe
@@ -1082,7 +1093,7 @@ version, nothing structural.
 
 ### 9.2 The encounter-credential flank — seam pre-wired with suites
 
-Encounter (0.26) carries `commitment: { suite, value }` with an
+Encounter (0.29) carries `commitment: { suite, value }` with an
 initially empty suite registry and a producer emission gate;
 assigning meaning is registration in that registry — its own loop.
 This document only reserves its consumer role.
@@ -1094,24 +1105,45 @@ DV mapping = double-DH MAC (Section 6) · DV-ZK counting predicates
 disclosure / counting = BBS+ (W3C bbs-2023 draft) · general SNARKs
 only if predicates outgrow counting and subsets.
 
-### 9.4 M-DID binding of membership — confirmed direction, open semantics
+### 9.4 M-DID binding of membership — landed; the semantics that stay open
 
-Decision (23.08., `design/mdid-bindung-2026-08.md`): the target
-picture is membership bound to the group-context anchor (a true
-M-DID), with the S-DID as the private cross-relationship
-coordinate disclosed per co-member via the Section 6 pattern
-(group→self); the UI surface of that disclosure is the **Trust**
-act. Current reality (review finding M5): roster *readers* and
-colluding insiders of different groups can correlate S-DID-bound
-members across groups, and admission artifacts replicate stable
-anchors into group logs permanently. Technically the star is
-anchor-agnostic (finding M6). The open questions are semantic:
-which anchor class counts as a "contact"; how group-specific hits
-on the same person deduplicate without rebuilding the linkability
-the change removes; when an M-DID may bind to a relationship. The
-change is the Access/Membership recast — a **membership
-proof-model** change, not a pin rename (joint finding S-B2) — its
-own loop after this document converges.
+Decision (23.08., `design/mdid-bindung-2026-08.md`): membership
+binds to the group-context anchor (a true M-DID), with the
+community anchor (since the S-DID cut an ordinary M-DID of the
+personal community) as the private cross-relationship coordinate
+disclosed per co-member via the Section 6 pattern
+(group→community); the UI surface of that disclosure is the
+**Trust** act.
+
+**The direction is no longer prospective.** The loop it named has
+converged and its castings are committed: Access 0.53 carries the
+member-anchor scoping property (its §5.1) and
+`member-mapping@1`, the group→community disclosure built on this
+document's §6 pattern with the anchor classes swapped (its §5.5);
+Membership 0.16 is cast against it. What that recast was — a
+**membership proof-model** change, not a pin rename (joint
+finding S-B2) — is settled fact, not a plan. This section's own
+consumer role is unchanged by it.
+
+Historic reality of the one-anchor era (review finding M5) stands
+as recorded: roster *readers* and colluding insiders of different
+groups could correlate members bound to the then-stable self
+anchor across groups, and admission artifacts replicate the
+anchors of their era into group logs permanently. The residue is
+now named where it lives — a pre-0.13 legacy anchor stays in the
+rosters that admitted it and keeps acting there (Identity §10,
+Access §5.1), so for those groups the pseudonymity
+`member-mapping@1` lifts deliberately was never established.
+Technically the star is anchor-agnostic (finding M6).
+
+**Still open, and deliberately so — these are semantic, not
+directional:** which anchor class counts as a "contact"; how
+group-specific hits on the same person deduplicate without
+rebuilding the linkability the change removes; when an M-DID may
+bind to a relationship. A legacy relationship carries no pair
+tuple, so the §6a continuity machinery reaches it only after the
+two people re-establish it as a relationship-creation act — never
+under the legacy anchor (Identity §10, rule 2).
 
 ### 9.5 Standing disclosure (from the architecture map)
 
@@ -1261,9 +1293,9 @@ A conformant implementation:
 
 ## References
 
-- Identity Layer 0.11 — `spec/identity-layer.md` (§5.2, §6.1,
+- Identity Layer 0.28 — `spec/identity-layer.md` (§5.2, §6.1,
   §9.3, §11).
-- Encounter Layer 0.28 (wire 0.25) — `spec/encounter-layer.md`
+- Encounter Layer 0.29 (wire 0.25) — `spec/encounter-layer.md`
   (fresh-always §4.4, commitment §7.2, versioned schemas).
 - **Vector debt discharged:** `vectors/visibility.json` now ships
   **payload-level positive vectors** with real Encounter contact

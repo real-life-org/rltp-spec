@@ -57,6 +57,494 @@ for (const v of ID.vectors) {
   }
 }
 
+// carrier-relationship identities (Identity 7a): Ed25519-only, two
+// length-fixed digest inputs, one principal per (relationship × carrier).
+if (ID.carrierRelationship) {
+  const CR = ID.carrierRelationship
+  const mh = (b) => 'u' + Buffer.concat([Buffer.from([0x12, 0x20]), sha(b)]).toString('base64url')
+  const N = Buffer.from(CR.relationshipNonce, 'hex')
+  check(N.length === 32, 'carrier-relationship: the relationship nonce is 32 bytes')
+  check(mh(N) === CR.relationshipDigest, 'carrier-relationship: Dn = multihash of the 32 nonce bytes')
+  const seen = new Set()
+  for (const c of CR.cases) {
+    const Dc = mh(Buffer.from(c.carrier, 'utf8'))
+    const info = CR.prefix + Dc + CR.relationshipDigest
+    check(Dc === c.carrierDigest, `carrier-relationship [${c.carrier}]: Dc = multihash of the UTF-8 carrier identifier`)
+    check(Dc.length === 47 && CR.relationshipDigest.length === 47, `carrier-relationship [${c.carrier}]: both info parts are 47 characters (length-fixed, 7a.4)`)
+    check(info === c.info, `carrier-relationship [${c.carrier}]: info = prefix || Dc || Dn`)
+    const seed = hkdf(IKM, info)
+    check(seed.toString('hex') === c.edSeed, `carrier-relationship [${c.carrier}]: seed`)
+    check(didOf(seed) === c.principal, `carrier-relationship [${c.carrier}]: principal`)
+    // 7a.1 — Ed25519-only: the vector asserts the ABSENCE of a key-agreement key
+    check('keyAgreement' in c && c.keyAgreement === null,
+      `carrier-relationship [${c.carrier}]: no key-agreement key is derived for this class (declared null, not merely omitted)`)
+    seen.add(c.principal)
+  }
+  check('keyAgreement' in CR && CR.keyAgreement === null,
+    'carrier-relationship: the class itself declares keyAgreement null — Ed25519-only, sealing stays at the rkid (7a.1)')
+  check(seen.size === CR.cases.length, 'carrier-relationship: every case yields a distinct principal (byte-exactness, per-carrier separation)')
+
+  // Identity 7a.2 — the ordered validation pipeline for C (no normalization step)
+  const G = CR.identifierGrammar
+  if (G) {
+    const wellFormed = (s) => {
+      for (let i = 0; i < s.length; i++) {
+        const c = s.charCodeAt(i)
+        if (c >= 0xd800 && c <= 0xdbff) { const n = s.charCodeAt(i + 1); if (!(n >= 0xdc00 && n <= 0xdfff)) return false; i++ }
+        else if (c >= 0xdc00 && c <= 0xdfff) return false
+      }
+      return true
+    }
+    // 7a.2 step 4 runs against the SHIPPED Unicode 15.0 ranges, never the runtime's tables
+    const parseRanges = (list) => list.map((r) => {
+      const [a, b] = r.split('-')
+      return [parseInt(a, 16), parseInt(b === undefined ? a : b, 16)]
+    })
+    const PIN = G.unicodePin
+    const pinned = PIN ? [].concat(parseRanges(PIN.cc), parseRanges(PIN.cf), parseRanges(PIN.whiteSpace)) : null
+    const inPinned = (cp) => pinned.some(([a, b]) => cp >= a && cp <= b)
+    const validId = (s) => {
+      if (typeof s !== 'string' || !wellFormed(s)) return false
+      const b = Buffer.from(s, 'utf8')
+      if (b.length < 1 || b.length > G.maxBytes) return false
+      if (!pinned) return !/[\p{Cc}\p{Cf}\p{White_Space}]/u.test(s)
+      for (const ch of s) if (inPinned(ch.codePointAt(0))) return false
+      return true
+    }
+    // strict UTF-8 decode for byte inputs (7a.2 step 1): overlong, truncated, surrogate-encoded, out of range
+    const decodeStrict = (buf) => {
+      try { return new TextDecoder('utf-8', { fatal: true }).decode(buf) } catch { return null }
+    }
+    const principalOf = (s) => didOf(hkdf(IKM, CR.prefix + mh(Buffer.from(s, 'utf8')) + CR.relationshipDigest))
+    for (const s of G.accepts) check(validId(s), `carrier identifier grammar accepts ${JSON.stringify(s)}`)
+    for (const r of G.rejects) {
+      const s = r.repeat ? r.repeat.char.repeat(r.repeat.count)
+        : r.valueEscaped !== undefined ? JSON.parse('"' + r.valueEscaped + '"') : r.value
+      check(!validId(s), `carrier identifier grammar rejects: ${r.reason}`)
+    }
+    const [nfcForm, nfdForm] = G.nfcPair
+    check(nfcForm !== nfdForm && validId(nfcForm) && validId(nfdForm) && principalOf(nfcForm) !== principalOf(nfdForm),
+      'carrier identifier: no normalization — NFC and NFD spellings are two carriers with two principals (7a.2)')
+
+    if (PIN) {
+      check(PIN.version === '15.0', 'carrier identifier: the shipped property pin declares Unicode 15.0')
+      // the pin must be self-consistent and must be what the checks above used
+      check(pinned.every(([a, b]) => a <= b && b <= 0x10ffff), 'carrier identifier: pinned ranges are well formed')
+      check(inPinned(0x00ad) && inPinned(0x200d) && inPinned(0x0007) && inPinned(0x3000) && !inPinned(0x0041),
+        'carrier identifier: the pinned set covers Cf (00AD, 200D), Cc (0007) and White_Space (3000) and not ordinary letters')
+    }
+    for (const r of G.rawByteRejects || []) {
+      const buf = Buffer.from(r.bytesHex, 'hex')
+      const s = decodeStrict(buf)
+      check(s === null || !validId(s), `carrier identifier raw bytes rejected: ${r.reason}`)
+    }
+    for (const a of G.rawByteAccepts || []) {
+      const s = decodeStrict(Buffer.from(a.bytesHex, 'hex'))
+      check(s !== null && validId(s), `carrier identifier raw bytes accepted: ${a.reason}`)
+    }
+  }
+
+  // m-1 (round 2): the relationship axis — same carrier, a second nonce
+  const AX = CR.relationshipAxisCase
+  if (AX) {
+    const N2 = Buffer.from(AX.nonce, 'hex')
+    check(N2.length === 32, 'carrier-relationship axis: the second relationship nonce is 32 bytes')
+    check(mh(N2) === CR.secondRelationshipDigest, 'carrier-relationship axis: Dn of the second nonce')
+    const info = CR.prefix + mh(Buffer.from(AX.carrier, 'utf8')) + CR.secondRelationshipDigest
+    check(info === AX.info, 'carrier-relationship axis: info = prefix || Dc || Dn(second)')
+    const seed = hkdf(IKM, info)
+    check(seed.toString('hex') === AX.edSeed, 'carrier-relationship axis: seed')
+    check(didOf(seed) === AX.principal, 'carrier-relationship axis: principal')
+    check('keyAgreement' in AX && AX.keyAgreement === null,
+      'carrier-relationship axis: no key-agreement key for this class either')
+    const sameCarrierFirst = CR.cases.find((c) => c.carrier === AX.carrier)
+    check(sameCarrierFirst && sameCarrierFirst.principal !== AX.principal,
+      'carrier-relationship axis: ONE carrier, two relationship nonces yield two different principals (7a.3)')
+  }
+
+  // Identity 7a.3 — the {nonce, generation} convergence rule (rounds 2 and 4)
+  const NC = CR.nonceConvergence
+  if (NC) {
+    // canonical = highest generation; ties by unsigned bytewise-smallest nonce
+    const canonicalOf = (entries) => entries.slice().sort((a, b) =>
+      (b.generation - a.generation) ||
+      Buffer.compare(Buffer.from(a.nonce, 'hex'), Buffer.from(b.nonce, 'hex')))[0]
+    const pAt = (hex) => didOf(hkdf(IKM, CR.prefix +
+      mh(Buffer.from(NC.carrier, 'utf8')) + mh(Buffer.from(hex, 'hex'))))
+    for (const c of NC.cases) {
+      check(c.entries.every((e) => Buffer.from(e.nonce, 'hex').length === 32 && Number.isInteger(e.generation) && e.generation >= 1),
+        `nonce convergence [${c.case}]: every entry is a 32-byte nonce with a generation >= 1`)
+      const w = canonicalOf(c.entries)
+      check(w.nonce === c.canonical.nonce && w.generation === c.canonical.generation,
+        `nonce convergence [${c.case}]: the declared entry is canonical`)
+      // order independence: every permutation of the entry set must agree
+      const perms = (xs) => xs.length <= 1 ? [xs]
+        : xs.flatMap((x, i) => perms([...xs.slice(0, i), ...xs.slice(i + 1)]).map((r) => [x, ...r]))
+      check(perms(c.entries).every((order) => {
+        const k = canonicalOf(order)
+        return k.nonce === c.canonical.nonce && k.generation === c.canonical.generation
+      }), `nonce convergence [${c.case}]: order-independent — every device reaches the same answer`)
+      check(pAt(c.canonical.nonce) === c.canonicalPrincipal,
+        `nonce convergence [${c.case}]: the canonical entry derives the declared principal`)
+      const superseded = c.entries.filter((e) => e.nonce !== c.canonical.nonce || e.generation !== c.canonical.generation)
+      check(superseded.length === c.entries.length - 1,
+        `nonce convergence [${c.case}]: exactly one canonical entry, every other superseded`)
+      check(superseded.every((e) => pAt(e.nonce) !== c.canonicalPrincipal) &&
+        c.supersededPrincipals.every((sp) => sp !== c.canonicalPrincipal),
+        `nonce convergence [${c.case}]: a superseded entry derives a DIFFERENT principal — an orphan at the carrier, never a collision`)
+    }
+    // round-6 M-1: generation has a closed, interoperable integer domain
+    const GD = NC.generationDomain
+    if (GD) {
+      const MAXG = Number.MAX_SAFE_INTEGER
+      check(GD.min === 1 && GD.max === MAXG,
+        'generation domain: [1, 2^53-1] — the largest integer every JSON implementation represents exactly')
+      const inDomain = (v) => Number.isSafeInteger(v) && v >= GD.min && v <= GD.max
+      for (const v of GD.accepts) check(inDomain(v), `generation domain accepts ${v}`)
+      for (const r of GD.rejects) {
+        if (r.valueString !== undefined) {
+          // canonical integer form: the round-trip must be byte-identical, which
+          // rejects 01 / 1.0 / 1e3 — and 2^53(+1), which are simply out of range
+          const parsed = Number(r.valueString)
+          const canonical = Number.isSafeInteger(parsed) && String(parsed) === r.valueString
+          check(!(canonical && inDomain(parsed)), `generation domain rejects ${r.valueString}: ${r.reason}`)
+        } else {
+          check(!inDomain(r.value), `generation domain rejects ${r.value}: ${r.reason}`)
+        }
+      }
+      // the divergence the bound exists to forbid, made visible
+      check(Number('9007199254740992') === Number('9007199254740993'),
+        'generation domain: 2^53 and 2^53+1 ARE indistinguishable in IEEE-754 — which is why the domain stops below them')
+      const BC = GD.boundaryCase
+      const wB = canonicalOf(BC.entries)
+      check(wB.nonce === BC.canonical.nonce && wB.generation === BC.canonical.generation,
+        'generation domain [boundary]: a rotation at the top of the domain resolves by generation')
+      check(Buffer.compare(Buffer.from(BC.canonical.nonce, 'hex'),
+        Buffer.from(BC.entries.find((e) => e.nonce !== BC.canonical.nonce).nonce, 'hex')) > 0,
+        'generation domain [boundary]: the winning nonce sorts HIGHER — a bytewise-only rule would have picked the other')
+      check(pAt(BC.canonical.nonce) === BC.canonicalPrincipal,
+        'generation domain [boundary]: the canonical entry derives the declared principal')
+    }
+
+    // The two properties bytewise-smallest alone could not deliver (round-4 B-3)
+    const rot = NC.cases.find((c) => /rotation/i.test(c.case))
+    check(rot && Buffer.compare(Buffer.from(rot.canonical.nonce, 'hex'),
+      Buffer.from(rot.entries.find((e) => e.nonce !== rot.canonical.nonce).nonce, 'hex')) > 0,
+      'nonce convergence: the rotation vector is a real counter-vector — the winning nonce sorts HIGHER, so bytewise-smallest alone would have undone the rotation')
+    const back = NC.cases.find((c) => /re-appears/i.test(c.case))
+    check(back && back.canonical.generation > Math.min(...back.entries.map((e) => e.generation)),
+      'nonce convergence: a re-appearing older entry carries the lower generation and stays superseded — the REGISTER needs no tombstone (the carrier keeps its own, for released bindings)')
+  }
+}
+
+// ── suite 1b: the carrier proof and the rate state machine ───────────────
+section('carrier-proof.json — Delivery §5a.3 signature input, §4.4 rate machine')
+{
+  const CP = J('vectors/carrier-proof.json')
+  const strip = (o) => { const { sig, ...rest } = o; return rest }
+
+  // §5a.3 — canonical, domain-separated signature input
+  for (const [name, blk] of [['registration', CP.registration], ['collection', CP.collection]]) {
+    check(blk.object.v === CP.v, `${name}: the domain tag is the v constant inside the signed object`)
+    check(jcs(strip(blk.object)) === blk.jcs, `${name}: signature input is the JCS serialization with sig omitted`)
+    check(verifyRaw(blk.object.principal, Buffer.from(blk.jcs, 'utf8'), blk.sig),
+      `${name}: the signature verifies under the control principal`)
+  }
+  const R = CP.registration
+  const chalLen = (s) => typeof s === 'string' && s.length === 43 && Buffer.from(s, 'base64url').length === 32 &&
+    Buffer.from(s, 'base64url').toString('base64url') === s
+  check(chalLen(R.object.principalChallenge) && chalLen(R.object.addressChallenge),
+    'registration: both challenges are exactly 32 bytes in canonical unpadded base64url (43 characters)')
+  check(R.object.purpose === 'register' && R.object.rkid && R.object.addressChallenge,
+    'registration: purpose=register carries rkid and the address challenge')
+  check(Number.isSafeInteger(R.object.generation) && R.object.generation >= 1,
+    'registration: the proof carries the register generation, in Identity 7a.3\'s domain (round-11 B-4)')
+
+  // §5a.3 — generation monotonicity across the port
+  const GM = CP.generationMonotonicity
+  if (GM) {
+    const verdict = (g, p) =>
+      g < GM.acceptedGeneration ? 'refused(stale-generation)'
+        : g > GM.acceptedGeneration ? 'rebound'
+          : p === GM.acceptedPrincipal ? 'registered(idempotent)' : 'refused(stale-generation)'
+    for (const c of GM.cases) {
+      check(verdict(c.generation, c.principal) === c.outcome,
+        `generation monotonicity [${c.case}]: ${c.outcome}`)
+      check(c.bindingMoves === (c.outcome === 'rebound'),
+        `generation monotonicity [${c.case}]: the binding moves only on a strictly higher generation`)
+    }
+    // round-12 B-1: the composite the two state machines did not cover separately
+    const TIE = GM.equalGenerationTie
+    if (TIE) {
+      check(TIE.carrierSeesNonces === false,
+        'equal-generation tie: the carrier never sees the nonces — any value reconstructing their order would be a cross-carrier join key (Identity §7a.4)')
+      let boundP = null, boundG = 0
+      for (const st of TIE.steps) {
+        if (st.registerOnly) {                       // the register converges; the carrier learns nothing
+          check(st.boundPrincipal === boundP && st.boundGeneration === boundG,
+            `equal-generation tie [${st.step}]: register convergence does not move the carrier's binding`)
+          continue
+        }
+        const got = boundP === null ? 'registered'
+          : st.generation > boundG ? 'rebound'
+            : st.generation === boundG && st.principal === boundP ? 'registered(idempotent)'
+              : 'refused(stale-generation)'
+        check(got === st.outcome, `equal-generation tie [${st.step}]: ${st.outcome}`)
+        if (got === 'registered' || got === 'rebound') { boundP = st.principal; boundG = st.generation }
+        check(st.boundPrincipal === boundP && st.boundGeneration === boundG,
+          `equal-generation tie [${st.step}]: binding is ${st.boundPrincipal === boundP ? 'as declared' : 'WRONG'}`)
+      }
+      const refusal = TIE.steps.find((st) => st.outcome === 'refused(stale-generation)')
+      const heal = TIE.steps[TIE.steps.length - 1]
+      check(refusal && heal.outcome === 'rebound' && heal.generation === refusal.generation + 1,
+        'equal-generation tie: the refusal is a WAIT state — one rotation later the binding moves (round-12 B-1)')
+      // round-13 B-2: the rotation must actually rotate — fresh nonce, newly DERIVED principal
+      const N3 = Buffer.from(TIE.rotationNonce, 'hex')
+      check(N3.length === 32 && TIE.rotationNonce !== TIE.registerCanonicalNonce &&
+        TIE.rotationNonce !== TIE.registerSupersededNonce,
+        'equal-generation tie: the rotation draws a FRESH nonce, not one of the two tie candidates (Identity §7a.3)')
+      // local multihash helper: suite 1's is block-scoped
+      const mh13 = (b) => 'u' + Buffer.concat([Buffer.from([0x12, 0x20]), sha(b)]).toString('base64url')
+      const CRX = ID.carrierRelationship
+      const dn3 = mh13(N3)
+      check(dn3 === TIE.rotationDigest, 'equal-generation tie: Dn of the rotation nonce')
+      const info3 = CRX.prefix + mh13(Buffer.from(TIE.carrier ?? 'did:web:carrier.example', 'utf8')) + dn3
+      check(info3 === TIE.rotationInfo, 'equal-generation tie: info = prefix || Dc || Dn(rotation)')
+      const seed3 = hkdf(IKM, info3)
+      check(seed3.toString('hex') === TIE.rotationEdSeed, 'equal-generation tie: rotation seed')
+      check(didOf(seed3) === TIE.rotationPrincipal && didOf(seed3) === heal.principal,
+        'equal-generation tie: the healing step binds a principal DERIVED from the fresh nonce (round-13 B-2)')
+      check(heal.principal !== TIE.steps[0].principal &&
+        heal.principal !== TIE.steps.find((st) => st.registerOnly).principal,
+        'equal-generation tie: a real rotation yields a principal different from BOTH tie candidates — the previous vector reused one, which was an impossible state sequence')
+      check(Buffer.compare(Buffer.from(TIE.registerSupersededNonce, 'hex'),
+        Buffer.from(TIE.registerCanonicalNonce, 'hex')) > 0,
+        'equal-generation tie: the vector is the hard direction — the device that bound first holds the LARGER nonce, so the register overturns it')
+      // round-13 B-1: the corner where rotation is unavailable
+      const MAXTIE = TIE.tieAtTheMaximum
+      if (MAXTIE) {
+        check(MAXTIE.generation === Number.MAX_SAFE_INTEGER && MAXTIE.rotationAvailable === false,
+          'tie at the maximum: no rotation is available there (Identity §7a.3 forbids generation + 1)')
+        check(MAXTIE.bindingStands === true && MAXTIE.collectableByEveryDevice === true &&
+          MAXTIE.boundPrincipalIsRegisterCanonical === false,
+          'tie at the maximum: the binding stands and stays collectable although the bound principal is NOT the register-canonical one — because entries are superseded, never deleted (round-13 B-1)')
+        check(MAXTIE.remainingLevers.length >= 2,
+          'tie at the maximum: the remaining levers are named (a move to a different C; a new chain as a social event) rather than a re-addressing instruction the holder cannot follow')
+      }
+    }
+    // round-12 B-2: the tombstone outlives the binding
+    const REL = GM.releasedAndReRegistered
+    if (REL) {
+      let tomb = REL.highestEverAccepted
+      for (const st of REL.steps) {
+        if (st.generation === undefined) continue
+        const got = st.generation > tomb ? 'registered' : 'refused(stale-generation)'
+        check(got === st.outcome, `released-then-re-registered [${st.step}]: ${st.outcome}`)
+        if (got === 'registered') tomb = st.generation
+      }
+      check(REL.steps.some((st) => st.bindingLive === false && st.outcome === 'refused(stale-generation)'),
+        'binding tombstone: a superseded generation is refused even though the binding itself is gone — resurrection by patience is closed (round-12 B-2)')
+      // round-14 B-1: the store is bounded, and the consequence of eviction is stated, not implied
+      const EV = REL.evictionRule
+      check(EV && EV.bound === 'max-binding-tombstones' && /oldest/.test(EV.evicts),
+        'binding tombstone: the store is capacity-bounded and evicts the oldest by release time (round-14 B-1)')
+      check(EV && /anti-resurrection guarantee ends/.test(EV.consequenceForEvictedRkid) &&
+        /both/.test(EV.reachableBy) && /orphan-horizon/.test(EV.attackerCostPerTombstone),
+        'binding tombstone: the eviction consequence is named with its preconditions — owner-only, and metered by a registration plus an orphan-horizon per tombstone')
+      check(!/binding-tombstone-retention/.test(REL.residual) && !/destroy/.test(REL.residual),
+        'binding tombstone: the shipped residual text no longer carries the withdrawn retention constant or the key-retention misreading (round-14 M-2)')
+    }
+    const restored = GM.cases.find((c) => /restored device/.test(c.case))
+    check(restored && restored.outcome === 'refused(stale-generation)' && restored.bindingMoves === false,
+      'generation monotonicity: a device restored from an older backup proves everything and still cannot roll the binding back — the register\'s succession holds across the port')
+  }
+  check(CP.collection.object.purpose === 'collect' &&
+    CP.collection.object.rkid === undefined && CP.collection.object.addressChallenge === undefined,
+    'collection: purpose=collect omits rkid and addressChallenge — absence is part of the signed bytes')
+  check(CP.collection.jcs !== R.jcs && CP.collection.sig !== R.sig,
+    'collection: a collection proof is byte-distinct from a registration proof (no cross-purpose replay)')
+  for (const n of CP.negatives.cases) {
+    check(jcs(n.object) === n.jcs, `transplant vector shape: ${n.case}`)
+    check(n.jcs !== R.jcs, `transplant changes the signed bytes: ${n.case}`)
+    check(!verifyRaw(n.object.principal, Buffer.from(n.jcs, 'utf8'), R.sig),
+      `the registration signature does NOT verify after: ${n.case}`)
+  }
+
+  // §4.4 — the challenge CHARGE machine (rounds 7 and 8)
+  const CC = CP.challengeChargeMachine
+  if (CC) {
+    const MAXO = CC.declaration['max-open-challenges']
+    const LIFE = CC.lifetimeMs
+    const replayCharges = (steps) => {
+      let charges = []
+      return steps.map((st) => {
+        if (st.restart) { charges = new Array(MAXO).fill(LIFE); return { verdict: null, heldAfter: charges.length } }
+        const e = Math.max(0, st.elapsedMs)
+        charges = charges.map((c) => c - e).filter((c) => c > 0)
+        if (charges.length >= MAXO) return { verdict: 'registration-refused(capacity)', heldAfter: charges.length }
+        charges.push(LIFE)                       // taken at the budget check, before any key operation
+        return { verdict: st.outcome ?? 'issued', heldAfter: charges.length }
+      })
+    }
+    for (const [name, seq] of Object.entries(CC.sequences)) {
+      const got = replayCharges(seq)
+      check(got.every((g, i) => g.verdict === seq[i].verdict && g.heldAfter === seq[i].heldAfter),
+        `challenge charge [${name}]: the declared sequence reproduces step for step (${seq.length} steps)`)
+      check(seq.every((st) => st.heldAfter <= MAXO),
+        `challenge charge [${name}]: never more than max-open-challenges charges are held`)
+    }
+    // round-7 B-1: completing an exchange must NOT refund the charge
+    const ser = CC.sequences.serialCompletions
+    const completedThenRefused = ser.findIndex((st) => st.verdict === 'registration-refused(capacity)')
+    check(completedThenRefused >= 0 && ser.slice(0, completedThenRefused).every((st) => st.verdict === 'issued'),
+      'challenge charge: completing max-open-challenges exchanges in sequence does NOT free the budget — the next request is refused (the counter-vector to serial recycling)')
+    check(ser.some((st) => st.elapsedMs > 0 && st.verdict === 'issued'),
+      'challenge charge: only the passage of challenge-lifetime returns a slot')
+    // round-8 B-2: a restart cannot be a way to obtain issuance
+    const rst = CC.sequences.acrossRestart
+    const ri = rst.findIndex((st) => st.restart)
+    check(ri > 0 && rst[ri].heldAfter === MAXO,
+      'challenge charge: a restart resumes with the FULL budget held — strictly less capacity than before, never more')
+    check(rst[ri + 1] && rst[ri + 1].verdict === 'registration-refused(capacity)',
+      'challenge charge: restart-loop closed — the first request after a restart is refused, so restarting buys no issuance')
+    check(rst[ri - 1].heldAfter < MAXO,
+      'challenge charge: the restart really increased the held count (the attack it forecloses is a real one)')
+  }
+
+  // §4.4/§5a.5 — the reserve is PER BOUND ADDRESS (round-11 B-1)
+  const RS9 = CC && CC.reserveAndStarvation
+  if (RS9) {
+    const MAXO2 = RS9.declaration['max-open-challenges']
+    const LIFE2 = CC.lifetimeMs
+    let pool = []              // unreserved charges (remaining ms)
+    const perAddress = new Map()  // rkid -> remaining ms of its own charge
+    const got = RS9.sequence.map((st) => {
+      const e = Math.max(0, st.elapsedMs ?? 0)
+      pool = pool.map((c) => c - e).filter((c) => c > 0)
+      for (const [k, v] of [...perAddress]) { const r = v - e; if (r > 0) perAddress.set(k, r); else perAddress.delete(k) }
+      // one charge per named rkid, whether reserved or from the pool
+      if (perAddress.has(st.rkid)) return { verdict: 'registration-refused(capacity)', unreservedHeld: pool.length }
+      if (st.bound) { perAddress.set(st.rkid, LIFE2); return { verdict: 'issued', unreservedHeld: pool.length } }
+      if (pool.length >= MAXO2) return { verdict: 'registration-refused(capacity)', unreservedHeld: pool.length }
+      pool.push(LIFE2); perAddress.set(st.rkid, LIFE2)
+      return { verdict: 'issued', unreservedHeld: pool.length }
+    })
+    check(got.every((g, i) => g.verdict === RS9.sequence[i].verdict && g.unreservedHeld === RS9.sequence[i].unreservedHeld),
+      `challenge reserve: the declared sequence reproduces step for step (${RS9.sequence.length} steps)`)
+    // the residual is real for the pool …
+    const afterLapse = RS9.sequence.findIndex((st) => (st.elapsedMs ?? 0) >= LIFE2)
+    check(afterLapse > 0 && RS9.sequence[afterLapse].verdict === 'issued',
+      'starvation residual: at the lapse the attacker re-takes the unreserved pool — the denial is NOT self-healing, and the vector says so')
+    // … and reaches no bound address's own charge
+    const poolFullAt = RS9.sequence.findIndex((st) => !st.bound && st.verdict === 'registration-refused(capacity)')
+    const boundAfter = RS9.sequence.slice(poolFullAt).filter((st) => st.bound && st.verdict === 'issued')
+    check(poolFullAt > 0 && boundAfter.length >= 2 &&
+      new Set(boundAfter.map((st) => st.rkid)).size >= 2,
+      'challenge reserve: with the unreserved pool exhausted, TWO different bound addresses still get their own reserved charge — reserves do not compete with each other (round-11 B-1)')
+    const aHeld = RS9.sequence.filter((st) => st.rkid === 'rkid-A')
+    check(aHeld.some((st) => st.verdict === 'registration-refused(capacity)') &&
+      RS9.sequence.some((st) => st.rkid === 'rkid-B' && st.verdict === 'issued'),
+      'challenge reserve: holding one address\'s charge reaches that address only — the promise is now the accounting, not an assumption about behaviour')
+  }
+
+  // §4.4 — the queue-floor accounting (round-11 B-2/B-3)
+  const QF = CP.queueFloorAccounting
+  if (QF) {
+    const FLOOR = QF.declaration['queue-floor']
+    const TOTAL = QF.declaration['max-total-bytes']
+    const QUOTA = QF.declaration['max-queue-bytes']
+    check(TOTAL >= QF.declaration['max-queues'] * FLOOR,
+      'queue floor: max-total-bytes >= max-queues * queue-floor holds for the declared set')
+    const committed = (live, closing) =>
+      live.reduce((a, u) => a + Math.max(u, FLOOR), 0) + closing.reduce((a, u) => a + u, 0)
+    for (const c of QF.cases) {
+      const before = committed(c.live, c.closing)
+      const after = committed(c.live.map((u, i) => i === c.queue ? u + c.size : u), c.closing)
+      check(before === c.committedBefore && after === c.committedAfter,
+        `queue floor [${c.case}]: committed ${before} -> ${after}`)
+      const fits = after <= TOTAL && (c.live[c.queue] + c.size) <= QUOTA
+      check((fits ? 'admitted' : 'refused(capacity)') === c.outcome,
+        `queue floor [${c.case}]: ${c.outcome}`)
+    }
+    // the property that makes the floor a guarantee rather than a promise
+    const belowFloor = QF.cases.find((c) => c.live[c.queue] + c.size <= FLOOR)
+    check(belowFloor && belowFloor.committedBefore === belowFloor.committedAfter &&
+      belowFloor.outcome === 'admitted',
+      'queue floor: growth within a queue\'s floor does not move `committed` at all, so it can never be refused for global occupancy (round-11 B-2)')
+    const closingCase = QF.cases.find((c) => c.closing.length > 0)
+    check(closingCase && closingCase.committedAfter > closingCase.committedBefore,
+      'queue floor: a closing queue contributes its bytes to `committed` — they cannot be handed out twice (round-11 B-3)')
+  }
+
+  // §5a.5 — `duplicate` is byte-exact over the sealed envelope (round-9 B-2)
+  const DR = CP.duplicateRule
+  if (DR) {
+    const bytesOf = (env) => JSON.stringify([env.rkid, env.epk, env.nonce, env.ciphertext])
+    for (const c of DR.cases) {
+      const identical = bytesOf(c.first) === bytesOf(c.second)
+      const expected = identical && !c.depositConcluded ? 'duplicate' : 'admitted'
+      check(expected === c.outcome, `duplicate rule [${c.case}]: outcome is ${c.outcome}`)
+      check(c.resourceCharged === 2,
+        `duplicate rule [${c.case}]: the admission resource is charged for BOTH submissions — a replay is never free`)
+      const expectedCopies = c.outcome === 'duplicate' ? 1 : (c.depositConcluded ? 1 : 2)
+      check(c.storedCopies === expectedCopies,
+        `duplicate rule [${c.case}]: ${c.storedCopies} stored cop${c.storedCopies === 1 ? 'y' : 'ies'} — a duplicate consumes no storage`)
+    }
+    const resealed = DR.cases.find((c) => /re-sealed/.test(c.case))
+    check(resealed && resealed.outcome === 'admitted' &&
+      resealed.first.epk !== resealed.second.epk && resealed.first.nonce !== resealed.second.nonce,
+      'duplicate rule: re-sealing one document yields a fresh epk and nonce, so a key-blind carrier admits it — §6.2 absorbs the repetition at the receiver, on the document digest')
+  }
+
+  // §4.4 — `rate` is a token bucket in integer MICRO-tokens (round-4 B-4)
+  const RS = CP.rateStateMachine
+  const MAX = RS.declaration['admission-rate-max']
+  const W = RS.windowMs
+  const CAP = MAX * W
+  check(RS.capacityMicro === CAP && RS.initialMicro === CAP, 'rate: a fresh queue starts with a full bucket, capacity max*windowMs')
+  check(W % MAX !== 0, 'rate: the shipped configuration is deliberately NOT evenly divisible — the fault of the previous casting could not have shown up under PT1M/3')
+
+  const replay = (steps) => {
+    let micro = RS.initialMicro
+    const seen = []
+    for (const s of steps) {
+      if (s.restart) { seen.push({ verdict: null, microAfter: micro }); continue }  // only micro persists
+      micro = Math.min(CAP, micro + Math.max(0, s.elapsedMs) * MAX)
+      const verdict = micro >= W ? 'admitted' : 'refused(admission-resource)'
+      if (verdict === 'admitted') micro -= W                                        // a refusal subtracts nothing
+      seen.push({ verdict, microAfter: micro })
+    }
+    return seen
+  }
+  const admits = (seq) => seq.filter((s) => s.verdict === 'admitted').length
+  for (const [name, seq] of Object.entries(RS.sequences)) {
+    const got = replay(seq)
+    check(got.every((g, i) => g.verdict === seq[i].verdict && g.microAfter === seq[i].microAfter),
+      `rate [${name}]: the declared sequence reproduces step for step (${seq.length} steps)`)
+    check(seq.every((s) => s.microAfter >= 0 && s.microAfter <= CAP),
+      `rate [${name}]: the bucket never leaves [0, max*windowMs] — no clock jump creates capacity`)
+  }
+  // The heart of B-4: capacity is a function of elapsed time, not of polling instants
+  const polled = RS.sequences.polledAt334And667
+  const together = RS.sequences.bothAt667
+  check(polled && together && admits(polled) === admits(together),
+    `rate: polling at 334 ms and 667 ms admits exactly as much as asking twice at 667 ms (${admits(polled)} admissions each) — no remainder is lost`)
+  check(polled.some((s) => s.verdict.startsWith('refused')) && polled.some((s) => s.verdict === 'admitted'),
+    'rate: the sequence exercises both outcomes')
+  const zeroRefusals = polled.filter((s, i) => i > 0 && s.elapsedMs === 0 && s.verdict.startsWith('refused'))
+  check(zeroRefusals.every((s, i) => {
+    const idx = polled.indexOf(s)
+    return polled[idx - 1].microAfter === s.microAfter
+  }), 'rate: a refusal at zero elapsed time changes no state — a flood cannot deepen a queue\'s own penalty')
+  // Restart: no elapsed credit crosses it, and the bucket never resumes fuller
+  const rst = RS.sequences.acrossRestart
+  const ri = rst.findIndex((s) => s.restart)
+  check(ri > 0 && rst[ri].microAfter === rst[ri - 1].microAfter,
+    'rate: a restart carries only `micro` — it neither refills nor resets to full')
+  check(rst[ri + 1] && rst[ri + 1].elapsedMs === 0 && rst[ri + 1].verdict === 'refused(admission-resource)',
+    'rate: no elapsed credit crosses the restart — the first request after it is judged on the persisted counter alone')
+}
+
 // ── suite 2: seal vector reproduces byte-for-byte ────────────────────────
 section('seal.json — Delivery §5 construction reproduces')
 {
@@ -121,8 +609,10 @@ for (const [k, v] of Object.entries(V.parties)) {
   P[k] = { ed, x, did: didOf(ed), mk: mkOf(x) }
   check(label === v.label && P[k].did === v.anchor && P[k].mk === v.keyAgreement, `party ${k}: derivation`)
 }
-const selfEd = hkdf(IKM, 'wot/identity/ed25519/v1'), selfX = hkdf(IKM, 'wot/encryption/x25519/v1')
-check(didOf(selfEd) === V.self.anchor && mkOf(selfX) === V.self.keyAgreement, 'self: derivation')
+// the community anchor is an ORDINARY group-context derivation (Identity
+// 0.13, the S-DID cut) — never the recovery context's fixed strings
+const selfEd = hkdf(IKM, 'rltp/anchor/ed/' + V.self.label), selfX = hkdf(IKM, 'rltp/anchor/x/' + V.self.label)
+check(V.self.label.startsWith('group/') && didOf(selfEd) === V.self.anchor && mkOf(selfX) === V.self.keyAgreement, 'community anchor: ordinary group-context derivation')
 const A = V.artifacts
 const macCheck = (label, body, mac, privSeed, peerMk, info) =>
   check(hmacU(hkdf(ecdh(privSeed, peerMk), info), jcs(body)) === mac, label)
@@ -174,6 +664,46 @@ for (const n of V.negative) {
   } else if (n.name === 'legacy-version') check(a.body.type === 'anchor-mapping@1', `${n.name}: unimplemented type (2.1 rejection before crypto)`)
   else if (n.name === 'star-salt-replay') check(jcs(a) === jcs(A.star), `${n.name}: byte-identical to the accepted star (state fixture)`)
   else err(`unknown negative ${n.name}`)
+}
+
+// ── suite 4a: member-mapping@1 — the Access 5.5 crossing of the group boundary ──
+section('member-mapping.json — both MACs, the card signature, card.anchor == self')
+{
+  const MM = J('vectors/member-mapping.json')
+  const mh = (s) => 'u' + Buffer.concat([Buffer.from([0x12, 0x20]), sha(Buffer.from(s, 'utf8'))]).toString('base64url')
+  const ctx = (label) => { const ed = hkdf(IKM, 'rltp/anchor/ed/' + label), x = hkdf(IKM, 'rltp/anchor/x/' + label); return { ed, x, did: didOf(ed), mk: mkOf(x) } }
+  // the two member anchors and the community anchor are ORDINARY group-context
+  // derivations (Identity 6.1) — no fixed label, no fixed genesis (5.3's
+  // prohibition 1); the community anchor is the one of vectors/visibility.json
+  for (const [k, p] of Object.entries(MM.parties)) {
+    const d = ctx(p.label)
+    check(p.label.startsWith('group/') && d.did === p.anchor && d.mk === p.keyAgreement, `member-mapping party ${k}: ordinary group-context derivation`)
+  }
+  check(MM.parties.community.anchor === V.self.anchor && MM.parties.community.label === V.self.label, 'member-mapping: community anchor is the one of visibility.json')
+  for (const [dg, pre] of Object.entries(MM.group.genesisDigestPreimages)) check(mh(pre) === dg, `member-mapping: sample genesis digest reproduces from its preimage (${pre})`)
+  for (const [o, pre] of Object.entries(MM.opRefs.preimages)) check('oid:' + sha(Buffer.from(pre, 'utf8')).toString('base64url') === o, `member-mapping: placeholder oid reproduces from its preimage (${pre})`)
+
+  const S = ctx(MM.parties.sender.label), T = ctx(MM.parties.addressee.label), C = ctx(MM.parties.community.label)
+  const mm1 = (body) => hmacU(hkdf(ecdh(S.x, T.mk), 'rltp/access/mac/member-map1'), jcs(body))
+  const mm2 = (body) => hmacU(hkdf(ecdhRaw(C.x, xRawOfMk(T.mk)), 'rltp/access/mac/member-map2'), jcs(body))
+  const b = MM.artifact.body
+  check(b.member === MM.parties.sender.anchor && b.to === MM.parties.addressee.anchor, 'member-mapping: member/to are the two member anchors')
+  check(b.self === MM.parties.community.anchor, 'member-mapping: `self` (frozen spelling) is the community anchor')
+  check(mm1(b) === MM.artifact.proof.mac1, 'member-mapping: mac1 (member-X × member-X)')
+  check(mm2(b) === MM.artifact.proof.mac2, 'member-mapping: mac2 (community-X × addressee member-X)')
+  check(mm1(b) !== mm2(b), 'member-mapping: the two MACs are under different keys')
+  check(verifyRaw(b.card.body.anchor, Buffer.from(jcs(b.card.body), 'utf8'), b.card.proof.proofValue), 'member-mapping: card verifies as self-card@1 under its own anchor')
+  check(b.card.body.anchor === b.self, 'member-mapping: step 4 — card.anchor == self')
+  check(b.card.body.keyAgreement === MM.parties.community.keyAgreement, 'member-mapping: the card carries the community key-agreement key')
+  check(jcs(b.card) === jcs(V.artifacts.selfCard), 'member-mapping: the enclosed card is byte-identical to the visibility.json self-card')
+  schemaOK(MM.artifact, 'member-mapping.schema.json', 'member-mapping')
+  for (const n of MM.negative) {
+    const a = n.artifact
+    if (n.name === 'member-mapping-foreign-self') {
+      check(mm1(a.body) === a.proof.mac1 && mm2(a.body) === a.proof.mac2, `${n.name}: both MACs over the MUTATED body verify (step 6 passes)`)
+      check(a.body.card.body.anchor !== a.body.self, `${n.name}: step 4 (card.anchor != self) is the failing check — a foreign community anchor stays unclaimable`)
+    } else err(`unknown member-mapping negative ${n.name}`)
+  }
 }
 
 // ── suite 5: dtg-credentials.json — VIC/VEC forms, u/z equivalence, genesis-to-bytes ──

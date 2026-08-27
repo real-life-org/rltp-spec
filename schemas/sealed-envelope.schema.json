@@ -1,7 +1,7 @@
 {
  "$schema": "https://json-schema.org/draft/2020-12/schema",
  "$id": "https://real-life.org/rltp/v1/schemas/sealed-envelope.schema.json",
- "title": "RLTP Sealed Envelope (rltp-delivery@0.22)",
+ "title": "RLTP Sealed Envelope (rltp-delivery@0.37)",
  "description": "Encrypted travel form per Delivery Contract section 5: fresh ephemeral X25519 per envelope, HKDF-SHA-256 (empty salt, info 'rltp/v1/seal'), AES-256-GCM with 128-bit tag and empty AAD. Plaintext is JCS(document), 1..65536 bytes; the document digest is computed over the plaintext, never the ciphertext. Shipped vector: vectors/seal.json.",
  "type": "object",
  "required": [

@@ -1,0 +1,103 @@
+{
+ "source": "BIP-39 test mnemonic of vectors/identity-derivation.json; member-mapping@1 per RLTP Access Layer 5.5 (rltp-access-member-mapping/0.24)",
+ "note": "The two member anchors are ORDINARY group-context derivations (Identity 6.1). In deployment both sides derive under the SAME group/<genesis digest> label from two DIFFERENT root IKMs; every key in this repository derives from ONE root IKM, so the two roles stand in as two distinct sample genesis digests. The derivation rule exercised is identical, and no acceptance condition of 5.5 compares the two labels.",
+ "group": {
+  "senderMemberGenesisDigest": "uEiCCsq5ciVSsrhXjp4-OoQbQ4JStCJEvM82lS_CIh4SFPA",
+  "addresseeMemberGenesisDigest": "uEiBAYgf2ze_ehYkIlMV0zF-7MLJ873Ib_nfrYtVCpn5KkQ",
+  "digestNote": "sha2-256 multihash of the ASCII bytes named in genesisDigestPreimages — documented samples, not real genesis envelopes",
+  "genesisDigestPreimages": {
+   "uEiCCsq5ciVSsrhXjp4-OoQbQ4JStCJEvM82lS_CIh4SFPA": "rltp/vectors/member-mapping/genesis/sender-side",
+   "uEiBAYgf2ze_ehYkIlMV0zF-7MLJ873Ib_nfrYtVCpn5KkQ": "rltp/vectors/member-mapping/genesis/addressee-side"
+  }
+ },
+ "parties": {
+  "sender": {
+   "role": "the discloser — member anchor in the group",
+   "label": "group/uEiCCsq5ciVSsrhXjp4-OoQbQ4JStCJEvM82lS_CIh4SFPA",
+   "anchor": "did:key:z6MknrQQh98pX1gmnWG4F7d1pGAuRWB5z1QFMfK16XzaC71d",
+   "keyAgreement": "z6LShFH7BNyUZR4TJU1RKPnRZXkxK8RrNijMpJNZLqaBa4v2"
+  },
+  "addressee": {
+   "role": "the co-member the pseudonym is lifted toward",
+   "label": "group/uEiBAYgf2ze_ehYkIlMV0zF-7MLJ873Ib_nfrYtVCpn5KkQ",
+   "anchor": "did:key:z6MkjYcg95wcrkwrXjTSGoMuQV9PXA8r4BZ3oP6cK9F6bgMP",
+   "keyAgreement": "z6LSm1SNtodFDLKoXFBseooScbpcurV8nuwduuk8vaZCkpjL"
+  },
+  "community": {
+   "role": "the sender's community anchor — the frozen wire field is spelled `self`",
+   "label": "group/uEiDYLnFbXqm2cwuJWuk9yNzRmlzWDpCTH6yA_4aP_1z_RA",
+   "anchor": "did:key:z6Mkp252PiZp5e3EzakYaFCbWuJjpCiVfkr2ZffkqyEVAE2t",
+   "keyAgreement": "z6LSfGq1jMrqQ3jmQFB1pJrsKvVQhgQxRFtdkpdBYSn6Lum6",
+   "note": "byte-identical to `self` in vectors/visibility.json: an ordinary group-context derivation over the personal community genesis (Identity 0.13, the S-DID cut)"
+  }
+ },
+ "proofInfo": {
+  "mac1": "HMAC-SHA-256(HKDF-SHA-256(ECDH(memberX_sender, memberX_addressee), info=\"rltp/access/mac/member-map1\"), JCS(body))",
+  "mac2": "HMAC-SHA-256(HKDF-SHA-256(ECDH(communityX_sender, memberX_addressee), info=\"rltp/access/mac/member-map2\"), JCS(body))",
+  "note": "both MACs are over the canonical JCS bytes of the complete body, the enclosed card included"
+ },
+ "opRefs": {
+  "note": "HONEST LIMIT: `memberOp` and `toOp` are documented placeholder digests — `oid:` + unpadded base64url(SHA-256) of the ASCII preimages below. They are NOT the self-addressing ids of real admission envelopes, because the log side of 5.5 (canonical admissions, their enclosed cards, current-membership materialization) lies outside this vector. Acceptance steps 2 and 3 — that each oid: names a canonical admission whose subject and enclosed card match — are therefore NOT exercised here; what this vector exercises is the crypto: both MACs, the card signature, and `card.anchor == self`. The admission-log vectors remain open work (Access 14).",
+  "preimages": {
+   "oid:o5DHtlbv-9wPRDWlgObPObRAMdwGOFQF-NAGl0sI88I": "rltp/vectors/member-mapping/admission/sender-side",
+   "oid:dL_rx1eHcG18GbFGEQa2blM76JarnuTPVUatBWg2LpU": "rltp/vectors/member-mapping/admission/addressee-side"
+  }
+ },
+ "artifact": {
+  "body": {
+   "type": "member-mapping@1",
+   "member": "did:key:z6MknrQQh98pX1gmnWG4F7d1pGAuRWB5z1QFMfK16XzaC71d",
+   "memberOp": "oid:o5DHtlbv-9wPRDWlgObPObRAMdwGOFQF-NAGl0sI88I",
+   "self": "did:key:z6Mkp252PiZp5e3EzakYaFCbWuJjpCiVfkr2ZffkqyEVAE2t",
+   "to": "did:key:z6MkjYcg95wcrkwrXjTSGoMuQV9PXA8r4BZ3oP6cK9F6bgMP",
+   "toOp": "oid:dL_rx1eHcG18GbFGEQa2blM76JarnuTPVUatBWg2LpU",
+   "card": {
+    "body": {
+     "type": "self-card@1",
+     "anchor": "did:key:z6Mkp252PiZp5e3EzakYaFCbWuJjpCiVfkr2ZffkqyEVAE2t",
+     "keyAgreement": "z6LSfGq1jMrqQ3jmQFB1pJrsKvVQhgQxRFtdkpdBYSn6Lum6"
+    },
+    "proof": {
+     "proofValue": "z3oMk6wADqZCgu4kpZL7cuhfVQQcU1YEJovYtrjcNDH9DthximjMyQK6nbMSPhnkj4DXBgmspAc4X615tH5LB3ezN"
+    }
+   },
+   "revision": "1",
+   "issuedAt": "2026-08-26T12:00:00Z"
+  },
+  "proof": {
+   "mac1": "uKH_a5IwANKAZrvKAYCA_QmZvZQc3RKvxDwO5oiSFo3U",
+   "mac2": "ud9ugbbI51YcAi1e2Us8TXYvVNKIY7DUNz6SjZda_BLY"
+  }
+ },
+ "negative": [
+  {
+   "name": "member-mapping-foreign-self",
+   "artifact": {
+    "body": {
+     "type": "member-mapping@1",
+     "member": "did:key:z6MknrQQh98pX1gmnWG4F7d1pGAuRWB5z1QFMfK16XzaC71d",
+     "memberOp": "oid:o5DHtlbv-9wPRDWlgObPObRAMdwGOFQF-NAGl0sI88I",
+     "self": "did:key:z6MkoFmDjYURbueh9eraATv8YBJMqhbZpFnK9W9qZfm1jF4J",
+     "to": "did:key:z6MkjYcg95wcrkwrXjTSGoMuQV9PXA8r4BZ3oP6cK9F6bgMP",
+     "toOp": "oid:dL_rx1eHcG18GbFGEQa2blM76JarnuTPVUatBWg2LpU",
+     "card": {
+      "body": {
+       "type": "self-card@1",
+       "anchor": "did:key:z6Mkp252PiZp5e3EzakYaFCbWuJjpCiVfkr2ZffkqyEVAE2t",
+       "keyAgreement": "z6LSfGq1jMrqQ3jmQFB1pJrsKvVQhgQxRFtdkpdBYSn6Lum6"
+      },
+      "proof": {
+       "proofValue": "z3oMk6wADqZCgu4kpZL7cuhfVQQcU1YEJovYtrjcNDH9DthximjMyQK6nbMSPhnkj4DXBgmspAc4X615tH5LB3ezN"
+      }
+     },
+     "revision": "1",
+     "issuedAt": "2026-08-26T12:00:00Z"
+    },
+    "proof": {
+     "mac1": "uZFKwkRrp_wxBdkfyBTrlpJBWlSUVRMXUISVeWYzsMZw",
+     "mac2": "uYXUjKwG2_KRzWNa8IwgZwua5klOLajCdrKHkaxsCdc4"
+    }
+   }
+  }
+ ]
+}

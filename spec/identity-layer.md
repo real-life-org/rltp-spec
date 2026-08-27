@@ -3,16 +3,207 @@
 **Real Life Trust Protocol — Layer 1: Identity**
 
 - **Status:** Editor's Draft
-- **Version:** 0.12.0-draft (twelfth casting: surgical — the pair
-  class gains one registered occasion, the founding of a group;
-  M-DID-loop finding B2, `design/mdid-joint-review1-2026-08.md`;
-  nothing else changes)
+- **Version:** 0.28.0-draft (twenty-eighth casting — the companion
+  to Delivery 0.37 for the **fourteenth** adversarial joint round
+  (triage in `design/traeger-review14-2026-08.md`). No finding of
+  that round landed in this layer: both blockers are
+  carrier-interface matters — the unbounded accumulation of
+  binding tombstones, and the missing external version pin for the
+  TSP adapter obligations — and both majors are stale text on the
+  delivery side. 7a is unchanged. This casting carries the
+  companion pin, and one sentence in 7a.3 follows the carrier-side
+  correction: the tombstone it names is bounded by capacity, not
+  kept without limit. No wire byte changes)
+- **Previous version:** 0.27.0-draft (twenty-seventh casting — the answer,
+  jointly with Delivery 0.36, to the **thirteenth** adversarial
+  joint round (triage in `design/traeger-review13-2026-08.md`).
+  Two of its findings reach this layer, and both are **retractions
+  of reasoning rather than changes of rule**. The previous casting
+  called the register's equal-generation tie *impossible* to
+  reproduce outside this register; the argument was wrong — a
+  carrier-scoped order-preserving map exists trivially — so the
+  categorical claim is withdrawn and what stands is the rule and
+  its real reason: no such value travels in any artifact of this
+  stack, because none is designed (Delivery §12, DO-7). And 7a.3's
+  promise that the entry at the maximum "keeps working
+  indefinitely" was, at the delivery side, contradicted by an exit
+  that sent a tie there to re-addressing; the promise is right and
+  is now shown to be right — **entries are superseded, never
+  deleted**, so even where the bound principal is not the
+  canonical one, every device retains its entry, derives its
+  principal, and collects. No wire byte changes)
+- **Earlier castings:** 0.26.0-draft (twenty-sixth casting — the companion
+  to Delivery 0.35 for the twelfth adversarial joint round (triage
+  in `design/traeger-review12-2026-08.md`). Both of its blockers
+  are **compositional** — each state machine correct, the pair not
+  — and both are answered on the delivery side. 7a.3's rules are
+  unchanged; what this casting adds is the sentence that keeps
+  them from being read past their reach. The register's
+  equal-generation tie is settled **here**, by nonce bytes, and a
+  carrier cannot reproduce that ordering — not by omission but by
+  necessity, since any value that would let it is order-preserving
+  in the nonce and therefore identical at every carrier of that
+  relationship, which is the cross-carrier join 7a.4 exists to
+  deny. And "entries are superseded, never deleted" is a rule
+  about *this register*, whose carrier-side counterpart is
+  deliberately different: a carrier releases and keeps a tiny
+  binding tombstone instead. No wire byte changes)
+- **Earlier castings:** 0.25.0-draft (twenty-fifth casting — the answer to
+  the **eleventh** adversarial joint round (triage in
+  `design/traeger-review11-2026-08.md`), jointly with Delivery
+  0.34. One of its five blockers reaches this layer, and it is
+  about the **reach** of a rule rather than its content: 7a.3's
+  `{nonce, generation}` ordering decides which entry a *register*
+  treats as canonical, and 0.22 said a returning old entry is
+  therefore "superseded on every device" — true of the register,
+  and not true of anything outside it. A device restored from an
+  older state copy still holds the root IKM, the older nonce and
+  the relationship's `rkid` private key, so it can prove
+  everything a carrier asks and roll a binding **back**. The
+  ordering was local and had to travel: 7a.3 now requires the
+  canonical entry's `generation` to be **carried in the carrier
+  registration proof**, where Delivery 0.37 §5a.3 binds only on a
+  strictly higher one. No wire byte changes)
+- **Earlier castings:** 0.24.0-draft (twenty-fourth casting — the companion
+  to Delivery 0.33 for the tenth adversarial joint round (triage
+  in `design/traeger-review10-2026-08.md`). Its two blockers were
+  both carrier-interface findings and 7a is unchanged by them. The
+  round's **major** lands here, though, and it is about proof
+  rather than rule: 7a.1 has always said this class derives **no
+  key-agreement key**, and Section 16 announced that the vector
+  covers it — but the vector merely omitted the field and the
+  runner never looked. The carrier-relationship vectors now
+  declare `keyAgreement: null` explicitly, per case and for the
+  class, and the runner asserts the **absence** rather than the
+  document asserting it alone. No wire byte changes)
+- **Earlier castings:** 0.23.0-draft (twenty-third casting — the companion
+  to Delivery 0.32 for the ninth adversarial joint round (triage
+  in `design/traeger-review9-2026-08.md`). Stated plainly: **no
+  finding of that round landed in this layer.** Both blockers were
+  carrier-interface findings — a protection claim Delivery made
+  about its own registration budget, and the missing byte-exact
+  condition behind its `duplicate` outcome — and 7a is unchanged.
+  This casting carries the companion pin. No wire byte changes)
+- **Earlier castings:** 0.22.0-draft (twenty-second casting — the answer to
+  the **eighth** adversarial joint round (triage in
+  `design/traeger-review8-2026-08.md`), jointly with Delivery
+  0.31. It corrects the terminal rule the previous casting
+  introduced. 0.21 answered the closed domain's last value by
+  telling a holder to "re-address" through a fresh pair context —
+  **which is not a move a holder can make**: under fresh-always
+  enactment a pair context comes from a ceremony or an
+  introduction act, and `rltp-visibility` §6a's continuity probe
+  then **chains a recognized re-encounter back to the existing
+  relationship**, so a new chain is what happens when a
+  counterpart is *not* recognized, never a state a party can
+  elect. 7a.3 now states the terminal rule as the small thing it
+  is: the entry at the maximum **stays canonical and keeps
+  working indefinitely**, only the convenience of further rotation
+  ends, the lever that remains is 7a.2's move to a different
+  configured carrier string, and a genuinely new relationship
+  chain is named as a **social event of the companions**, never as
+  an instruction this document issues. Labelled honestly as a
+  theoretical closure. No wire byte changes)
+- **Earlier castings:** 0.21.0-draft (twenty-first casting — the
+  answer to the **seventh** adversarial joint round (triage in
+  `design/traeger-review7-2026-08.md`), jointly with Delivery
+  0.30: it named the terminal exit at `2^53 − 1`, in a form 0.22
+  had to correct — see above)
+- **Earlier castings:** 0.20.0-draft (twentieth casting — the answer to the
+  **sixth** adversarial joint round (triage in
+  `design/traeger-review6-2026-08.md`), jointly with Delivery
+  0.29. One finding lands here, and it is the kind that only shows
+  up when someone runs the numbers: `generation` decides which
+  nonce — and therefore which principal — is canonical, and it was
+  specified as "an integer ≥ 1" with no upper end and no
+  representation. Past `2^53` a double-based runtime cannot
+  distinguish two successive generations and reads a rotation as a
+  tie, while an arbitrary-precision one reads a clear succession —
+  the same register, two canonical principals. 7a.3 now closes the
+  domain at exactly `[1, 2^53 − 1]`, fixes the canonical integer
+  encoding, and requires an out-of-domain entry to be **rejected
+  rather than clamped**; Section 16 carries the boundary vector,
+  including the two values that are provably indistinguishable.
+  No wire byte changes)
+- **Earlier castings:** 0.19.0-draft (nineteenth casting — the companion to
+  Delivery 0.28 for the fifth adversarial joint round (triage in
+  `design/traeger-review5-2026-08.md`). One finding touches this
+  layer and it touches it as a **seam**, not as a rule: 7a.2 lets
+  a proxy, a federation member or a key rotation leave `C` — and
+  therefore the principal — unchanged, while a neighbouring
+  protocol may identify the *direct hop* by something that changes
+  underneath it. That is not a defect of this derivation and 7a.2
+  is unchanged; what was missing is the sentence saying whose
+  problem it is, so 7a.2 now states that a hop-level identifier of
+  a neighbouring protocol is **adapter-local** and never enters
+  any derivation here, and Delivery 0.37 §5a.10 carries the
+  lifecycle. Otherwise this casting carries the pin and two
+  present-tense pin corrections. No wire byte changes)
+- **Earlier castings:** 0.18.0-draft (eighteenth casting — the answer to the
+  **fourth** adversarial joint round (triage in
+  `design/traeger-review4-2026-08.md`), jointly with Delivery
+  0.27. One blocker landed here and it is a real one: 7a.3's
+  convergence rule could settle a **race** between two devices but
+  could not express an **intention** — a holder deliberately
+  rotating a carrier nonce drew a fresh random value that replaced
+  the old one only if it happened to sort lower, so rotation
+  succeeded about half the time and was otherwise silently undone,
+  and a superseded entry returning from a partition heal or a
+  backup restore dragged the register back. The register entry is
+  therefore now **`{nonce, generation}`**: canonical = highest
+  generation, ties settled by the bytewise rule as before, so
+  rotation wins by construction while concurrent first writes are
+  still decided the old way. Entries are **superseded, never
+  deleted**, which is what makes a returning old entry harmless
+  without inventing a tombstone. Only the `nonce` enters the
+  derivation; the generation is register semantics alone, and no
+  wire byte changes)
+- **Earlier castings:** 0.17.0-draft (seventeenth casting — the **companion
+  casting** to Delivery 0.26, the answer to the third adversarial
+  joint round (triage in `design/traeger-review3-2026-08.md`).
+  Stated plainly, because a version number should not imply more
+  than it carries: **no finding of that round landed in this
+  layer.** All four blockers and the minor were carrier-interface
+  findings, and 7a is unchanged. This casting carries the
+  companion pin and the one consequence the delivery-side
+  two-phase wind-up has for this layer's recovery story — 9.3 now
+  says what it means for a person who comes back late: a holder
+  who recovers a state copy after the orphan horizon has passed
+  can still present the proofs, and the binding returns to
+  service. No wire byte changes)
+- **Earlier castings:** 0.16.0-draft (sixteenth casting — the answer to the
+  **second** adversarial joint round (triage in
+  `design/traeger-review2-2026-08.md`), jointly with Delivery
+  0.25. Two blockers, one major and one minor landed here, all of
+  them about the **lifecycle** of the derivation's inputs rather
+  than the derivation: 7a.3 now decides the **multi-device nonce
+  race** — two partitioned devices may honestly create two nonces
+  for one relationship, and the register converges by a rule
+  either device can evaluate alone (**bytewise-smallest wins**),
+  because a rule that called honest parallel devices faulty is the
+  mistake this stack has already paid for once; 9.3 states which
+  of the two losses takes the **pair contexts** with it and
+  therefore where a delivery rebind can exist at all; the Unicode
+  15.0 pin of 7a.2 is **shipped as enumerated data** instead of
+  being left to the runtime's tables, alongside raw-byte
+  rejection vectors; and the vector set gains the relationship
+  axis (same carrier, two nonces). No wire byte changes)
+- **Earlier castings:** 0.15.0-draft (fifteenth casting — the answer
+  to the first adversarial joint round against the
+  carrier cut (triage in `design/traeger-review1-2026-08.md`),
+  jointly with Delivery 0.24: `C` gained a
+  **complete, ordered byte grammar** (7a.2), and the
+  non-ambiguity argument of 7a.4 was **corrected to what it
+  actually proves** — length fixing removes parse ambiguity, while
+  distinctness of digest pairs rests on SHA-256 collision
+  resistance, with a fail-closed rule if that assumption is ever
+  observed to break)
 - **Editors:** Anton Tranelis
-- **Date:** 2026-08-23
+- **Date:** 2026-08-27
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
-- **Conformance profile:** `rltp-identity@0.12` (draft)
-- **Supersedes:** version 0.11 (archived as
-  `archive/identity-layer-0.11.md`) and versions 0.10–0.1,
+- **Conformance profile:** `rltp-identity@0.28` (draft)
+- **Supersedes:** version 0.27 (archived as
+  `archive/identity-layer-0.27.md`) and versions 0.26–0.1,
   archived alongside it.
 - **Supersedes on adoption:** `01-wot-identity/001-identitaet-und-schluesselableitung.md`
   and `003-did-resolution.md` (wot-spec v0.1, German). The planned
@@ -27,9 +218,17 @@ presented to every other layer.
 
 A person keeps **one secret and one register**. The secret is a
 mnemonic; from the seed it encodes, the person derives **one anchor
-per context**: one for their personal community, one per group they
-join, one per public persona they choose to maintain, and one service
-identity per group toward infrastructure. The register is the list of
+per context**: one per group they join — their personal community
+among them — one per relationship, one per public persona they
+choose to maintain, and one service identity per group toward
+infrastructure; plus two registry-external derivations with no
+social surface at all: the **recovery context** (5.3), the entry
+point to the person's own encrypted state, and one
+**carrier-relationship identity** per (relationship × carrier)
+(7a), the principal under which the person registers and collects
+that one relationship's deliveries at that one carrier — so that
+relationships do not converge into a person at whoever carries
+them. The register is the list of
 contexts — data, not secret — synchronized in the person's encrypted
 state. Derivation is deterministic: secret plus register reconstructs
 every key. And it is one-way: without the seed, two anchors of the
@@ -81,18 +280,144 @@ stale version references). A confirmation round runs jointly with
 the block. The round-by-round record lives in the design journal
 (`design/identity-review1…7-2026-08.md`), not here.
 
-The companions above this layer: the **RLTP Encounter Layer 0.28**
-(fresh always — in its joint convergence loop with
-the visibility layer; 0.22 was the last converged Encounter), the
-converged **RLTP Delivery Contract 0.22**, **RLTP Membership Tasks
-0.16** and **RLTP Access Layer 0.52**; two
+The thirteenth casting was the **S-DID cut** (editor's decision,
+26.08.2026): the fused "self anchor" — social surface plus
+zero-input recovery root, a class of our own beside the DTGWG
+R/M/P — was dissolved into the registry-external **recovery
+context** with no social surface of its own (5.3) and the
+**community anchor**, an ordinary M-DID of the person's personal
+community; the S-DID class is withdrawn. Decomposition and
+decision record: `design/sdid-auftrennung-zerlegung-2026-08.md`.
+
+The fourteenth casting was the **carrier cut**, cast jointly with
+**Delivery 0.23** against the decomposition
+`design/traeger-beziehungsidentitaet-zerlegung-2026-08.md`
+(editor's decisions E1–E9, 27.08.2026). It answers a promise the
+Delivery Contract had been making into a void: its Privacy
+Considerations claimed that "derived service identities bound what
+a transport learns", while Section 7 defines those identities
+**per group** only and knows no identity for a delivery
+relationship at all. Section 7a closes that gap with a second
+registry-external derived class, the **carrier-relationship
+identity** — one control principal per (relationship × carrier),
+with which a person registers addresses and collects deliveries at
+one carrier for one relationship, and which is by construction
+unjoinable to the `rkid` it registers. The layer's contribution is
+the derivation and its recovery semantics (9.3); what a carrier
+may ask of a principal, and the role separation that keeps the
+recovery root out of delivery, is cast in the Delivery Contract's
+§5a.
+
+The fifteenth casting answered the **first** adversarial joint round
+against that cut (7 blockers, 4 majors; triage in
+`design/traeger-review1-2026-08.md`), jointly with **Delivery
+0.24**. Two of the findings landed in this layer, and both are
+about the derivation's *edges* rather than its shape: the carrier
+controller identifier had a comparison rule but no grammar — no
+statement of which inputs are admissible at all — so two
+implementations could disagree about an ill-formed string and
+derive two principals from one configured carrier (7a.2 now
+carries an ordered validation pipeline, deliberately without the
+NFC step that 6.2 has); and the info-string argument claimed
+injectivity where it had only shown unambiguous parsing (7a.4 now
+separates the two, names SHA-256 collision resistance as what the
+remaining half rests on, and fails closed if a collision is ever
+observed). The construction, the register entry, and the recovery
+semantics were unchanged.
+
+The sixteenth casting answered the **second** round (6 blockers, 1
+major, 1 minor; triage in `design/traeger-review2-2026-08.md`),
+jointly with **Delivery 0.25**. Where the first round found the
+*derivation's edges*, this one found its **lifecycle** — what
+happens to `N` over time, across devices, and across a loss — and
+two of its findings are the kind that only appear when a
+construction is read against the profile it actually runs in:
+
+- **The nonce race (7a.3).** "Generated fresh when the
+  relationship first uses any carrier" is a register write, and
+  this is a shared-seed **multi-device** profile whose
+  synchronizing storage contract is expressly still unwritten
+  (6.3). Two partitioned devices can therefore both write, both
+  honestly. The casting resolves it the only way that does not
+  punish honest behaviour — a **deterministic convergence rule**
+  over the register entries themselves (bytewise-smallest wins),
+  with the superseded principals ending as ordinary orphans and
+  the addresses rebound where they survived. "One nonce per
+  relationship" is restated as what it is: a property the register
+  **converges on**, not a precondition a device can guarantee
+  alone.
+- **Which loss takes the addresses (9.3).** The delivery side had
+  built a recovery branch on a surviving `rkid`, forgetting that
+  an `rkid`'s private half is a **pair context's** key: a total
+  register loss takes it too, and a counterpart holds only the
+  public value. 9.3 now says which loss leaves a way back, and the
+  Delivery casting of that round withdrew the branch that did not.
+
+The seventeenth casting was a companion casting, and said so
+rather than dressing itself up: the third adversarial joint round
+(4 blockers, 1 minor; triage in
+`design/traeger-review3-2026-08.md`) landed **entirely** on the
+carrier interface, and Section 7a is unchanged by it. What this
+casting carried was the pin to **Delivery 0.26** and one
+consequence worth stating where a person will look for it: the
+delivery side's orphan ageing is now a two-phase wind-up, so 9.3
+can say plainly that **coming back late is not fatal** — a holder
+who recovers a state copy after the horizon can still present the
+proofs and resume.
+
+**This eighteenth casting answers the fourth round**, and unlike
+the seventeenth it carries a finding of its own. The convergence
+rule of 7a.3 was written for a **race** — two devices creating a
+first entry at the same time, where no intent distinguishes them —
+and it was then also asked to carry a **rotation**, which is the
+opposite situation: there, one entry is meant to replace another.
+Bytewise-smallest cannot say that. A holder rotating a carrier
+nonce drew a fresh random value that won only if it happened to
+sort lower, and an old entry returning from a partition heal or an
+older backup pulled the register back to the superseded principal.
+The entry therefore carries a **generation** now, the same
+instrument Access §7.3 uses for the same purpose: canonical is the
+highest generation, ties fall back to the bytewise rule, so a
+rotation wins by construction and a concurrent first write is
+still settled the way it was. And entries are **superseded rather
+than deleted** — which is precisely what makes a returning old
+entry harmless, since it arrives carrying a lower generation and
+is superseded on every device by the same rule, with no tombstone
+to invent and no resurrection to patch.
+
+
+The nineteenth casting was again mostly a companion, and the
+one thing it adds is a sentence rather than a rule. The fifth
+round found that a neighbouring protocol may identify its direct
+hop by something that changes while `C` does not — a TSP
+intermediary VID under a stable configured carrier string — and
+asked which of the two gives. Neither: the derivation is right to
+ignore it, because a principal that moved when an unconfigured
+hop moved would be tracking the network rather than the holder's
+configuration, and that is exactly the property 7a.2 exists to
+have. What was missing was the sentence saying so, and saying
+whose problem the consequence is. 7a.2 now carries it; the
+lifecycle it implies is Delivery 0.37 §5a.10.
+
+Beside them, the Unicode 15.0 pin of 7a.2 is **shipped as data**
+rather than delegated to the runtime's property tables (a pin
+every implementation reads from its own ICU is not a pin), the
+strict-UTF-8 step is stated for byte inputs with raw-byte
+rejection vectors, and Section 16 gains the missing **relationship
+axis** — same carrier, two nonces, two principals.
+
+The companions above this layer: the **RLTP Encounter Layer 0.29**
+(fresh always; 0.22 was the last converged Encounter), the
+**RLTP Delivery Contract 0.37** (jointly cast),
+**RLTP Membership Tasks 0.16**, **RLTP Access Layer 0.53**, and
+**RLTP Network Visibility 0.16**; two
 cross-document debts against Delivery and Access are recorded in
 Section 7. *RLTP Succession* (0.2, parked) operates on the anchors
 this document defines. It is cast against the requirements list of
 the layer's decomposition (I-list Revision 3); Appendix B maps
 every requirement to its section. Parts of the design are executed
 by the graph simulator with real WebCrypto credentials — including
-the Section 5.3 self rule and digest-form group labels against
+the Section 5.3 recovery rule and digest-form group labels against
 fixed expected-anchor oracles; X25519 derivation and label
 rejection remain pending probes.
 
@@ -150,7 +475,9 @@ third party could ever compute (Section 15.3).
 
 The Encounter Layer issues credentials **between anchors** and
 carries key-agreement material in its **contact card**. The Delivery
-Contract seals envelopes **to** that material. Membership and Access
+Contract seals envelopes **to** that material, and presents the
+**carrier-relationship identities** of Section 7a to the carriers
+that hold its queues. Membership and Access
 admit **anchors** to groups, and Access consumes the **service
 identities** of Section 7. Succession replaces **an anchor** while
 preserving its relations. All of them consume this document through
@@ -170,32 +497,66 @@ when, they appear in all capitals.
 - **Root IKM**: the 64-byte BIP-39 seed derived from the mnemonic;
   the input keying material of every derivation in this document.
 - **Context**: a social surface toward which a person acts under one
-  identity: their personal community, one group, one public persona.
+  identity: one group (their personal community among them), one
+  relationship, one public persona.
 - **Label**: the canonical string naming a context in the derivation
   (Section 6).
 - **Label register**: the holder's list of used labels — data
   required for recovery, held inside the synchronized encrypted
-  state. It carries no self mode: the self context is not a label
-  (Section 5.3).
+  state. It carries no special mode: the recovery context is not a
+  label (Section 5.3). The register additionally holds **entries
+  that are not labels**: the relationship nonce of each pair label
+  (6.1) and the carrier-relationship entries of Section 7a, each a
+  distinct entry type that no derivation API ever accepts as a
+  label.
 - **Anchor**: the DID a person presents toward one context. Evidence
   accumulates on anchors.
 - **Anchor key pair**: the Ed25519 assertion key pair of an anchor.
 - **Key agreement key**: the X25519 key pair derived alongside each
   anchor for sealing (Section 5.2).
-- **Self anchor**: the anchor of the person's personal community,
-  derived by the fixed rule of Section 5.3 — the same rule for
-  created and migrated identities. Since the Encounter pair castings,
-  ceremonies enact under fresh **pair** anchors (fresh always); the self anchor
-  never appears on the ceremony wire and is disclosed per recipient
-  through the visibility layer.
+- **Recovery context**: the registry-external fixed derivation of
+  Section 5.3 — the holder's zero-input entry point to their own
+  encrypted state. **In its recovery role it is not an anchor**:
+  that role carries no social surface, appears in no social
+  artifact, and is presented only to the holder's own storage
+  services. For a **native** recovery context (created under this
+  casting or later) the role is the whole object — it is not an
+  anchor at all. The historic recovery context of a **migrated**
+  identity is additionally a legacy anchor: it exercises, but
+  never extends, the social surface it already carries, and
+  historic artifacts naming it stay verifiable forever (5.3,
+  Section 10). Its primacy is a property of the derivation, not of
+  the person.
+- **Community anchor**: the anchor of the person's personal
+  community — an **ordinary group-context anchor** (M-DID) over the
+  personal community's genesis digest, serving, where its holder so
+  chooses, as their private cross-relationship coordinate,
+  disclosed selectively per recipient through the visibility layer.
+  Ceremonies enact under fresh **pair** anchors (fresh always); no
+  standing anchor appears on the ceremony wire.
 - **Anchor classes, DTGWG-aligned naming** (informative): in prose
   this family calls pair-context anchors **R-DIDs**, group-context
-  anchors **M-DIDs**, persona anchors **P-DIDs**, and the self
-  anchor **S-DID** — the DTGWG classification plus one class of our
-  own. The registry labels above are the normative spelling; the
-  class names are how we speak.
+  anchors **M-DIDs**, and persona anchors **P-DIDs** — the DTGWG
+  classification, adopted without additions. (Castings up to 0.12
+  named a fourth class of our own, the "self anchor" **S-DID** —
+  a fusion of social surface and recovery root. The class is
+  **withdrawn**: the fusion is dissolved into the recovery context
+  and the community anchor above; the design journal records the
+  analysis.) The registry labels above are the normative spelling;
+  the class names are how we speak.
 - **Service identity**: the derived pseudonym a person presents to
   infrastructure for one group (Section 7).
+- **Carrier**: a party that holds delivery queues for other
+  people — the Delivery Contract's adapter side, below its port
+  line. A carrier is schlüsselblind: it sees addresses, sizes, and
+  timing, never content.
+- **Carrier controller identifier**: the canonical, byte-exact
+  string by which a holder configures one carrier (7a.2). It is a
+  configured string, never a resolution result.
+- **Carrier-relationship identity** (the **control principal**):
+  the derived Ed25519 pseudonym a person presents to **one**
+  carrier for **one** relationship (Section 7a) — register-borne,
+  never zero-input derivable, and named in no social artifact.
 - **Holder**: the person controlling the mnemonic.
 
 ## 3. Creation, hierarchy, and human actions (normative)
@@ -210,12 +571,14 @@ to create an identity or to derive any key.
 
 ### 3.2 The hierarchy
 
-The hierarchy of `rltp-identity@0.12` has two levels:
+The hierarchy of `rltp-identity@0.28` has two levels:
 
 ```text
 mnemonic → root IKM (64-byte BIP-39 seed; cold in principle)
  └── per context: anchor key pair (Ed25519) + key agreement key (X25519)
  └── per group:   service identity (Ed25519), Access contract
+ └── per (relationship × carrier): carrier-relationship identity
+                  (Ed25519), Delivery contract
 ```
 
 - The root IKM MUST NOT be used directly as a signing or agreement
@@ -228,7 +591,7 @@ mnemonic → root IKM (64-byte BIP-39 seed; cold in principle)
   shared key. Presenting one anchor under two contexts is a
   disclosure decision of the holder, not a key-reuse mechanism.
 - A third level — per-device operational keys authorized by an
-  anchor — is **not part of this profile**. In `rltp-identity@0.12`,
+  anchor — is **not part of this profile**. In `rltp-identity@0.28`,
   a device that acts for a person holds the mnemonic or root IKM
   (the shared-seed model). Section 15.1 names the successor and the
   constraint any successor MUST honor.
@@ -244,12 +607,13 @@ profile is defined.
 | Mechanism | Everyday action | Visible consequence | Required warning |
 |---|---|---|---|
 | Create identity (3.1, 4) | "Write down your recovery words" (12 or 24 generated; all valid BIP-39 lengths import) | the person exists; contacts can be made | the words are the only secret; losing them is final (9.2) |
-| Full recovery (9.3) | "Enter your words on the new device" — synced state reachable | the self anchor returns immediately; every context returns as the register loads | none |
-| Partial recovery (9.3) | "Enter your words" — synced state gone | the self anchor and its relations return; group and persona contexts do **not** enumerate; **pair contexts do not return at all** | MUST say: without your synced data, only your personal community returns by itself; group and persona contexts return as counterparts re-supply them; **relationship (pair) contexts cannot be re-supplied — those relationships are re-created, not recovered** (9.3) |
+| Full recovery (9.3) | "Enter your words on the new device" — synced state reachable | the recovery context locates and unlocks the state; every context — the personal community included — returns as the register loads | none |
+| Partial recovery (9.3) | "Enter your words" — synced state gone | the recovery context reaches only storage, and no social anchor returns by itself; group and persona contexts — the personal community among them — return as counterparts re-supply their digests; **pair contexts do not return at all** | MUST say: without your synced data, nothing returns by itself; your people can re-supply your groups — your personal community included — and personas re-derive from their names; **relationship (pair) contexts cannot be re-supplied — those relationships are re-created, not recovered** (9.3), and their carrier registrations are made afresh under new principals (7a.3) |
 | Join a group (6.1) | joining itself — no key step | the group appears | none (label handling is automatic) |
 | Create a public persona (6.1) | "Create public profile" | publicly findable under the chosen name | publishing is forever — stopping does not unpublish (visibility layer) |
 | Report loss or compromise (8.2, C1) | today: "meet your people again" — relations are re-witnessed by re-encounter (the B1 grade; B2 remains none); guardian succession is a **parked future function**, not offered | new edges accumulate on the new identity | a new identity is a new identity; nothing transfers by itself |
 | Service identities (7) | *automatic* | none visible | none |
+| Carrier-relationship identities (7a) | *automatic* — derived when a relationship first uses a carrier; **configuring the carrier** is the only human act, and it is an ordinary settings choice | none visible; the person's delivery relationships stay separate at that carrier | none for the derivation. A UI that offers to "move" a carrier MUST say that moving is a **new registration**, not a migration (7a.2) |
 | Adopt a legacy identity (10) | "Enter your words" (same gesture as recovery) | the existing identity continues, unchanged | none |
 
 ## 4. The mnemonic and the root IKM (normative)
@@ -337,39 +701,134 @@ derives, the anchor and the multikey of this section such that a
 counterpart holding only the contact card can seal to it per the
 Delivery Contract with no further information.
 
-### 5.3 The self context — one fixed derivation for everyone
+### 5.3 The recovery context — one fixed derivation, no new social surface
 
-The self context does **not** derive through Section 5.1. For every
-identity — created under this document or migrated from wot-spec
-v0.1 — the self seeds are:
+The recovery context does **not** derive through Section 5.1, and
+**in its recovery role it is not an anchor**: in that role it is
+the holder's zero-input entry point to their own encrypted state
+and nothing else. For an identity created under this casting or
+later the role is the whole object — the context is not an anchor
+at all, in any role. For the **one** exception class, the historic
+recovery context of a migrated identity, the same key is
+**additionally** a legacy anchor that already carries social
+surface (Section 10); the recovery role adds none to it, and
+carries none of its own. A **native** recovery context (an
+identity created under this casting or later) is presented only
+to the holder's own storage services, never to a person, and
+appears in **no** social artifact — no ceremony, no group
+operation, no mapping, no card. For the **one** exception class —
+the historic recovery context of a migrated identity — the
+prohibition binds exactly the **acquisition of new social
+surface**, never the exercise of surface already held: no new
+ceremony, membership, relationship, mapping, card, or disclosure
+is ever issued under it, while signing operations in groups whose
+materialized membership already carries the historic anchor
+remains conformant (Section 10 states the exact rules). The
+social past of such an identity (edges, memberships, logs made
+when it was the self anchor) remains valid and verifiable forever
+(Section 10). A
+derivation is all it is; its primacy is a property of the
+derivation, not of the person.
+
+For an identity **created under this casting or later**, the
+recovery seeds are:
 
 ```text
-edSeed(self) = HKDF-SHA-256(ikm = root IKM, salt = empty, info = "wot/identity/ed25519/v1", length = 32)
-xSeed(self)  = HKDF-SHA-256(ikm = root IKM, salt = empty, info = "wot/encryption/x25519/v1", length = 32)
+edSeed(recovery) = HKDF-SHA-256(ikm = root IKM, salt = empty, info = "rltp/identity/recovery/v1", length = 32)
+xSeed(recovery)  = HKDF-SHA-256(ikm = root IKM, salt = empty, info = "rltp/encryption/recovery/v1", length = 32)
 ```
 
-These are the historic info strings of the deployed generation, and
-that is the point: **one rule, no mode.** There is nothing for the
-label register to record about the self context, no adoption state,
-and no ambiguity after total loss — the mnemonic alone determines
-the self anchor, deterministically, for every identity that ever
-existed under either generation. The naming asymmetry against
-Section 5.1's `rltp/` prefixes is the visible cost, carried
-knowingly: continuity of every deployed identity is worth an
-irregular string. The two info **byte sequences are immutable**: a
-future casting may introduce a symbolic alias that resolves to
-exactly these UTF-8 bytes, and may do nothing else — an alias that
-resolved to different bytes would recreate the very ambiguity this
-section removes.
+For an identity **migrated from wot-spec v0.1 — or created under
+any casting before 0.13** — the recovery seeds are the historic
+strings of the deployed generation:
 
-Key-agreement interchange and placement for the self context follow
-Section 5.2 unchanged.
+```text
+edSeed(recovery) = HKDF-SHA-256(ikm = root IKM, salt = empty, info = "wot/identity/ed25519/v1", length = 32)
+xSeed(recovery)  = HKDF-SHA-256(ikm = root IKM, salt = empty, info = "wot/encryption/x25519/v1", length = 32)
+```
+
+All four info **byte sequences are immutable**. There is nothing
+for the label register to record about the recovery context and no
+adoption state; after total loss a recovering holder derives
+**both candidates** and locates state under whichever binds. The
+probe is total and deterministic: **"binds" means a reachable
+storage service holds sealed state registered to the candidate and
+answers its possession challenge, and the fetched state decrypts
+and verifies under the holder's keys — verification, not the
+service's claim, is the bind** (a decoy bind whose state fails
+decryption or verification is no bind). The probe's outcome set
+is **closed and union-shaped**: each candidate independently
+binds or does not; **every** verifying bind is recovered — state
+is fetched and merged through the Replication Contract's
+admission, never chosen between (an identity that verifies under
+both rule sets recovers the union; recovery is never a
+destructive choice) — and zero verifying binds is partial
+recovery (9.3). Probe order is immaterial; the probe is socially
+void (a storage lookup, not a recognition act), so the
+two-generation split creates no ambiguity a person ever sees.
+Discovery of the holder's storage services and the challenge
+protocol are the storage contract's terrain — the **named, still
+unwritten external prerequisite** of Section 6.3. This casting
+fixes what this layer can fix: the contract's principal (the
+recovery context), its outcome algebra (above), and the normative
+chain seed → recovery context → sealed register → every context
+(9.3). **The seed-plus-network totality claim is conditional on
+that contract and stated as such**; today's implementations
+satisfy it in fact with their deployed end-to-end encrypted
+vault (6.3). From the decrypted register onward the chain is
+fully specified here; above the register, rebind runs on the
+Replication Contract's machinery (its I15). The historic bytes stay because the
+deployed vaults are bound to them; the fresh `rltp/` strings end
+the naming asymmetry the previous casting carried as a known cost.
+
+**Two prohibitions guard the cut** (the fusion this section
+replaces must not re-form):
+
+1. The personal community is an **ordinary group**: its genesis
+   MUST be an ordinary genesis and its anchor an ordinary
+   `group/<genesis digest>` context (Section 6.1). No rule may
+   make a social anchor derivable with no further input — a
+   well-known fixed label or a fixed genesis construction would
+   re-create the withdrawn fusion under a new name.
+2. No protocol surface may ask any counterparty to verify a
+   binding between the recovery context and any social anchor —
+   the recovery root MUST NOT acquire a social surface, least of
+   all during recovery. Social continuity after loss of **every**
+   state copy is re-established by people (re-encounter; the
+   parked succession function), never by a derivable coordinate.
+   **What this prohibits is the acquisition of social surface,
+   not the exercise of surface already held.** For an identity
+   created under this casting the two are the same thing: its
+   recovery context has no social past and never acquires one.
+   For a **migrated** identity they are not (Section 10): the
+   historic anchor already carries memberships and
+   relationships, and continuing to act inside them is not the
+   acquisition this prohibition names. Prospectively forbidden in
+   both cases is every **new** binding and every **new**
+   disclosure — a new membership, a new relationship, and any new
+   mapping, card, or disclosure that names the recovery context.
+
+The recovery context derives and encodes its X25519 key-agreement
+key per Section 5.2's derivation and interchange rules — **but the
+card-placement half of 5.2 does not apply to it**: no contact
+card, mapping, or any social artifact is ever **newly issued**
+carrying a recovery-context key (prohibition 2; historic
+artifacts of migrated identities remain verifiable, Section 10).
+**In the recovery role its keys meet exactly one counterparty
+class, the holder's own storage services.** For a **native**
+recovery context that is the only class they ever meet. For the
+historic recovery context of a **migrated** identity the legacy
+anchor role additionally meets the counterparties of the
+attachments the key already holds — the co-members and
+relationship parties of those existing groups and edges, and no
+others; that set never grows, because acquiring a new attachment
+is what prohibition 2 forbids (Section 10).
 
 ## 6. Context labels (normative)
 
 ### 6.1 The closed registry
 
-The registry of `rltp-identity@0.12` is **closed**: exactly the
+The registry of `rltp-identity@0.28` is **closed**: exactly the
 following label forms are derivable, and a derivation API presented
 with any other string MUST reject it before any key derivation
 (fail closed, no normalization repair beyond Section 6.2). A closed
@@ -400,15 +859,21 @@ and recovery semantics per context. Which artifacts carry pair anchors, and how 
 anchor may later be linked to any other anchor of the same holder,
 is the visibility layer's contract (`rltp-visibility`), not this
 document's; this document guarantees only the derivation and its
-recovery semantics (Section 9.3). Encounter (fresh always, currently 0.26) enacts every ceremony under a fresh
+recovery semantics (Section 9.3). Encounter (fresh always, currently 0.29) enacts every ceremony under a fresh
 pair anchor (its §4.4); the joint convergence loop with the
 visibility layer is running.
 
-The string `self` is **not a label**: the self context has its own
-fixed derivation (Section 5.3), and a derivation API presented with
-`self` — or with `device/…`, the prefix still **reserved** for the
-successor of Section 15.1 — MUST reject it like any unknown label. Service identities are NOT labels of this registry either;
-they derive per Section 7.
+The strings `self`, `recovery` and `carrier` — the last with or
+without a further component — are **not labels**: the recovery
+context has its own fixed derivation (Section 5.3) and the
+carrier-relationship identity its own derivation outside this
+registry (Section 7a), and a
+derivation API presented with any of them — or with `device/…`, the
+prefix still **reserved** for the successor of Section 15.1 — MUST
+reject it like any unknown label. Service identities are NOT labels of this registry either;
+they derive per Section 7. **The registry stays closed**: 7a adds a
+derivation, never a label form, and the set of strings this table
+accepts is unchanged from 0.13.
 
 ### 6.2 Name grammar and canonicalization
 
@@ -459,7 +924,11 @@ Labels never appear on the protocol wire. They are nevertheless
 **sensitive data**: a `group/<digest>` label reveals membership to
 anyone who can map the digest, `persona/<name>` reveals the chosen
 persona, and the register as a whole is a map of the person's
-contexts. Therefore:
+contexts. The **carrier-relationship entries** of 7a are the same
+class and the more concentrated one: they name every carrier the
+person uses and, per carrier, how many relationships it carries —
+precisely the join the derivation of 7a exists to deny that carrier.
+Therefore:
 
 - The label register MUST be held **only inside the holder's
   synchronized encrypted state** — the same storage that protects
@@ -478,9 +947,24 @@ contexts. Therefore:
 ## 7. Derived service identities (A7, normative)
 
 For infrastructure interactions a person MUST use a **derived
-service identity** and MUST NOT present any personal anchor — the
-self anchor of Section 5.3 and every anchor of Section 6 — to a
-service. This document adopts the Access Layer's frozen contract
+pseudonym** and MUST NOT present any personal anchor —
+every anchor of Section 6, the community anchor included — to a
+service. **Which** pseudonym is decided by what the interaction is
+scoped to, and the two scopes are disjoint: an interaction on
+behalf of **one group** uses the derived **service identity** of
+this section; an interaction on behalf of **one delivery
+relationship at one carrier** uses the **carrier-relationship
+identity** of Section 7a. A service identity is never presented to
+a carrier for delivery, and a carrier-relationship identity is
+never presented in a group's service relationship. The one deliberate exception class is the **recovery
+context** (5.3): in its recovery role it is itself
+infrastructure-facing and is presented exactly to the holder's own
+storage services, never elsewhere — for a **native** recovery
+context that is its only presentation; the historic recovery
+context of a **migrated** identity is additionally the legacy
+anchor of the attachments it already holds and continues to appear
+there (Section 10), which is not the presentation to a service
+this section governs. This document adopts the Access Layer's frozen contract
 verbatim as the stack-wide rule:
 
 ```text
@@ -510,8 +994,12 @@ serviceSeed(g) = HKDF-SHA-256(ikm = root IKM, salt = empty, info = "rltp/v1/serv
 - The binding member ↔ service identity lives inside the group's
   encrypted log per Access §5.2; it is not this document's concern.
 - Granularity is **per group** (the genesis digest is the scope).
-  A future casting may add non-group scopes only together with the
-  Access Layer, in one move.
+  A future casting may add non-group scopes **to this derivation**
+  only together with the Access Layer, in one move. Section 7a is
+  not such a scope: it is a **separate derivation class** with its
+  own prefix, its own inputs, and its own consuming contract
+  (Delivery), and it leaves this section's info string, scope, and
+  consumers untouched.
 - Section 16 carries the seam vector: root IKM plus canonical
   genesis digest MUST produce the same service identity under this
   document and under Access §5.2, byte-exactly.
@@ -521,14 +1009,551 @@ converged; debts are discharged at their next castings, never by
 patching):
 
 - *Against the Delivery Contract:* **discharged (Delivery 0.22,
-  26.08.2026)** — its §5 now expressly excludes the derived
+  26.08.2026; carried unchanged into Delivery 0.23–0.37)** — its §5
+  expressly excludes the derived
   service identity as an `rkid` source (Ed25519-only, no
-  sealing-to-service in the 0.x stack).
+  sealing-to-service in the 0.x stack). Delivery 0.23–0.37 add the
+  consuming contract of Section 7a and, with it, the second
+  Delivery-side seam this layer now owns.
 - *Against the Access Layer:* **discharged (Access 0.45+,
   26.08.2026)** — its §5.2 incorporates this document's §§4/7
   byte-exactly (root IKM, empty salt, info string, L = 32,
   canonical `u` digest) and names Identity as governing on any
   divergence.
+
+## 7a. The carrier-relationship identity (normative)
+
+### 7a.1 What it is, and the problem it answers
+
+A **carrier** holds delivery queues for other people (Delivery
+0.37 §5a). It is key-blind — it never reads a document — but it
+sees who registers which addresses, and it sees who comes to
+collect them. Section 7's service identity does not help here: it
+is scoped to a **group**, and a delivery relationship is not a
+group. Without a derivation of its own, the natural
+implementation is the one the previous generation deployed: one
+account per person, every address and every pickup under it. That
+account *is* the person, and it hands the carrier the join for
+free.
+
+The goal is therefore not to hide from a carrier the relationship
+it carries — the carrier of a relationship knows the relationship.
+**The goal is that relationships do not converge into a person at
+the carrier.** The instrument is one derived Ed25519 pseudonym,
+the **control principal**, per (relationship × carrier):
+
+```text
+principal(C, N) = did:key of the Ed25519 key pair of carrierSeed(C, N)
+```
+
+The principal is what a holder registers under, queries under,
+collects under, and concludes under, at that one carrier for that
+one relationship. It is **Ed25519-only**: it signs and
+authenticates, and it receives nothing — sealing stays at the
+`rkid` of Section 5.2, and this section derives no key-agreement
+material for exactly the reason Section 7 gives (a key no artifact
+distributes and no rule binds would be surface without a
+contract; the design a future flow would have to bring is 15.4's).
+
+It is **registry-external**: no label of Section 6.1 names it, the
+closed registry is unchanged, and — the point of the whole
+construction — it is **not derivable with no further input**. A
+zero-input derivable carrier identity would be a person-wide
+constant, which is the account this section abolishes. That is the
+sharp difference to the recovery context of 5.3, which MUST be
+zero-input derivable because it is the entry to the person's own
+storage before any register exists. Two derivations, two opposite
+requirements; Delivery §5a.6 makes the consequence normative for
+deployments where one process fills both roles.
+
+### 7a.2 The carrier controller identifier (byte-exact)
+
+`C` is the **canonical identifier string of the carrier**, as the
+holder has configured it. Its comparison rule is **exact byte
+equality of the UTF-8 string — no normalization of any kind**: no
+case folding, no percent-decoding, no default-port or
+trailing-slash equivalence, no alias, no DID resolution, and never
+"the next hop". This is the rule Access §7.3 already imposes on
+its `service` field, adopted here verbatim and for the same
+reason: two strings that differ in any byte name two carriers.
+
+- A holder MUST configure exactly one canonical string per carrier
+  (RECOMMENDED: a DID or an absolute `https` URI) and MUST derive
+  from that string's bytes only.
+- A proxy, a mirror, or a federation member is the **same** carrier
+  exactly when the holder configured the **same string** — and a
+  different carrier otherwise. The identifier is a configuration
+  fact of the holder, never a property discovered from the network.
+- **Controller key rotation is without effect on the principal.**
+  The input is the string, not the carrier's key material; a
+  carrier that rotates every key it holds still faces the same
+  principals.
+- **A neighbouring protocol's hop identifier is adapter-local and
+  enters nothing here.** A proxy, a federation member, a key
+  rotation — and, at the transport below, the concrete peer a
+  neighbouring protocol identifies its direct hop by (a ToIP/TSP
+  intermediary VID, a DIDComm connection DID) — may all change
+  while `C` does not, and therefore while the principal does not.
+  That is the intended behaviour and not an oversight: the
+  principal is the identity a **holder** presents to a carrier it
+  **configured**, so it must not move when something the holder
+  did not configure moves underneath it. The consequence for the
+  adapter — a fresh hop identifier succeeding a retired one, with
+  the principal and its registration unchanged — is **Delivery
+  0.37 §5a.10**, and it belongs there because it is a fact about a
+  neighbouring protocol's relationship, never about this
+  derivation.
+- **A move is a new registration, not a migration.** Changing the
+  configured string derives different principals, and the holder
+  registers afresh at the new string. This is the honest price of
+  byte-exactness: the alternative — normalization or aliasing —
+  is precisely the seam at which one carrier could make two
+  configured names collide into one principal set, or two carriers
+  could be told apart by nothing the holder controls.
+
+**The grammar of `C`, byte-precisely.** Byte-exact comparison is
+only half a rule: it says how two accepted strings are compared and
+nothing about which strings are accepted at all. Without the second
+half, one implementation rejects an ill-formed input, another
+replaces it with U+FFFD, a third passes the raw bytes through — and
+the three derive three different principals from what a holder
+believes is one configured carrier. RFC 8259 §8.2 names exactly
+this class of divergence for unpaired surrogates. `C` therefore has
+the same kind of **ordered, normative validation pipeline** that a
+persona name has in 6.2, minus the one step that would defeat the
+purpose:
+
+1. The configured input MUST be a valid sequence of **Unicode
+   scalar values** — well-formed UTF-8, no surrogate code point
+   (U+D800–U+DFFF) whether paired or unpaired, no over-long
+   encoding, no truncated or stray continuation byte, no code
+   point above U+10FFFF. An input that is not is **rejected**,
+   never repaired: an implementation MUST NOT substitute U+FFFD,
+   strip, or otherwise coerce it. **Where the input arrives as
+   bytes** — a configuration file, an environment variable, a
+   pasted value, a network response — this step is a **strict
+   UTF-8 decode** performed on those bytes and MUST fail rather
+   than produce a replacement character; where it arrives as a
+   string in an environment whose strings are UTF-16 code-unit
+   sequences, the same rule reads as: no unpaired surrogate. The
+   two readings accept the same set, and Section 16 carries the
+   raw-byte rejection vectors that make that testable rather than
+   assumed.
+2. **No normalization step exists.** This is the deliberate
+   difference to 6.2, and the reason the pipeline is written out:
+   6.2 applies NFC because a persona name is a human-chosen name;
+   `C` is a machine identifier a holder configured, and the whole
+   force of 7a.2 is that its bytes are taken as configured. Two
+   inputs that differ only by normalization form are **two
+   carriers**.
+3. Length: at least 1 and at most **1024 UTF-8 bytes**. The empty
+   string is not a carrier identifier, and the upper bound exists
+   so that "canonical string" cannot become "unbounded blob"; a
+   value outside the range is rejected.
+4. No code point of category **Cc** (control) or **Cf** (format),
+   and no `U+0009`–`U+000D`, `U+0020`, or other `White_Space` code
+   point anywhere in the string — leading, trailing, or interior.
+   An identifier that differs from another only by an invisible or
+   whitespace code point is a configuration accident, not a second
+   carrier, and the pipeline refuses to make it one. Unicode
+   properties are evaluated against **Unicode 15.0** data, the
+   same pin 6.2 carries and for the same reason.
+
+   **The pin is shipped, not merely asserted.** A rule that says
+   "Unicode 15.0" while every implementation reaches for its
+   platform's property tables is a pin in name only — a runtime on
+   a later Unicode version silently accepts or rejects a different
+   set, which is precisely the derivable-set divergence the pin
+   exists to prevent. `Cc` needs no table (it is `U+0000`–`U+001F`
+   and `U+007F`–`U+009F`, fixed for all time) and `White_Space` is
+   a short closed list, but **`Cf` grows between versions**.
+   Section 16's vector file therefore carries the **enumerated
+   Unicode 15.0 `Cf` and `White_Space` ranges** as data, and a
+   conforming implementation MUST evaluate this step against those
+   ranges rather than against whatever its runtime happens to
+   ship. An implementation whose platform tables disagree with the
+   shipped ranges is not thereby wrong about Unicode; it is wrong
+   about **this profile**, and the shipped ranges govern.
+5. The accepted input **is** the canonical string; derivation uses
+   its UTF-8 bytes, unchanged, and comparison of two accepted
+   strings is byte equality (the rule above).
+
+Validation runs **before** any use: before storing the
+configuration, before comparison, and before the UTF-8 bytes enter
+`Dc` in 7a.4. A holder MUST NOT derive a principal from an input
+that fails any step — there is no "derive anyway and see"; a failed
+input has no principal. Implementations SHOULD surface the failing
+step, because a configured carrier identifier is a thing a person
+typed or pasted, and "invalid" without a reason is a support call.
+
+### 7a.3 The relationship's carrier nonce, and its register entry
+
+`N` is a **32-byte nonce of the relationship**, generated fresh
+from a cryptographically secure source when the relationship first
+uses any carrier, and recorded in the holder's label register as
+its own entry type (Section 2, 6.3) — data, like every register
+entry, never a secret in its own right and never on the wire. The
+entry is a pair `{nonce, generation}`; only the `nonce` enters the
+derivation of 7a.4, and the `generation` — an integer in the
+closed domain `[1, 2^53 − 1]`, below — exists solely to make the
+register's own convergence and rotation decidable.
+
+- `N` MUST NOT be the pair-label relationship nonce of 6.1, MUST
+  NOT be derived from it, and MUST NOT be derived from any anchor,
+  `rkid`, contact card, or from `C`. It is a sibling of the pair
+  nonce, not a function of it. A carrier is the one party that
+  reliably sees both a principal and the `rkid`s it registers; any
+  computable relation between the two would hand back exactly what
+  the derivation withholds.
+- **One nonce per relationship, across carriers.** The carrier
+  identifier is what separates carriers (7a.4), so a relationship
+  carried by three carriers needs one register entry, not three,
+  and the three carriers see three principals with no computable
+  relation between them.
+- **The relationship, not the enactment.** Under fresh-always
+  (Encounter §4.4) a relationship is the holder-local chain of pair
+  contexts with one active head (`rltp-visibility` §6a); `N`
+  belongs to that **chain** and survives a fresh pair context. A
+  re-encounter therefore does not force a re-registration. Stated
+  honestly: the carrier consequently sees one principal across the
+  chain — that is one relationship at one carrier, which is what
+  the carrier carries, and it is not a join across relationships.
+- Loss and recovery follow 9.3; the carrier-side aging of the
+  principals a lost register leaves behind is Delivery §5a.9.
+
+**Two devices, one relationship, two fresh nonces — and why that
+is not a fault (normative).** This profile is a **shared-seed
+multi-device** model (3.2): every device of a person derives the
+same keys and holds the same register, synchronized through the
+person's encrypted state. The storage contract that synchronizes
+it is a named, still unwritten external prerequisite (6.3), so it
+offers no transaction across devices — and "generated fresh when
+the relationship first uses **any** carrier" is a write that two
+partitioned devices can perform at the same time, each perfectly
+honestly, each producing a valid `N`. A rule that treated that as
+an error would **criminalize honest parallel devices**, which is
+the lesson this stack has already paid for once. It is treated as
+what it is: an ordinary **register merge**, resolved by a rule
+both devices can evaluate alone.
+
+> **The register entry is `{nonce, generation}`, and the
+> convergence rule (MUST) reads both.** A carrier-nonce entry
+> carries its 32-byte `nonce` and an integer `generation` in the
+> closed domain **`1 ≤ generation ≤ 2^53 − 1`** (9 007 199 254
+> 740 991), written as a JSON integer with no sign, no leading
+> zero, no fractional part and no exponent.
+> Where a register holds more than one entry for one relationship,
+> exactly one is **canonical**: the entry with the **highest
+> `generation`**; among entries of equal generation, the one whose
+> 32 nonce bytes are **smallest in unsigned bytewise order**.
+> Every other entry for that relationship is **superseded**. Every
+> device MUST apply this rule, and every device holding the same
+> entry set reaches the same answer — no clock, no device
+> identity, no coordination, and no last-writer.
+
+**Why two fields and not one.** Bytewise-smallest alone answers
+one question and silently fails the other. It settles a *race* —
+two devices writing a first entry at the same time, where no
+intent distinguishes them and any total order will do. It cannot
+express an *intention*: a holder who deliberately rotates `N`
+draws a fresh random value that replaces the old one only if it
+happens to sort lower, so a rotation succeeds about half the time
+and is otherwise silently undone — and a superseded entry
+reappearing after a partition heal or a restore from backup would
+drag the register back to the old principal. The generation is
+what carries intent, and it is the same instrument Access §7.3
+uses for exactly the same purpose.
+
+- **Rotation is `generation + 1`.** A holder rotating a
+  relationship's carrier nonce writes a fresh random `nonce` with
+  a `generation` one higher than the highest it holds for that
+  relationship. It wins by construction, whatever the bytes sort
+  like.
+- **At the top of the domain, rotation ends — and nothing else
+  does (MUST).** A closed domain has a last value, and a rule
+  that says "always one higher" owes an answer there: an entry at
+  `2^53 − 1` cannot be rotated, because `2^53` is invalid and MUST
+  be rejected rather than clamped. What follows is deliberately
+  *small*, and a previous casting made it too large by instructing
+  the holder to "re-address" through a fresh pair context — which
+  **is not a move a holder can make**. Under fresh-always
+  enactment a pair context arises only from a ceremony or an
+  introduction act, and the continuity machinery then decides what
+  it belongs to: `rltp-visibility` §6a runs its probe on **every**
+  enactment and **chains a recognized re-encounter back to the
+  existing relationship**, so "a new chain" is the outcome of
+  *not* recognizing a counterpart, never a state a party who still
+  recognizes them can elect. Instructing a holder to produce one
+  was instructing them to do something the companions do not
+  offer. The terminal rule is therefore stated as what it is:
+
+  1. **The entry at the maximum stays canonical and keeps
+     working — indefinitely.** Nothing expires, nothing degrades,
+     no principal is lost. Rotation is a convenience of this
+     register, not a condition of the relationship, and running
+     out of it costs exactly that convenience. **This holds even
+     where two entries tie at the maximum**, which is the one
+     situation in which the canonical entry is *not* the one a
+     carrier is bound to: because entries are **superseded, never
+     deleted** (below), every device retains the bound entry and
+     can derive its principal, so collection and conclusion
+     continue unaffected. Canonicality decides which entry is
+     authoritative for **new** derivations; it never meant that a
+     superseded principal stops working where it is already bound.
+     Delivery 0.37 §5a.3 carries the same sentence from the
+     carrier's side.
+  2. **Further rotation of `N` for this relationship chain is
+     over.** A generation beyond the maximum is invalid on every
+     device by 7a.3's domain, so no register can be brought into a
+     state where devices disagree.
+  3. **What a holder *can* still do, from here, without any
+     companion's help:** change the configured carrier identifier
+     (7a.2) — a **move is a new registration**, and it derives
+     different principals at a different `C` without touching `N`
+     at all. That is the register-level lever that remains, and it
+     is a configuration act the holder owns outright.
+  4. **A genuinely new relationship chain is a social event, not
+     a register operation**, and this document neither commands
+     nor simulates one: it arises where a fresh enactment's
+     continuity probe finds no match, or through a new
+     introduction act (Encounter §4.4, `rltp-visibility` §6a). If
+     it happens, `N` belongs to the chain (above), so the new
+     chain opens its own entry at `generation` 1 — as a
+     consequence, not as an instruction.
+
+  **Honestly labelled:** this is a *theoretical* closure. A
+  relationship would have to rotate its carrier nonce every second
+  for roughly a hundred million years to reach the maximum. The
+  rule exists so that the domain has no undefined corner and no
+  device can be pushed into an invalid one, not because anyone
+  will ever stand in it — and that is exactly why it must not
+  demand machinery the neighbours do not have.
+- **Concurrent first writes are still decided by the bytes.** Two
+  devices both writing generation 1 tie on generation, and the
+  bytewise rule settles it — the race case is unchanged, which is
+  why both halves of the rule are needed rather than either alone.
+- **Two devices may rotate concurrently to the same generation.**
+  That is a race again, at a higher generation, and it resolves
+  the same way: equal generation, bytewise-smallest wins, the
+  other is superseded. No rule is needed beyond the two already
+  given.
+
+**Why that domain, and why it is stated at all.** `generation`
+decides which `N` — and therefore which principal — is canonical,
+so two implementations that disagree about a number disagree about
+an identity. "An integer ≥ 1" left both an upper end and a
+representation open, and the two failures compound: at
+`2^53` a runtime using IEEE-754 doubles cannot distinguish
+`9007199254740992` from `9007199254740993`, so it reads a genuine
+rotation as a tie and hands the decision to the nonce bytes, while
+an implementation using arbitrary-precision integers reads the
+same two entries as a clear succession. Same register, two
+canonical principals. The bound is therefore set at exactly the
+largest integer every JSON implementation represents exactly:
+**no implementation needs arbitrary precision, and none may use it
+to go further.** An entry whose generation lies outside the domain,
+or whose encoding is not the canonical integer form above, is
+**invalid** and MUST be rejected on arrival rather than clamped —
+clamping would silently manufacture the tie the domain exists to
+prevent. Section 16 carries the boundary vector.
+
+The headroom is not a constraint in practice: a relationship would
+have to rotate its carrier nonce every second for a hundred
+million years to reach it. The domain exists to make disagreement
+impossible, not to ration rotations.
+
+**The tie is settled here, and this register carries no value
+that would settle it elsewhere.** Where two entries share a
+generation, the nonce bytes decide (above). A previous casting
+called that decision *impossible* to reproduce outside this
+register and gave an argument that does not hold — a
+carrier-scoped order-preserving map exists trivially — so the
+categorical claim is **withdrawn** here as it is in Delivery
+0.36 §5a.3. What stands is the rule and its reason: **no value
+derived from the nonce ordering travels in any artifact of this
+stack**, because such a value would have to be authentically
+bound to the derivation and analysed for what it discloses to a
+party that already sees the principal and the address, and no such
+construction is designed. A holder therefore MUST NOT place one in
+a carrier proof, and a carrier cannot decide the tie. What happens instead is Delivery 0.37 §5a.3's: the
+carrier refuses the equal-generation rebind, that refusal is a
+**wait state**, and the canonical device resolves it with an
+ordinary rotation to `generation + 1`, which both this register
+and the carrier accept by the rules they already have.
+
+**The ordering is local, so it must travel (MUST).** Everything
+above decides which entry a *register* treats as canonical, on
+each device, from the entries it holds. That is enough for the
+register and **not** enough for anything outside it: a device
+restored from an older state copy still holds the root IKM, the
+older nonce, and the relationship's `rkid` private key, so it can
+derive a superseded principal and prove everything a carrier asks
+of it. Local ordering alone would let such a device roll a
+carrier's binding **back**, and the newer device roll it forward
+again, indefinitely. Therefore the generation does not stay
+inside: **a holder MUST carry the canonical entry's `generation`
+in the carrier registration proof** (Delivery 0.37 §5a.3), and a
+carrier binds only on a strictly higher generation than the one it
+last accepted. What this register supersedes, the carrier refuses
+to resurrect — and the sentence in the bullet below ("superseded
+on every device") is true of the register *because* the value
+that decides it is the one that travels.
+
+**Entries are superseded, never deleted (MUST)** — a rule about
+*this register*, and one whose carrier-side counterpart is
+deliberately different: a carrier releases a binding at the end of
+its wind-up and keeps only a tiny **binding tombstone**
+(`rkid` and the highest generation it ever accepted, Delivery
+0.37 §5a.3) — which does not expire in time and is bounded only by
+that contract's declared tombstone capacity — and which is what
+stops a superseded generation from being re-installed after the
+binding is gone. Here nothing is
+released, so nothing needs a tombstone. A device MUST
+retain a superseded entry rather than removing it, and MUST NOT
+treat its reappearance as new information. This is what makes the
+rule safe against the two ways a stale value comes back — a
+partition healing and a restore from an older state copy — and it
+is why no tombstone is needed: a returning old entry carries a
+**lower generation** and is therefore superseded on arrival, by
+the same rule, on every device. Deleting entries would reintroduce
+exactly the resurrection problem tombstones exist to patch.
+
+Three consequences, stated so that nobody has to derive them:
+
+- **"One nonce per relationship" is a convergence property, not a
+  precondition.** The rule says what the register settles on; it
+  does not claim that a transient second entry cannot arise.
+  Implementations MUST NOT reject or discard a second entry on
+  arrival — it is evidence of a concurrent honest write or of a
+  rotation, and discarding it before the rule runs makes two
+  devices converge on two different answers.
+- **A superseded nonce is not undone at the carriers.** Whatever
+  was already registered under a principal derived from it stays
+  registered: the holder re-registers the relationship's addresses
+  under the canonical principal, and the superseded principals
+  become **orphans** in the ordinary sense of Delivery §5a.9 —
+  they age out on the carrier's published horizon under its
+  two-phase wind-up, and everything admitted under them reaches
+  its give-up conclusion first, so nothing is silently lost. Where
+  the relationship's `rkid` is still held (and it is: neither a
+  race nor a rotation costs a pair context), that re-registration
+  is the **rebind** of Delivery §5a.3, which is exactly what
+  rebind is for. This is unchanged by the generation: the
+  generation decides *which* entry is canonical, never what a
+  carrier already holds.
+- **Bytewise-smallest as the tie-break, and why that and not
+  another.** It is total over 32-byte values, needs nothing but
+  the entries themselves, and is stable under re-evaluation. It is
+  deliberately **not** "the earliest" (there is no trustworthy
+  time across devices), **not** "the first synchronized" (that is
+  the storage layer's arrival order, which differs per device),
+  and **not** "the one whose principal is already registered"
+  (which would make the register's convergence depend on what a
+  carrier happens to hold).
+
+### 7a.4 The derivation
+
+```text
+carrierSeed(C, N) = HKDF-SHA-256(ikm = root IKM, salt = empty,
+                                 info = "rltp/v1/carrier-relationship/ed25519/v1/" || Dc || Dn,
+                                 length = 32)
+```
+
+where, with the **encoding of 6.1** (`u` followed by the canonical
+unpadded base64url of a `sha2-256` multihash — bytes `0x12 0x20`
+followed by exactly 32 digest bytes, **exactly 47 ASCII characters**
+in every case):
+
+- `Dc` is that encoding of `sha2-256` over the **UTF-8 bytes of
+  `C`**, the carrier controller identifier of 7a.2;
+- `Dn` is that encoding of `sha2-256` over the **32 raw bytes of
+  `N`**, the carrier nonce of 7a.3 — the same construction 6.1
+  applies to a pair nonce, over a different nonce.
+
+The principal is the Ed25519 `did:key` of `carrierSeed(C, N)`
+(Section 8.1). No X25519 key is derived (7a.1).
+
+**Why this info string cannot be ambiguous** (the argument
+Section 5.1 makes for labels, made here for two inputs):
+
+1. The prefix `rltp/v1/carrier-relationship/ed25519/v1/` is a
+   literal ASCII constant with no variable part, and it differs
+   from every other derivation family of this document —
+   `rltp/anchor/ed/`, `rltp/anchor/x/`, `rltp/v1/service-identity/`,
+   and the four fixed recovery strings of 5.3 — **before any
+   variable part begins** (Section 13 keeps the full list). No
+   choice of `C` or `N` can reach another family.
+2. Both variable parts are **length-fixed**: 47 characters each,
+   from base64url's fixed alphabet, by construction of the
+   encoding. The split point is therefore determined by position
+   alone: every info string of this family parses back into
+   **exactly one** pair `(Dc, Dn)`, and distinct digest pairs
+   therefore always yield distinct info strings. Concatenating two
+   *variable-length* strings would have been ambiguous — the
+   classic failure this rule exists to exclude.
+
+   **What that argument does and does not prove, stated exactly**,
+   because the difference has been miscast before: length fixing
+   removes **parse ambiguity**, not hash collisions. `Dc` and `Dn`
+   are `sha2-256` digests, and SHA-256 is not injective; it is
+   *collision-resistant*. The honest chain is therefore three
+   links, not one: (i) the multihash encoding of 6.1 is injective
+   over digest bytes (fixed prefix `0x12 0x20`, fixed 32-byte
+   digest, canonical unpadded base64url — one encoding per digest,
+   one digest per encoding); (ii) the concatenation is unambiguous
+   by the positional argument above; (iii) two distinct inputs
+   reaching one digest — a different `C` colliding on `Dc`, a
+   different `N` colliding on `Dn` — is a **SHA-256 collision**,
+   computationally infeasible under the assumption this whole
+   document already rests on (Section 12), and not a property this
+   construction adds or could add. So: **distinct pairs `(C, N)`
+   yield distinct info strings except under a SHA-256 collision**,
+   and an implementation that ever observes two distinct `(C, N)`
+   pairs deriving one info string MUST treat it as such — fail
+   closed, derive nothing, and surface it — rather than resolve
+   the ambiguity in either direction.
+3. Implementations MUST build the info string from the canonical
+   47-character encodings and MUST NOT insert separators, lengths,
+   or padding of their own: the bytes above are the whole contract,
+   and a self-invented delimiter derives a different, non-conformant
+   principal.
+4. The **suite is in the prefix**. This derivation is Ed25519-only;
+   a future signature suite, and any future key type for this
+   class, gets a **future prefix** through a new casting — never a
+   parameter inside this one.
+
+Derivation is deterministic and lazy, exactly as in Section 5.1: a
+principal exists the moment `(C, N)` is first derived and
+re-derives identically forever after. Section 16 carries the
+vector.
+
+### 7a.5 Prohibitions
+
+These are the section's normative core; each answers a way the
+construction is defeated from the side.
+
+1. **No computable relation to the addresses it registers.** No
+   `rkid`, pair context, anchor, or card may be derived from a
+   principal, and no principal may be derived from any of them
+   (7a.3). The carrier is the one party that sees both.
+2. **No zero-input derivability** (7a.1). An implementation MUST
+   NOT substitute a fixed string, a person-wide constant, an
+   anchor, or any value derivable without the register for `N`.
+3. **The principal is never social.** No artifact a person sees
+   names it: it appears in no card, no credential, no mapping, no
+   group operation, and no disclosure — the same prohibition the
+   recovery context carries (5.3), for the same reason. A protocol
+   surface that asked a counterparty to verify a binding between a
+   principal and any anchor would re-create the account this
+   section abolishes.
+4. **One principal, one relationship, one carrier.** An
+   implementation MUST NOT present one principal to two carriers,
+   MUST NOT present one principal for two relationships, and MUST
+   NOT reuse the recovery context (5.3) or a service identity
+   (Section 7) as a principal. What a carrier may and may not ask
+   of a principal, and the role separation that keeps storage
+   entry and delivery pickup apart in a process that is both, is
+   Delivery 0.37 §5a.6.
 
 ## 8. Anchors (normative)
 
@@ -662,7 +1687,7 @@ sufficient to recover all key material on a fresh device.
   implementations MUST present it as a new identity with witnessed
   continuity, never as recovery. Its re-cast must additionally
   solve the **anchor fan-out**: succession 0.2 operates on one
-  anchor, while a root compromise affects the self, every group,
+  anchor, while a root compromise affects every context — recovery,
   and every persona anchor of the person at once.
 
 ### 9.3 What the mnemonic restores
@@ -672,7 +1697,9 @@ Implementations MUST make this distinction, and user interfaces
 SHOULD state it plainly:
 
 Restored by the mnemonic alone: every anchor key pair, key agreement
-key, and service identity — **for every label the holder can name**.
+key, and service identity — **for every label the holder can name**
+— and every carrier-relationship principal (7a) for every pair
+`(C, N)` the holder can name.
 
 NOT restored by the mnemonic — this is data state, held and
 synchronized by the layers above:
@@ -682,12 +1709,15 @@ synchronized by the layers above:
   Implementations MUST persist the label register in the holder's
   synchronized encrypted state (6.3), and recovery UIs MUST treat
   "mnemonic present, register lost" as **partial recovery** (3.3):
-  the self context is always recoverable — its derivation needs no
-  register entry (5.3) — and labels re-learnable from counterparts
-  (a group re-supplying its digest, a persona's own publication)
-  return as they are re-learned; the rest is not enumerable.
-  Partial recovery is deterministic: there is exactly one self
-  candidate, never a choice. **Pair labels are the honest limit of
+  the recovery context is always derivable — it needs no register
+  entry (5.3) — and with any state copy it unlocks, the register
+  and every context return; without one, labels are re-learnable
+  from counterparts (a group re-supplying its digest — the
+  personal community like any group — a persona's own publication)
+  and return as they are re-learned; the rest is not enumerable.
+  Partial recovery is deterministic: the recovery-context
+  candidates are the two fixed rule sets of 5.3, never a holder's
+  choice. **Pair labels are the honest limit of
   re-learning:** the relationship nonce exists nowhere but in the
   holder's register — a counterpart holds the derived anchor, not
   the label. With the register lost, a pair anchor is
@@ -695,6 +1725,58 @@ synchronized by the layers above:
   by a new encounter (Encounter §4.4, fresh always) or a new introduction act —
   and whatever standing the old pair anchor carried follows the
   visibility layer's disclosure rules, not a re-derivation.
+- the **carrier nonces** of 7a.3 and the configured carrier
+  identifiers of 7a.2. Both are register and configuration, not
+  key material, and both behave exactly like the pair nonces
+  beside them: the recovery context of 5.3 is derivable without
+  them, and with any state copy it unlocks, the register returns
+  and every principal re-derives — including after a device loss,
+  which is the ordinary case and needs no carrier interaction at
+  all. **Without a state copy there is no re-learning path**: a
+  carrier holds the principal, never the nonce, and a carrier that
+  offered to hand a person "their" principals back would be
+  answering the very question 7a.5 forbids anyone to ask. So the
+  honest rule, symmetric to the pair labels: a lost carrier nonce
+  is **unrecoverable-but-replaceable** — the holder generates a
+  fresh `N` for that relationship, registers the relationship's
+  `rkid`s afresh at each carrier under the new principals, and the
+  old principals **become orphans at the carrier**, holding a queue
+  nobody will ever collect. Because that surface would otherwise
+  grow monotonically, a carrier MUST publish an aging rule for
+  uncollected principals as a declared constant; that duty and its
+  constant live in Delivery 0.37 §5a.9, not here. **What that rule
+  is worth knowing here:** ageing is a two-phase wind-up, not a
+  deletion at a deadline — the queue stops accepting new deposits,
+  everything already admitted is concluded or given up, and only
+  then are queue and binding released. For a person that has one
+  practical consequence: **coming back late is not fatal.** A
+  holder who recovers a state copy after the horizon has passed
+  can still present the proofs, and the binding returns to normal
+  service; what was already concluded stays concluded.
+
+  **Which of the two losses happened decides whether the addresses
+  survive, and that decides everything downstream** — the point is
+  stated here because the delivery side depends on it and got it
+  wrong once. The `rkid` of a relationship is the key-agreement key
+  of a **pair context** (5.2), so its private half lives or dies
+  with the pair nonce in the bullet above, not with the carrier
+  nonce in this one:
+  - **Carrier entries lost, pair contexts held** — the partial
+    case, and the ordinary one: a nonce entry corrupted, a
+    selective restore, a deliberate rotation of `N`. The addresses
+    are intact and their private keys are held, so the holder can
+    prove possession of them and re-registers under the new
+    principals; Delivery §5a.3's **rebind** is exactly this path.
+  - **The whole register lost with no state copy** — then the pair
+    contexts are gone **too**, and with them every `rkid` private
+    key. A counterpart's copy of an address is the **public**
+    value; it re-derives nothing. There is therefore **no rebind
+    after total register loss**: the relationship is re-created and
+    re-addressed by the bullet above, the old queues are collected
+    by nobody, and they end as orphans on the carrier's horizon
+    with their contents given up first (Delivery §5a.8/§5a.9).
+    Anything that promised a return path here would be promising a
+    proof the holder cannot construct.
 - received credentials, contact memory, received disclosures and
   delivered snapshots, membership documents, and every other
   holding.
@@ -711,22 +1793,68 @@ BIP-39 mnemonic with the historic info strings. Under this casting,
 
 - The migrated person's root IKM is the same 64-byte BIP-39 seed
   (Section 4) — the historic derivation already used it.
-- The self context of *every* identity derives with exactly the
-  historic info strings (Section 5.3). The migrated person's
-  existing anchor therefore *is* their self anchor under this
-  document, byte-identical: all edges, memberships, and logs remain
-  attached, nothing any consumer observes changes, and no register
-  entry, mode, or adoption step exists.
+- The recovery context of every **pre-0.13** identity derives with
+  exactly the historic info strings (Section 5.3). The migrated
+  person's existing anchor therefore *is*, byte-identical, their
+  recovery context under this document — its storage-entry role
+  continues unchanged, and no register entry, mode, or adoption
+  step exists. What ends is prospective and social: the historic
+  anchor acquires no **new** social attachments; the person's
+  personal community is founded (or continues) as an ordinary
+  group, and the community anchor takes over the
+  cross-relationship role via the visibility layer's disclosure
+  acts.
 - New contexts of a migrated person MUST use Section 5.1
-  derivation. Existing group memberships of the one-context world
-  remain attached to the self anchor — they were made under it and
-  membership documents are immutable; groups joined after adoption
-  use `group/<digest>` anchors. Both states are legitimate and
-  permanent; the visibility layer decides what linking between them
-  is disclosed, exactly as for any two contexts.
-- Section 16's self vector *is* the migration vector: mnemonic →
+  derivation. Existing edges, memberships, and logs of the
+  one-context world remain attached to the historic anchor — they
+  were made under it and the documents are immutable; groups
+  joined after adoption use `group/<digest>` anchors. Both states
+  are legitimate and permanent (for migrated identities the
+  recovery context **has** a social past; for identities created
+  under 0.13 it never does).
+- Section 16's recovery vector *is* the migration vector: mnemonic →
   the historic derivation → the anchor a deployed identity already
   has.
+
+**What "mute" means, exactly (normative).** Prospectively the
+historic recovery context is **mute — it forms no new binding and
+appears in no new disclosure. It is not silenced inside the
+bindings it already has.** Three rules, in that order:
+
+1. **Exercising existing attachments stays conformant.** A
+   migrated person keeps signing operations in every group whose
+   materialized membership already carries the historic anchor,
+   and keeps acting in the relationships that anchor is already a
+   party to. Access §5.1's scoping property governs the
+   **derivation** of member anchors; it is not a re-admission
+   requirement for an anchor a roster already holds. The historic
+   anchor **is** the member anchor those groups admitted and
+   stays a current member until an ordinary membership event ends
+   that. Continuing an existing social surface is not acquiring
+   one — prohibition 2 of 5.3, read exactly.
+2. **Every new binding and every new disclosure is forbidden.**
+   No new membership under the historic anchor, no new
+   relationship under it, and no new mapping, card, or disclosure
+   naming it: a `member-mapping@1` (Access §5.5), a
+   `self-card@1` or `anchor-mapping@2` (`rltp-visibility` §6), or
+   any other artifact whose fields name the historic recovery
+   context is nonconformant from this casting on. Old artifacts
+   naming it remain verifiable as history, forever.
+3. **The prospective transition, named and unforced.** New
+   memberships are entered under `group/<genesis digest>` member
+   anchors (6.1), and the cross-relationship role moves to the
+   community anchor — disclosed per co-member as
+   `member-mapping@1` and per contact as `anchor-mapping@2`,
+   always under the **new** anchors. **No re-joining is forced.**
+   A legacy attachment MAY persist until its own group or its own
+   relationship migrates to new anchors, and that migration is
+   that group's or those two people's act — an ordinary
+   membership event, an ordinary re-encounter or introduction —
+   never a duty this document imposes with a deadline. What the
+   visibility layer decides is linking among the person's
+   **social** contexts, the community anchor included, exactly as
+   for any two contexts; the historic recovery context is not
+   among them.
 
 ## 11. Profile properties — the graded table (normative honesty)
 
@@ -735,9 +1863,9 @@ properties (B1–B4). Which grade a group requires is that group's
 policy, not this protocol's. The native profile of this casting
 (BIP-39 · HKDF labels · Ed25519/X25519 · `did:key` ·
 `eddsa-jcs-2022`) grades as follows, and implementations claiming
-`rltp-identity@0.12` claim exactly these grades — no better:
+`rltp-identity@0.28` claim exactly these grades — no better:
 
-| Property | Grades (best → weakest) | **Native profile 0.11** |
+| Property | Grades (best → weakest) | **Native profile 0.28** |
 |---|---|---|
 | **B1** Edge survival across key change | native (identifier stable across key events) · compensated (edge succession, C1) · re-encounter | **re-encounter.** C1 (*RLTP Succession*) is parked; until its re-cast, edges survive an anchor change only by being witnessed anew |
 | **B2** Takeover resistance under operational key possession | pre-separated successor anchor · witnessed succession quorum (C1) · none | **none.** Operational possession of an anchor key is control of the anchor. A first-mover race would also grade as *none*; this profile does not pretend otherwise |
@@ -753,17 +1881,24 @@ this table.
 
 ## 12. Conformance
 
-The profile `rltp-identity@0.12` is claimed by an implementation
+The profile `rltp-identity@0.28` is claimed by an implementation
 that:
 
 1. creates identities per Section 3.1, presents human actions per
    3.3, and implements the mnemonic/root-IKM contract of Section 4,
 2. derives contexts per Section 5 (both seeds, and the key
-   agreement chain of 5.2 through to the contact-card multikey),
+   agreement chain of 5.2 through to the contact-card multikey —
+   for labeled contexts; the recovery context derives the same
+   way but is never **newly** placed in a card — historic cards of
+   migrated identities remain verifiable, 5.3, Section 10),
 3. enforces the closed registry and grammar of Section 6 with
    rejection before derivation, and stores the label register per
    6.3,
-4. derives service identities per Section 7,
+4. derives service identities per Section 7, and
+   carrier-relationship identities per Section 7a — including the
+   byte-exactness rule of 7a.2, the nonce independence and
+   per-relationship scope of 7a.3, the length-fixed info string of
+   7a.4, and the four prohibitions of 7a.5,
 5. produces anchors per 8.1, obeys the waist rule of 8.3 toward
    foreign anchors, and enforces the binding rule of 8.4,
 6. implements recovery per Section 9 (including the A5 presentation
@@ -778,7 +1913,8 @@ that:
 - **The mnemonic is a single point of failure by design.** One
   secret reconstructs every context — and its compromise is
   **retroactive**. Precisely: an attacker with the root IKM alone
-  derives the self anchor with certainty and can *confirm* any
+  derives the recovery-context candidates with certainty — a
+  storage-entry coordinate, not a social anchor — and can *confirm* any
   labeled anchor whose label they know or guess (group digests
   circulate among members; persona names are public); an attacker
   with root IKM **and** the label register links every context of
@@ -812,14 +1948,17 @@ that:
   flow, not an error state.
 - **Domain separation.** The derivation families in force are:
   `rltp/anchor/ed/` and `rltp/anchor/x/` (labeled contexts, 5.1),
-  the two fixed self strings `wot/identity/ed25519/v1` and
-  `wot/encryption/x25519/v1` (5.3), and
-  `rltp/v1/service-identity/` (7). Their literal prefixes are
+  the fixed recovery strings (both generations, 5.3) such as `wot/identity/ed25519/v1` and
+  `wot/encryption/x25519/v1` (5.3),
+  `rltp/v1/service-identity/` (7), and
+  `rltp/v1/carrier-relationship/ed25519/v1/` (7a). Their literal prefixes are
   pairwise distinct before any variable part begins (the fixed
-  self strings contain no variable part at all), so no label or
+  recovery strings contain no variable part at all), so no label or
   digest choice can collide two families; Section 5.1's argument
   records why no input can collide two labels within a family
-  either.
+  either, and 7a.4's why no pair of inputs can collide two
+  principals within the carrier family — the one family with **two**
+  variable parts, both length-fixed for exactly that reason.
 - **Label collision as attack surface.** If an attacker can
   influence a label (a group's genesis digest is
   adversary-influenced input), they still cannot influence the
@@ -864,6 +2003,25 @@ that:
   granularity would multiply the derivation and binding surface —
   and it is stated here so nobody mistakes the pseudonym for
   per-service unlinkability.
+- **A carrier of one relationship sees one pseudonym — by design,
+  and that is the whole claim.** The carrier-relationship identity
+  (7a) is per *(relationship × carrier)*: a carrier cannot join two
+  of a person's relationships through the identities it is shown,
+  and two carriers of the same relationship see two principals with
+  no computable relation. What it does **not** claim: it does not
+  hide the relationship from the carrier carrying it (the carrier
+  of a relationship knows the relationship), and it does not touch
+  the correlations that need no identity at all — timing, volume,
+  the collection pattern of a device that serves many principals in
+  one session, the network layer, or two carriers comparing notes.
+  Delivery 0.37 §10 states those residuals where they are paid; the
+  derivation closes the **list join**, not traffic analysis.
+- **The register is where the carrier picture reassembles.** The
+  carrier-relationship entries (6.3) hold, in one place, every
+  carrier the person uses and every relationship each one carries —
+  the join the derivation denies each carrier individually. Its
+  leakage is the same class as the label register's leakage, and
+  the same rule protects it.
 - **Structure is a fingerprint.** Even fully anonymous anchors form
   a graph whose shape can be matched against outside knowledge.
   That residual risk is inherent to stable identifiers and is
@@ -877,7 +2035,7 @@ that:
   retroactively **prove** control of every recorded context: under
   coercion or seizure, unlinkability collapses not into suspicion
   but into evidence — of key control, not of any human act. The seed
-  *alone* proves less: the self context and any label the holder can
+  *alone* proves less: the recovery context and any label the holder can
   be made to name or the attacker can guess — group digests and
   persona names are guessable from context, while **pair labels are
   high-entropy and enumerable from nothing but the register**
@@ -1012,7 +2170,8 @@ Genesis-digest sample (a valid `u`-multibase sha2-256 multihash):
 
 | Context | info (ed) | anchor | keyAgreement |
 |---|---|---|---|
-| self (5.3 — also the migration vector) | `wot/identity/ed25519/v1` | `did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a` | `z6LSqA7sbKGK3WVHP9SBcmv9ikp19iDNb1P5Q315kRPQrcTV` |
+| recovery, historic strings (5.3 — every pre-0.13 identity; also the migration vector) | `wot/identity/ed25519/v1` | `did:key:z6Mko3ZEjKJWQAM5nDXKoZ9jErvvxbWbYgS8KJXYpC5Hbu8a` | `z6LSqA7sbKGK3WVHP9SBcmv9ikp19iDNb1P5Q315kRPQrcTV` |
+| recovery, `rltp/` strings (5.3 — identities created under 0.13+) | `rltp/identity/recovery/v1` | `did:key:z6MkroYXLjZhtyy74Y1Wg1vaW1zTBetwgaHS9xvcAKMxpHfj` | `z6LScSadCGjgAHFhaMs2MWa8kucJG1KheG3vqjaqnhbP4kBg` |
 | `group/uEiDYLnFbXqm2cwuJWuk9yNzRmlzWDpCTH6yA_4aP_1z_RA` | `rltp/anchor/ed/<label>` | `did:key:z6Mkp252PiZp5e3EzakYaFCbWuJjpCiVfkr2ZffkqyEVAE2t` | `z6LSfGq1jMrqQ3jmQFB1pJrsKvVQhgQxRFtdkpdBYSn6Lum6` |
 | `persona/Anna` | `rltp/anchor/ed/<label>` | `did:key:z6MkkfafvRtofcUe2qRjeN5wWF3pbJ8cX3wM8hPrNc5m6eQi` | `z6LSmJ5NXLqcbrro1dQ3XGmf5D1foCq5PUtRDbNj7GKPjipA` |
 | `persona/anna` (case pair to the above) | `rltp/anchor/ed/<label>` | distinct — full values in the file | in the file |
@@ -1027,6 +2186,86 @@ Further vectors in the file:
   `z`-multibase (`zQmctXr3tRbmrD5JGXvfdimQkJ9tKvJQ7VrtyGGdEvsEVu5`)
   normalizes to the `u`-form and MUST yield the same service
   identity.
+- **Carrier-relationship seam (7a), three executable cases** under
+  one documented 32-byte carrier nonce
+  (`4317e83f…35937b`, whose digest is
+  `uEiARyBeBGoLeFlKIajBVjNixpsQkyp4HupNXzStv37vlvw`): the same
+  relationship at `did:web:carrier.example` →
+  `did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF`; at
+  `did:web:other-carrier.example` → a **different** principal
+  (one nonce, two carriers, no computable relation); and at
+  `did:web:Carrier.example` → a **third** principal, because 7a.2
+  compares bytes and folds no case. The file carries both digests
+  and the full info string of each case; a conforming
+  implementation MUST reproduce all three and MUST derive **no**
+  key-agreement key for this class (7a.1). Both info parts are 47
+  characters in every case — the length-fixedness of 7a.4 is
+  checked, not assumed.
+- **Carrier identifier grammar (7a.2), executable:**
+  `carrierRelationship.identifierGrammar` carries the acceptance
+  and rejection sets of the validation pipeline — accepted:
+  ordinary DID and `https` forms, a case variant, and **both** the
+  NFC and NFD spellings of one accented name; rejected: the empty
+  string, leading, trailing and interior `White_Space`, a control
+  character (Cc), a format character (Cf), a **lone surrogate**
+  (carried as a JSON escape, because a value that is not encodable
+  as UTF-8 is exactly the case at issue), and a 1025-byte input.
+  One further check makes the *absence* of normalization
+  executable rather than merely asserted: the NFC and NFD
+  spellings are both valid, and they MUST derive **two different
+  principals** — the case 6.2 decides the opposite way for persona
+  names.
+- **The Unicode 15.0 pin, shipped as data.**
+  `identifierGrammar.unicodePin` carries the enumerated `Cc`, `Cf`,
+  and `White_Space` ranges of 7a.2 step 4. It is there because a
+  pin every implementation reads from its own ICU build is not a
+  pin: the ranges govern, a conforming implementation evaluates
+  step 4 against them, and the file records their provenance (two
+  independent enumerations, Unicode 15.1 and 16.0 tables, agreeing
+  range for range on both properties).
+- **Raw-byte rejection vectors.** `identifierGrammar.rawByteRejects`
+  gives step 1 something a string-level check cannot express:
+  an overlong `C0 AF`, a truncated `E2 82`, a stray continuation
+  `80`, a surrogate encoded as `ED A0 80`, a five-byte sequence,
+  and a code point past U+10FFFF — each MUST fail a strict UTF-8
+  decode, and none may be repaired into U+FFFD. One further case
+  decodes cleanly and is rejected a step later (an embedded
+  `U+0000`), which is what makes the ordering of the pipeline
+  observable rather than incidental.
+- **The relationship axis.** The three carrier cases above vary
+  `C` and hold `N`; `relationshipAxisCase` does the opposite —
+  **one** carrier, a second documented nonce
+  (`rltp/vector/carrier-relationship/nonce-2`), a different
+  principal. Without it the vector set proved only half of what
+  7a.4 claims.
+- **The `generation` domain (7a.3).**
+  `nonceConvergence.generationDomain` carries the closed domain
+  `[1, 2^53−1]`, its acceptance and rejection sets — including
+  `2^53` and `2^53+1`, the two values a double-based runtime
+  cannot tell apart, and the non-canonical encodings `01`, `1.0`,
+  `1e3` — and a **boundary case**: a rotation at the very top of
+  the domain, whose winning nonce deliberately sorts *higher*, so
+  that the generation is what decides it. One check in the runner
+  demonstrates the hazard rather than asserting it, by showing
+  that the two out-of-domain values really are equal once parsed
+  as doubles.
+- **The nonce convergence rule (7a.3), four cases.**
+  `nonceConvergence` carries register entries as `{nonce,
+  generation}` and, for each case, the canonical entry, the
+  principal it derives and the superseded ones: (1) **concurrent
+  first writes** at the same generation, where the bytes decide;
+  (2) a **deliberate rotation**, whose new nonce deliberately
+  sorts *higher* — the counter-vector, because bytewise-smallest
+  alone would have silently undone it; (3) the superseded entry
+  **re-appearing** after a partition heal or a restore, which
+  carries the lower generation and stays superseded, so no
+  tombstone is needed; (4) **two concurrent rotations** to the
+  same generation, a race again, settled by the bytes at that
+  generation. Every case is evaluated over **all permutations** of
+  its entry set and MUST give the same answer, and every
+  superseded entry MUST derive a **different** principal — a
+  superseded nonce leaves an orphan at the carrier, never a
+  collision.
 - **NFC pair:** two distinct real input strings —
   `persona/Café` (composed) and `persona/Café`
   (decomposed) — normalize to the same canonical label and derive
@@ -1061,7 +2300,8 @@ derivation.
 | `did:key` | W3C CCG did:key Method v0.9. **RLTP uses only the Ed25519 resolution of the anchor.** The method's optional X25519 key *derived from* the Ed25519 key is NOT used: RLTP's key-agreement key is independently HKDF-derived (Sections 5.2, 5.3) and carried by the signed contact card — a verifier MUST take it from the card, never from a resolver's derived DID document key |
 | Multibase / Multikey | W3C Controlled Identifiers v1.0 Multikey + IETF draft-multiformats-multibase: `u` (base64url unpadded), `z` (base58btc); multicodec registry entries `0xed01` (Ed25519 pub), `0xec01` (X25519 pub); multihash `0x12 0x20` (sha2-256) |
 | Data Integrity | W3C Data Integrity EdDSA Cryptosuites v1.0 (vc-di-eddsa), cryptosuite `eddsa-jcs-2022` (via the consuming layers' securing decision) |
-| Unicode | Unicode 15.0 data for assignment, `General_Category`, `White_Space`; NFC per UAX #15 |
+| Unicode | Unicode 15.0 data for assignment, `General_Category`, `White_Space`; NFC per UAX #15. For 7a.2 the pinned `Cf` and `White_Space` sets are **shipped as enumerated ranges** in `vectors/identity-derivation.json` and govern over any runtime's property tables |
+| RLTP Delivery Contract | **0.37** (normative for the carrier-side consumption of 7a: §5a.3 registration proofs, §5a.8 conclusion, §5a.9 loss and orphans, §4.4 the carrier constants) |
 
 ## Appendix A. Relation to prior wot-spec documents (informative)
 
@@ -1070,11 +2310,11 @@ encryption key derived from the full BIP-39 seed with the
 `wot/identity/ed25519/v1` and `wot/encryption/x25519/v1` info
 strings, the did:key form, and resolution. This document generalizes
 it without moving it: the same seed remains the root IKM, the
-historic derivation *is* the self context for every identity
-(Section 5.3), and derivation gains the label dimension for every
-further context. A deployed identity is already conformant to this
-document's self rule without any migration step — which is the
-migration argument in one sentence.
+historic derivation *is* the recovery context for every deployed
+identity (Section 5.3), and derivation gains the label dimension
+for every further context. A deployed identity is already
+conformant to this document's recovery rule without any migration
+step — which is the migration argument in one sentence.
 
 ## Appendix B. Requirements coverage (informative)
 
@@ -1089,7 +2329,7 @@ Revision 3:
 | A4 recovery without custodians | 9.1 |
 | A5 honesty about the second loss case | 9.2 |
 | A6 separated key purposes | 5.1/5.3 (ed/x domain separation) |
-| A7 derived service identities | 7 (Ed25519-only, canonical digest, Access seam vector, Delivery/Access debts) |
+| A7 derived service identities | 7 (Ed25519-only, canonical digest, Access seam vector, Delivery/Access debts) · **7a** (the carrier-relationship class: the second scope A7 needs, Delivery 0.37 §5a its consumer) |
 | A8 operability without cryptography knowledge | 3.3 (normative table) |
 | A9 anchor stability as chosen position | 8.5 |
 | B1–B4 graded properties | 11 (native profile row) |
