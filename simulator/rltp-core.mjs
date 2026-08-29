@@ -25,7 +25,12 @@ export const jcs = (o) => {
   if (typeof o === 'number' && !Number.isFinite(o)) throw new Error('jcs: non-finite number')
   // Sparse Arrays kollidieren auf einen Digest ([empty] und [] wären
   // gleich) — verwerfen statt still kanonisieren (lib-Review 4, B-3)
-  if (Array.isArray(o)) for (let i = 0; i < o.length; i++) if (!(i in o)) throw new Error('jcs: sparse array')
+  if (Array.isArray(o)) {
+    for (let i = 0; i < o.length; i++) if (!(i in o)) throw new Error('jcs: sparse array')
+    // Nicht-Index-Eigenschaften und Symbol-Schlüssel würden still
+    // verworfen und mit dem nackten Array kollidieren (lib-Review 6, B-2)
+    if (Object.getOwnPropertyNames(o).length !== o.length + 1 /* 'length' selbst */ || Object.getOwnPropertySymbols(o).length > 0) throw new Error('jcs: array with extra own properties')
+  }
   return Array.isArray(o) ? '[' + o.map(jcs).join(',') + ']'
     : (o && typeof o === 'object')
       ? (plainOr(o)) && '{' + Object.keys(o).sort().map((k) => {
@@ -42,6 +47,9 @@ export const jcs = (o) => {
 const plainOr = (o) => {
   const proto = Object.getPrototypeOf(o)
   if (proto !== null && proto !== Object.prototype) throw new Error('jcs: not a plain JSON object')
+  // Symbol-Schlüssel würden still verworfen (lib-Review 6, B-2)
+  if (Object.getOwnPropertySymbols(o).length > 0) throw new Error('jcs: object with symbol keys')
+  if (Object.getOwnPropertyNames(o).length !== Object.keys(o).length) throw new Error('jcs: object with non-enumerable own properties')
   return true
 }
 const term = (o) => {
@@ -49,6 +57,19 @@ const term = (o) => {
   if (typeof s !== 'string') throw new Error('jcs: value is not JSON-representable')
   return s
 }
+
+// Das Form-Gate der Probe-Empfänger (lib-Review 2 M-3 / 6 M-2, Parität):
+// eine gültige Signatur bindet, was signiert wurde — die FORM ist ein
+// eigenes, früheres Gate. 'string' | 'number' | 'boolean' | 'object' | 'array'
+export const shaped = (o, fields) =>
+  o !== null && typeof o === 'object' && !Array.isArray(o) && Object.entries(fields).every(([k, t]) =>
+    t === 'array' ? Array.isArray(o[k])
+    : t === 'object' ? (o[k] !== null && typeof o[k] === 'object' && !Array.isArray(o[k]))
+    : typeof o[k] === t)
+
+// kanonischer Dezimal-Integer-String: keine führenden Nullen, >= 1,
+// <= 18 Stellen — die Form jedes Sequenzfeldes (lib-Review 9, P-B1)
+export const intStr = (v) => typeof v === 'string' && /^[1-9][0-9]{0,17}$/.test(v)
 
 // ── multibase encodings ─────────────────────────────────────────────────
 export const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'

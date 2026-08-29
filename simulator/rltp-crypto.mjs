@@ -173,8 +173,12 @@ export async function unseal (env, xPriv) {
   if (raw.length - 16 > 65536) return { error: 'oversize' }          // size bound BEFORE decryption
   let key
   try { key = await aesKey(await ecdh(xPriv, epkRaw), 'decrypt') } catch { return { error: 'decryption-failed' } }
+  let bytes
+  try { bytes = await S.decrypt({ name: 'AES-GCM', iv: nonce }, key, raw) } catch { return { error: 'decryption-failed' } }
+  // ab hier hat die Krypto GESPROCHEN: ungültiges UTF-8 wird nicht per
+  // U+FFFD repariert, sondern ist Form (lib-Review 7 M-1, Parität)
   let plaintext
-  try { plaintext = new TextDecoder().decode(await S.decrypt({ name: 'AES-GCM', iv: nonce }, key, raw)) } catch { return { error: 'decryption-failed' } }
+  try { plaintext = new TextDecoder('utf-8', { fatal: true }).decode(bytes) } catch { return { error: 'malformed' } }
   try { return { document: JSON.parse(plaintext) } }
   catch { return { error: 'malformed' } }                            // parse failure is NOT a crypto failure
 }

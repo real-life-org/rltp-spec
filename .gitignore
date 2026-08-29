@@ -2,3 +2,5 @@ node_modules/
 
 # local toolchain symlink — never part of the published mirror
 simulator/node_modules
+lib/node_modules/
+lib/dist/

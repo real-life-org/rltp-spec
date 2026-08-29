@@ -20,57 +20,57 @@
 //   und sonst nichts. Epochales Blenden: salt = monotone Sequenznummer
 //   pro Beziehung; Listen SORTIERT (Lieferreihenfolge leakt nichts).
 //   Ehrlicher Rest: 1-Bit-Orakel über gehaltene Anker + die Zählung.
-import { jcs, shaped, intStr } from './rltp-core.mjs'
-import * as C from './rltp-crypto.mjs'
-import * as DV from './delivery.mjs'
+import { jcs } from '../core.js'
+import * as C from './deps.js'
+import type { Person } from './deps.js'
 
 const te = new TextEncoder()
 const S = globalThis.crypto.subtle
 const TT = 'https://real-life.org/trust-tasks/'
-const say = (p, m) => p.log.push(m)
-const uuid = (ent) => ent ?? globalThis.crypto.randomUUID()
+const say = (p: Person, m: string) => p.log.push(m)
+const uuid = (ent?: any) => ent ?? globalThis.crypto.randomUUID()
 
 // ── Primitiven ──────────────────────────────────────────────────────────
-export async function hmac (keyBytes, msg) {
+export async function hmac (keyBytes: Uint8Array, msg: string) {
   const k = await S.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
   return C.b64uOf(new Uint8Array(await S.sign('HMAC', k, te.encode(msg))))
 }
 // der stabile soziale Anker = COMMUNITY-ANKER (Identity 0.13, S-DID-Schnitt):
 // gewöhnlicher Gruppen-Kontext über die Genesis der persönlichen Community —
 // nie mehr die zero-input-Recovery-Strings
-export async function communityContext (p) {
+export async function communityContext (p: Person) {
   if (!p.selfCtx) p.selfCtx = await C.communityContext(p.rootIkm, p.communityGenesis)
   return p.selfCtx
 }
-export const selfCard = async (p, whenIso) => {
+export const selfCard = async (p: Person, whenIso: string) => {
   const s = await communityContext(p)
   return C.signCard(s, C.cardBody(s, { name: p.name }), whenIso)
 }
 // Beziehungs-Schlüssel: X25519 zwischen den pair-Kontexten des Kanals
-const chShared = (contact) => C.ecdh(contact.channel.own.x.priv, C.xRawOfMk(contact.channel.counterpartKa))
-const relKey = async (contact, info) => C.hkdf(await chShared(contact), info)
+const chShared = (contact: any) => C.ecdh(contact.channel.own.x.priv, C.xRawOfMk(contact.channel.counterpartKa)!)
+const relKey = async (contact: any, info: string) => C.hkdf(await chShared(contact), info)
 
 // ── anchor-mapping@2 (Designated Verifier, Doppel-MAC) ──────────────────
 // mac1: Kanal-DH (pairA × pairB) · mac2: selfA × pairB — der Empfänger
 // rechnet mac2 mit SEINEM pair-Privkey gegen die Self-Card nach. Beide
 // Schlüssel kann auch der Empfänger allein ableiten: Abstreitbarkeit.
-const mappingBody = (pairAnchor, selfAnchor, toPairAnchor, whenIso) =>
+const mappingBody = (pairAnchor: string, selfAnchor: string, toPairAnchor: string, whenIso: string) =>
   ({ type: 'anchor-mapping@2', pair: pairAnchor, self: selfAnchor, to: toPairAnchor, issuedAt: whenIso })
-export async function makeMapping (p, counterpartAnchor, when) {
+export async function makeMapping (p: Person, counterpartAnchor: string, when: number) {
   const contact = p.contacts.get(counterpartAnchor)
   const s = await communityContext(p)
   const whenIso = C.iso(when)
   const card = await selfCard(p, whenIso)
   const body = mappingBody(contact.channel.own.anchor, s.anchor, counterpartAnchor, whenIso)
   const msg = jcs(body)
-  const theirKa = C.xRawOfMk(contact.channel.counterpartKa)
+  const theirKa = C.xRawOfMk(contact.channel.counterpartKa)!
   return { body, card,
     mac1: await hmac(await relKey(contact, 'rltp/trust/mac/map1'), msg),
     mac2: await hmac(await C.hkdf(await C.ecdh(s.x.priv, theirKa), 'rltp/trust/mac/map2'), msg) }
 }
 // Verifikation ist EMPFÄNGER-PRIVAT: sie BRAUCHT die eigenen Geheimnisse
 // (das ist der Punkt — ein Dritter kann nicht einmal die Gültigkeit prüfen)
-export async function verifyMapping (p, m) {
+export async function verifyMapping (p: Person, m: any) {
   try {
     const b = m?.body
     if (!b || b.type !== 'anchor-mapping@2') return false
@@ -81,7 +81,7 @@ export async function verifyMapping (p, m) {
     if (card?.anchor !== b.self || !(await C.diVerify(card, b.self))) return false
     const msg = jcs(b)
     if ((await hmac(await relKey(entry, 'rltp/trust/mac/map1'), msg)) !== m.mac1) return false
-    const k2 = await C.hkdf(await C.ecdh(entry.channel.own.x.priv, C.xRawOfMk(card.keyAgreement)), 'rltp/trust/mac/map2')
+    const k2 = await C.hkdf(await C.ecdh(entry.channel.own.x.priv, C.xRawOfMk(card.keyAgreement)!), 'rltp/trust/mac/map2')
     if ((await hmac(k2, msg)) !== m.mac2) return false
     return true
   } catch { return false }
@@ -90,36 +90,41 @@ export async function verifyMapping (p, m) {
 // einen beliebigen pair-Anker an ein beliebiges Self bindet, dessen Card
 // er hält — es verifiziert identisch. Genau darum überzeugt ein
 // geleaktes Mapping niemanden.
-export async function forgeMapping (forger, victimCard, pairAnchor, when) {
+export async function forgeMapping (forger: Person, victimCard: any, pairAnchor: string, when: number) {
   const entry = forger.contacts.get(pairAnchor)
   const whenIso = C.iso(when)
   const body = mappingBody(pairAnchor, victimCard.anchor, entry.channel.own.anchor, whenIso)
   const msg = jcs(body)
-  const k2 = await C.hkdf(await C.ecdh(entry.channel.own.x.priv, C.xRawOfMk(victimCard.keyAgreement)), 'rltp/trust/mac/map2')
+  const k2 = await C.hkdf(await C.ecdh(entry.channel.own.x.priv, C.xRawOfMk(victimCard.keyAgreement)!), 'rltp/trust/mac/map2')
   return { body, card: victimCard,
     mac1: await hmac(await relKey(entry, 'rltp/trust/mac/map1'), msg),
     mac2: await hmac(k2, msg) }
 }
 
 // ── der geblendete Stern ────────────────────────────────────────────────
-// Sequenz-Reservierung SYNCHRON vor jedem await — zwei nebenläufige
-// Aufrufe ziehen nie denselben Salt (lib-Review 6 B-1, Parität)
-const reserveStarSeq = (contact) => {
+// Sequenz-Reservierung: SYNCHRON vor jedem await, damit zwei
+// nebenläufige Aufrufe nie denselben Salt ziehen (Review 6, B-1).
+// Ein bei Fehlschlag verbrannter Salt ist erlaubt — die Sequenz ist
+// strikt monoton, nicht lückenlos.
+const reserveStarSeq = (contact: any): number => {
   contact.starSeqNext = Math.max(contact.starSeqNext ?? 0, contact.starSeq ?? 0) + 1
   return contact.starSeqNext
 }
-const commitStar = (contact, seq, snap) => {
-  // Journal = High-Water-Stern; kein Rollback durch Nachzügler (lib-Review 7 B-2)
+const commitStar = (contact: any, seq: number, snap: any): void => {
+  // das Journal hält NUR den High-Water-Stern: ein verspätet fertig
+  // gewordener kleinerer Salt rollt sentStar nicht zurück (Review 7, B-2)
   if (seq > (contact.starSeq ?? 0)) { contact.starSeq = seq; contact.sentStar = snap }
 }
-const withStarLock = (contact, fn) => {
+// Produktion pro Kontakt SERIALISIERT: die Reservierung macht Salts
+// eindeutig, erst die Kette macht ihre AUSLIEFERUNG streng steigend —
+// der Empfänger verwirft normativ jeden nicht strikt größeren Salt
+const withStarLock = <T>(contact: any, fn: () => Promise<T>): Promise<T> => {
   const run = (contact.starLock ?? Promise.resolve()).then(fn, fn)
   contact.starLock = run.catch(() => {})
   return run
 }
-// reine Berechnung — Commit von Journal/Sequenz erst nach allem Fehlbaren
-// (lib-Review 5 B-5, Parität)
-async function buildStarPure (p, contact, seq) {
+// reine Berechnung — mutiert NICHTS; Sequenz kommt aus reserveStarSeq
+async function buildStarPure (p: Person, contact: any, seq: number) {
   const salt = String(seq)
   const k = await relKey(contact, 'rltp/trust/blind/star/' + salt)
   const blinded = []
@@ -132,7 +137,7 @@ async function buildStarPure (p, contact, seq) {
   blinded.sort()
   return { salt, count, blinded }
 }
-export function buildStar (p, contact) {
+export function buildStar (p: Person, contact: any) {
   return withStarLock(contact, async () => {
     const seq = reserveStarSeq(contact)
     const snap = await buildStarPure(p, contact, seq)
@@ -141,13 +146,13 @@ export function buildStar (p, contact) {
   })
 }
 // Empfängerseite: denselben Lieferschlüssel nachrechnen, EINEN Anker testen
-export async function starMatch (p, entry, snap, anchor) {
+export async function starMatch (p: Person, entry: any, snap: any, anchor: string) {
   const k = await relKey(entry, 'rltp/trust/blind/star/' + snap.salt)
   return snap.blinded.includes(await hmac(k, anchor))
 }
 // Cache für die synchrone UI: pro Kontakt { count, knownNames } aus dem
 // empfangenen Schnappschuss gegen die EIGENEN gehaltenen Self-Anker.
-export async function refreshStarInfo (p) {
+export async function refreshStarInfo (p: Person) {
   for (const [key, entry] of p.contacts) {
     if (!entry.starReceived || !entry.channel?.own) continue
     const known = []
@@ -168,20 +173,25 @@ export async function refreshStarInfo (p) {
 // Vermittler-Abhängigkeit. Gesperrt bleibt ◇: einseitig hast du nichts
 // freigegeben — es existiert kein eigener Kanal-Kontext für das Mapping.
 // Einweg-Tür: trustGiven bleibt; Pausieren stoppt nur das Abo.
-export async function setTrust (p, counterpartAnchor, when, ent = {}) {
+export async function setTrust (p: Person, counterpartAnchor: string, when: number, ent: any = {}) {
   const contact = p.contacts.get(counterpartAnchor)
   if (!contact) return { error: 'kein Kontakt' }
   if (!contact.channel?.own) return { error: 'kein eigener Kanal — einseitig (◇) hast du nichts freigegeben' }
   if (contact.trustGiven) return { error: 'bereits geschenkt (Einweg-Tür)' }
-  // In-flight-Latch + Tür-nach-Siegel (lib-Review 6 B-1 / 5 B-5, Parität)
+  // In-flight-Latch (Review 6, B-1): der Latch fällt SYNCHRON — zwei
+  // nebenläufige Aufrufe können die offene Tür nicht beide bestehen
   if (contact.trustPending) return { error: 'bereits unterwegs (Einweg-Tür)' }
   contact.trustPending = true
   try {
-    // alles Fehlbare — auch iso(when) — im try (lib-Review 7 B-1, Parität)
+    // ALLES Fehlbare — auch die Zeitform (when=NaN wirft) — liegt im
+    // try, dessen finally den Latch räumt (Review 7, B-1)
     const whenIso = C.iso(when)
+    // die Tür schließt erst, wenn die Disclosure WIRKLICH existiert
+    // (Review 5, B-5): alles Fehlbare läuft vor den Journal-Mutationen
     const mapping = await makeMapping(p, counterpartAnchor, when)
-    // Stern-Abschnitt unter dem Kontakt-Lock (lib-Review 7 B-2, Parität)
-    const { env } = await withStarLock(contact, async () => {
+    // Stern-Abschnitt unter dem Kontakt-Lock: Reservierung, Bau, Siegel
+    // und Commit in EINEM geordneten Zug (Review 7, B-2)
+    const { env, star, seq } = await withStarLock(contact, async () => {
       const seq = reserveStarSeq(contact)
       const star = await buildStarPure(p, contact, seq)
       const body = {
@@ -192,7 +202,7 @@ export async function setTrust (p, counterpartAnchor, when, ent = {}) {
       const doc = await C.diSign(contact.channel.own, body, whenIso)
       const env = await C.seal(doc, contact.channel.counterpartKa, ent)
       commitStar(contact, seq, star)
-      return { env }
+      return { env, star, seq }
     })
     contact.trustGiven = whenIso
     contact.sentMapping = mapping // Sender-Journal: die geöffnete Einweg-Tür
@@ -200,7 +210,7 @@ export async function setTrust (p, counterpartAnchor, when, ent = {}) {
     return { to: contact, env }
   } finally { contact.trustPending = false }
 }
-export function setTrustPaused (p, counterpartAnchor, paused) {
+export function setTrustPaused (p: Person, counterpartAnchor: string, paused: boolean) {
   const contact = p.contacts.get(counterpartAnchor)
   if (!contact?.trustGiven) return
   contact.trustPaused = !!paused
@@ -209,11 +219,18 @@ export function setTrustPaused (p, counterpartAnchor, paused) {
 // Bestand geändert (neuer Self-Anker gehalten) → Stern überall auffrischen,
 // wo ich vertraue und nicht pausiert habe. Ohne das frieren Sterne in der
 // Toggle-Reihenfolge ein (Antons Erstlauf-Befund im Graph-Simulator).
-// pro Empfänger resilient: EIN Fehlschlag verwirft nie die schon
-// gebauten Sterne; failures gehören dem Host (lib-Review 5 M-1, Parität)
-export async function starRefreshAll (p, when, ent = {}) {
+/**
+ * Refresh every deliverable star. Per-recipient resilience (review 5,
+ * M-1): a failure for ONE recipient never discards the stars already
+ * built for others — the result carries the sealed outbound plus a
+ * named failure list. THE CONTRACT: the caller (host application) owns
+ * redelivery of failed refreshes, e.g. by calling this again; a failed
+ * refresh is a SEND problem, never grounds to redeliver the inbound
+ * document (its effect is complete and cached).
+ */
+export async function starRefreshAll (p: Person, when: number, ent: any = {}) {
   const outbound = []
-  const failures = []
+  const failures: { to: string, error: string }[] = []
   for (const [anchor, contact] of p.contacts) {
     if (!contact.trustGiven || contact.trustPaused) continue
     try {
@@ -231,32 +248,34 @@ export async function starRefreshAll (p, when, ent = {}) {
         return sealed
       })
       outbound.push({ to: contact, env })
-    } catch (e) { failures.push({ to: contact.name ?? anchor, error: String(e?.message ?? e) }) }
+    } catch (e: any) { failures.push({ to: contact.name ?? anchor, error: String(e?.message ?? e) }) }
   }
   return Object.assign(outbound, { failures })
 }
 
 // ── Empfangs-Dispatch (Form wie groups.receiveDoc) ──────────────────────
-export async function receiveTrustDoc (p, env, when, ent = {}) {
-  const opened = await DV.openEnvelope(p, env)                // Stufen 1–4, Cache-Lesung (lib-Parität)
+export async function receiveTrustDoc (p: Person, env: any, when: number, ent: any = {}) {
+  const opened = await C.openEnvelope(p, env)                 // Stufen 1–4, Cache-Lesung
   if (opened.duplicate) return { handled: true, duplicate: true }
   if (opened.error) return { handled: false }
   const r = await receiveTrustDocInner(p, env, opened.doc, when, ent)
-  if (r?.handled && !r.error) DV.effectDone(p, opened.digest)
+  if (r?.handled && !(r as any).error) C.effectDone(p, opened.digest)
   return r
 }
-async function receiveTrustDocInner (p, env, doc, when, ent = {}) {
+async function receiveTrustDocInner (p: Person, env: any, doc: any, when: number, ent: any = {}) {
   const ctx = p.contexts.get(env.rkid)
   if (!ctx) return { handled: false }
   if (typeof doc?.type !== 'string' || !doc.type.startsWith(TT + 'trust-')) return { handled: false, doc }
-  // Form VOR Feldern: jeder Typ verlangt SEIN Payload (lib-Review 6 M-2)
+  // form BEFORE fields (M-3): issuer, proof and payload as used below
+  // form BEFORE fields (M-3, verschärft in Runde 3): jeder Typ verlangt
+  // SEIN Payload — star@probe ohne star ist formwidrig, nicht ein Throw
   const kind = doc.type.slice((TT + 'trust-').length)
-  const starOk = shaped(doc.payload ?? {}, { star: 'object' }) && shaped(doc.payload.star, { salt: 'string', count: 'number', blinded: 'array' })
-    && intStr(doc.payload.star.salt) && Number.isInteger(doc.payload.star.count) && doc.payload.star.count >= 0
+  const starOk = C.shaped(doc.payload ?? {}, { star: 'object' }) && C.shaped(doc.payload.star, { salt: 'string', count: 'number', blinded: 'array' })
+    && C.intStr(doc.payload.star.salt) && Number.isInteger(doc.payload.star.count) && doc.payload.star.count >= 0
     && doc.payload.star.count === doc.payload.star.blinded.length
-    && doc.payload.star.blinded.every((b) => typeof b === 'string')
-  const mappingOk = shaped(doc.payload ?? {}, { mapping: 'object' }) && shaped(doc.payload.mapping, { mac1: 'string', mac2: 'string', card: 'object' })
-  if (!shaped(doc, { issuer: 'string', proof: 'object', payload: 'object' })
+    && doc.payload.star.blinded.every((b: any) => typeof b === 'string')
+  const mappingOk = C.shaped(doc.payload ?? {}, { mapping: 'object' }) && C.shaped(doc.payload.mapping, { mac1: 'string', mac2: 'string', card: 'object' })
+  if (!C.shaped(doc, { issuer: 'string', proof: 'object', payload: 'object' })
     || (kind === 'disclosure@probe' && !(mappingOk && starOk))
     || (kind === 'star@probe' && !starOk)) return { handled: true, error: 'malformed' }
   const fromEntry = [...p.contacts.entries()].find(([, c]) => c.channel?.own?.anchor === ctx.anchor)
@@ -273,10 +292,13 @@ async function receiveTrustDocInner (p, env, doc, when, ent = {}) {
       from.starReceived = doc.payload.star
       await refreshStarInfo(p)
       say(p, `${from.name} vertraut dir: stabiler Anker geprüft übernommen (nur für dich beweisend)`)
-      // Inbound-Effekt komplett; starRefreshAll ist pro Empfänger
-      // resilient, failures gehören dem Host (lib-Review 5 M-1, Parität)
+      // mein Bestand wuchs → mein lieferbarer Stern auch: auffrischen.
+      // Der INBOUND-Effekt ist hier komplett und bleibt cached;
+      // starRefreshAll ist pro Empfänger resilient — Teilergebnisse
+      // gehen nie verloren, Fehlschläge stehen benannt in failures und
+      // gehören dem HOST (Nachliefer-Vertrag, Review 5 M-1)
       const outbound = await starRefreshAll(p, when, ent)
-      const outboundError = outbound.failures.length ? outbound.failures.map((f) => `${f.to}: ${f.error}`).join(' · ') : undefined
+      const outboundError = outbound.failures.length ? outbound.failures.map((f: any) => `${f.to}: ${f.error}`).join(' · ') : undefined
       return { handled: true, disclosed: m.body.self, fromName: from.name, outbound: [...outbound], outboundError }
     }
     case 'star@probe': {

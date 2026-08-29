@@ -26,18 +26,18 @@
 //   way; the systemic control is the first real encounter (◇→✓,
 //   continuity). Deniability/linkability hardening is RECAST WORK — this
 //   probe signs plainly and says so.
-import { jcs, makeValidator, tsec, shaped, calOK } from './rltp-core.mjs'
-import * as C from './rltp-crypto.mjs'
-import * as DV from './delivery.mjs'
-import { SCHEMAS } from './rltp-schemas.mjs'
-const V = makeValidator(SCHEMAS)
-import { snapshotPriors } from './continuity.mjs'
+import { jcs, makeValidator, tsec } from '../core.js'
+import { SCHEMAS } from '../schemas.js'
+const VAL = makeValidator(SCHEMAS)
+import * as C from './deps.js'
+import type { Person } from './deps.js'
+import { snapshotPriors } from './continuity.js'
 
 const te = new TextEncoder(), td = new TextDecoder()
 const S = globalThis.crypto.subtle
 
 // ── people ──────────────────────────────────────────────────────────────
-export function createPerson (name, rootIkm) {
+export function createPerson (name: string, rootIkm?: Uint8Array): Person {
   return {
     name,
     rootIkm: rootIkm ?? C.rand(64),
@@ -48,10 +48,13 @@ export function createPerson (name, rootIkm) {
     online: true,
     queue: [],             // actions deferred while offline (device ferry of ONESELF)
     log: [],
+    // the demo community's genesis — a PROBE FIXTURE the person carries,
+    // so the strict identity layer never needs a default
+    communityGenesis: C.COMMUNITY_GENESIS,
   }
 }
-const say = (p, m) => p.log.push(m)
-export async function freshCtx (p, nonce) {
+const say = (p: Person, m: string) => p.log.push(m)
+export async function freshCtx (p: Person, nonce?: Uint8Array) {
   const ctx = await C.pairContext(p.rootIkm, nonce ?? C.rand(32))
   p.contexts.set(ctx.anchor, ctx); p.contexts.set(ctx.keyAgreement, ctx)
   return ctx
@@ -61,11 +64,11 @@ export async function freshCtx (p, nonce) {
 // Code zeigen → scannen → BEIDE bestätigen bewusst; erst dann entsteht
 // das Enactment. Der gezeigte Anker ist immer frisch (4.4) und verrät
 // nichts — wer ihn wirklich trifft, klärt hinterher die §6a-Probe.
-export async function ceremonyShow (p, ent = {}) {
+export async function ceremonyShow (p: Person, ent: any = {}) {
   const ctx = await freshCtx(p, ent.nonce)
   return { ctx, ch: C.challengeOf(ent.ch ?? C.rand(17)) }
 }
-export async function ceremonyComplete (a, sa, b, sb, when) {
+export async function ceremonyComplete (a: Person, sa: any, b: Person, sb: any, when: number) {
   const ctxA = sa.ctx, ctxB = sb.ctx, chA = sa.ch, chB = sb.ch
   const bind = await C.binding(C.CEREMONY, chA, chB)
   const iso = C.iso(when)
@@ -81,7 +84,7 @@ export async function ceremonyComplete (a, sa, b, sb, when) {
   return { ctxA, ctxB, bind }
 }
 // Test-Shortcut: beide Schritte in einem Zug (Vorgeschichte in Szenarien)
-export async function ceremony (a, b, when, ent = {}) {
+export async function ceremony (a: Person, b: Person, when: number, ent: any = {}) {
   return ceremonyComplete(a, await ceremonyShow(a, { nonce: ent.nonceA, ch: ent.chA }),
     b, await ceremonyShow(b, { nonce: ent.nonceB, ch: ent.chB }), when)
 }
@@ -89,20 +92,20 @@ export async function ceremony (a, b, when, ent = {}) {
 // ── the rendezvous drop PORT: put/get by derived topic, opaque blobs ────
 export function createDrop () {
   return {
-    slots: new Map(),      // topic -> b64u blob
-    log: [],               // { n, op, topic, by }
-    put (topic, blob, by) { this.slots.set(topic, blob); this.log.push({ n: this.log.length, op: 'put', topic: topic.slice(0, 16) + '…', by }) },
-    get (topic, by) { this.log.push({ n: this.log.length, op: 'get', topic: topic.slice(0, 16) + '…', by }); return this.slots.get(topic) ?? null },
+    slots: new Map<string, string>(),  // topic -> b64u blob
+    log: [] as any[],                  // { n, op, topic, by }
+    put (topic: string, blob: string, by: string) { this.slots.set(topic, blob); this.log.push({ n: this.log.length, op: 'put', topic: topic.slice(0, 16) + '…', by }) },
+    get (topic: string, by: string) { this.log.push({ n: this.log.length, op: 'get', topic: topic.slice(0, 16) + '…', by }); return this.slots.get(topic) ?? null },
   }
 }
-const dropTopic = async (secret, dir) => C.b64uOf(await C.hkdf(secret, 'rltp/introduce/topic/' + dir))
-const dropKey = async (secret, dir) => S.importKey('raw', await C.hkdf(secret, 'rltp/introduce/key/' + dir), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
-async function dropSeal (secret, dir, obj, nonce) {
+const dropTopic = async (secret: Uint8Array, dir: string) => C.b64uOf(await C.hkdf(secret, 'rltp/introduce/topic/' + dir))
+const dropKey = async (secret: Uint8Array, dir: string) => S.importKey('raw', await C.hkdf(secret, 'rltp/introduce/key/' + dir), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt'])
+async function dropSeal (secret: Uint8Array, dir: string, obj: any, nonce: Uint8Array | undefined) {
   const n = nonce ?? C.rand(12)
   const ct = new Uint8Array(await S.encrypt({ name: 'AES-GCM', iv: n }, await dropKey(secret, dir), te.encode(jcs(obj))))
   return C.b64uOf(C.cat(n, ct))
 }
-async function dropOpen (secret, dir, blob) {
+async function dropOpen (secret: Uint8Array, dir: string, blob: string) {
   try {
     const raw = C.fromB64u(blob)
     const pt = await S.decrypt({ name: 'AES-GCM', iv: raw.subarray(0, 12) }, await dropKey(secret, dir), raw.subarray(12))
@@ -118,15 +121,15 @@ async function dropOpen (secret, dir, blob) {
 // the vouch@2 vocabulary): the recipient decides informed, and a chain of
 // introductions never washes amber to blue — reach spreads, verification
 // does not. ◇ cannot mediate: no own channel context exists.
-export async function introduce (m, anchorA, anchorB, when, ent = {}) {
+export async function introduce (m: Person, anchorA: string, anchorB: string, when: number, ent: any = {}) {
   const A = m.contacts.get(anchorA), B = m.contacts.get(anchorB)
   if (!A || !B) throw new Error('mediator does not hold both contacts')
   if (!A.channel?.own || !B.channel?.own) throw new Error('introducing needs a mutual channel to BOTH (◇ cannot mediate)')
   const secret = ent.secret ?? C.rand(32)
   const act = await C.digestBytes(secret)          // act id: public handle, secret stays sealed
   const iso = C.iso(when)
-  const provOf = (c) => c.provenance === 'ceremony' ? 'met' : 'introduced'
-  const mk = async (mine, other, dir) => {
+  const provOf = (c: any) => c.provenance === 'ceremony' ? 'met' : 'introduced'
+  const mk = async (mine: any, other: any, dir: string) => {
     // voucher FOR the counterpart, under M's channel anchor toward the counterpart;
     // it carries M's self-attested provenance toward the person it vouches for
     const voucher = await C.diSign(other.channel.own, { type: 'introduction-voucher@2', act, direction: dir, provenance: provOf(mine), issuedAt: iso }, iso)
@@ -145,27 +148,30 @@ export async function introduce (m, anchorA, anchorB, when, ent = {}) {
 }
 
 // ── 2. receiving the offer (each side, independently) ───────────────────
-export async function receiveOffer (p, env) {
-  const opened = await DV.openEnvelope(p, env)                // Stufen 1–4, Cache-Lesung (lib-Parität)
-  if (opened.duplicate) return { duplicate: true }
+export async function receiveOffer (p: Person, env: any) {
+  const opened = await C.openEnvelope(p, env)                 // Stufen 1–4, Cache-Lesung
+  if (opened.duplicate) return { duplicate: true }                    // kein Fehler: der Effekt ist längst da
   if (opened.error) return { error: opened.error }
   const r = await receiveOfferInner(p, env, opened.doc)
-  if (!r.error) DV.effectDone(p, opened.digest)
+  if (!(r as any).error) C.effectDone(p, opened.digest)
   return r
 }
-async function receiveOfferInner (p, env, offer) {
-  // Form VOR Feldern samt Wertformen (lib-Review 9 P-B1, Parität)
-  if (!shaped(offer, { type: 'string', act: 'string', direction: 'string', rendezvous: 'string', issuedAt: 'string', peer: 'object', proof: 'object' })
+async function receiveOfferInner (p: Person, env: any, offer: any) {
+  // form BEFORE fields (M-3; value forms per review 9, P-B1): the offer
+  // binds ITS artifact form before anything enters the inbox
+  if (!C.shaped(offer, { type: 'string', act: 'string', direction: 'string', rendezvous: 'string', issuedAt: 'string', peer: 'object', proof: 'object' })
     || offer.type !== 'introduction-offer@2'
     || (offer.direction !== 'a' && offer.direction !== 'b')
-    || !calOK(offer.issuedAt)
-    || !shaped(offer.peer, { name: 'string', provenance: 'string' })
+    || !C.calOK(offer.issuedAt)
+    || !C.shaped(offer.peer, { name: 'string', provenance: 'string' })
     || (offer.peer.provenance !== 'met' && offer.peer.provenance !== 'introduced')) return { error: 'malformed offer' }
   try { if (C.fromB64u(offer.rendezvous).length !== 32) return { error: 'malformed offer' } }
   catch { return { error: 'malformed offer' } }
-  const vch = offer.voucherForCounterpart
-  if (!shaped(vch, { type: 'string', act: 'string', direction: 'string', provenance: 'string', issuedAt: 'string', proof: 'object' })
-    || vch.type !== 'introduction-voucher@2' || vch.act !== offer.act || !calOK(vch.issuedAt)) return { error: 'malformed offer' }
+  // der mitreisende Voucher ist Teil der Offer-Form (Review 10, P-B1-Rest):
+  // er wird beim Consent unbesehen ins Drop-Paket übernommen
+  const v = offer.voucherForCounterpart
+  if (!C.shaped(v, { type: 'string', act: 'string', direction: 'string', provenance: 'string', issuedAt: 'string', proof: 'object' })
+    || v.type !== 'introduction-voucher@2' || v.act !== offer.act || !C.calOK(v.issuedAt)) return { error: 'malformed offer' }
   const from = [...p.contacts.entries()].find(([anchor, c]) => c.channel && offer.proof?.verificationMethod?.startsWith(anchor))
   if (!from) return { error: 'offer not from a held contact' }
   if (!(await C.diVerify(offer, from[0]))) return { error: 'offer proof fails' }
@@ -179,7 +185,7 @@ async function receiveOfferInner (p, env, offer) {
 // Releasing and receiving are SEPARATE (ceremony-parallel): consent only
 // controls the own card; the counterpart's card arrives via sync
 // (checkDrop) whether or not this side ever consents.
-export async function consent (p, entry, drop, when, ent = {}) {
+export async function consent (p: Person, entry: any, drop: any, when: number, ent: any = {}) {
   if (!p.online) { p.queue.push(() => consent(p, entry, drop, when, ent)); say(p, 'offline — Freigabe wartet auf Netz'); return { queued: true } }
   const { offer } = entry
   const secret = C.fromB64u(offer.rendezvous)
@@ -205,7 +211,7 @@ export async function consent (p, entry, drop, when, ent = {}) {
 // ── 4. sync: fetch the counterpart's card — PASSIVE receipt, independent
 // of the own decision (like a shared contact arriving; ignoring the offer
 // never blocks what the other side chose to release) ────────────────────
-export async function checkDrop (p, entry, drop) {
+export async function checkDrop (p: Person, entry: any, drop: any) {
   if (!p.online || entry.done) return null
   const { offer } = entry
   const secret = C.fromB64u(offer.rendezvous)
@@ -214,11 +220,14 @@ export async function checkDrop (p, entry, drop) {
   if (!blob) return { mutual: false }
   const pkg = await dropOpen(secret, otherDir, blob)
   if (!pkg) { say(p, 'Drop-Blob unlesbar (falsches Geheimnis?)'); return { error: 'undecryptable' } }
-  // Form VOR Feldern, dann Schema, dann Krypto (lib-Review 6 M-2, Parität)
-  if (!shaped(pkg, { card: 'object', voucher: 'object' }) || !shaped(pkg.voucher, { act: 'string' })) { say(p, 'Drop-Paket formwidrig'); return { error: 'malformed' } }
+  // form BEFORE fields (M-3), THEN the cryptography — and the card runs
+  // through its CLOSED wire-0.25 schema, not an ad-hoc field list
+  // (review 3, M-4: a valid signature binds a schema-violating card too)
+  if (!C.shaped(pkg, { card: 'object', voucher: 'object' })
+    || !C.shaped(pkg.voucher, { act: 'string' })) { say(p, 'Drop-Paket formwidrig'); return { error: 'malformed' } }
   {
     const s = SCHEMAS['contact-card.schema.json']
-    const errs = V.validate(pkg.card, s, s)
+    const errs = VAL.validate(pkg.card, s, s)
     if (errs.length) { say(p, 'Karte schema-widrig: ' + errs[0]); return { error: 'card schema' } }
   }
   // the counterpart card: schema + DI; the voucher: signed by MY mediator
@@ -239,7 +248,7 @@ export async function checkDrop (p, entry, drop) {
 }
 
 // ── device lifecycle ────────────────────────────────────────────────────
-export async function setOnline (p, online, drop) {
+export async function setOnline (p: Person, online: boolean, drop: any) {
   p.online = online
   say(p, online ? 'online' : 'offline (Flugmodus)')
   if (online) {

@@ -19,32 +19,32 @@
 // alte deaktiviert; Evidenz akkumuliert AUF DER BEZIEHUNG (✓ bleibt ✓),
 // für Dritte unsichtbar. Wer die Probe nicht beantworten kann, IST
 // protokollisch eine neue Beziehung (Identity 9.3).
-import { jcs, shaped, intStr } from './rltp-core.mjs'
-import * as C from './rltp-crypto.mjs'
-import * as DV from './delivery.mjs'
-import { hmac } from './trust.mjs'
+import { jcs } from '../core.js'
+import * as C from './deps.js'
+import type { Person } from './deps.js'
+import { hmac } from './trust.js'
 
-const say = (p, m) => p.log.push(m)
+const say = (p: Person, m: string) => p.log.push(m)
 const CHUNK = 256
 
 // ── Schlüssel (Spec-Infostrings, richtungsgebunden) ─────────────────────
 // k_p = HKDF(ECDH(newPairX_sender, newPairX_recipient),
 //            'rltp/visibility/blind/probe/' + senderNewPair + '/' + recipientNewPair)
-const kProbe = async (xPriv, theirKa, senderAnchor, recipientAnchor) =>
-  C.hkdf(await C.ecdh(xPriv, C.xRawOfMk(theirKa)), 'rltp/visibility/blind/probe/' + senderAnchor + '/' + recipientAnchor)
-const kMac = async (xPriv, theirKa, info) =>
-  C.hkdf(await C.ecdh(xPriv, C.xRawOfMk(theirKa)), info)
+const kProbe = async (xPriv: CryptoKey, theirKa: string, senderAnchor: string, recipientAnchor: string) =>
+  C.hkdf(await C.ecdh(xPriv, C.xRawOfMk(theirKa)!), 'rltp/visibility/blind/probe/' + senderAnchor + '/' + recipientAnchor)
+const kMac = async (xPriv: CryptoKey, theirKa: string, info: string) =>
+  C.hkdf(await C.ecdh(xPriv, C.xRawOfMk(theirKa)!), info)
 
 // ── Schnappschuss-Helfer (Prior-Candidate-Set, Sicht des Halters) ───────
 // wird von introduce.mjs BEI TUPEL-ERZEUGUNG aufgerufen: aktive Heads,
 // das frische Tupel selbst ausgeschlossen; deaktivierte Glieder nie.
-export const snapshotPriors = (p) => ({
+export const snapshotPriors = (p: Person) => ({
   own: [...p.contacts.values()].filter((c) => !c.deactivated && c.channel?.own).map((c) => c.channel.own.anchor),
   counterpart: [...p.contacts.entries()].filter(([, c]) => !c.deactivated).map(([k]) => k),
 })
 
 // ── continuity-probe@1: bauen ───────────────────────────────────────────
-export async function buildProbe (p, newKey, ent = {}) {
+export async function buildProbe (p: Person, newKey: string, ent: any = {}) {
   const t = p.contacts.get(newKey)
   if (!t?.channel?.own) return null
   t.probeSeqOut = (t.probeSeqOut ?? 0) + 1
@@ -69,7 +69,7 @@ export async function buildProbe (p, newKey, ent = {}) {
 // Gegenseite; mac1 unter dem ALTEN Beziehungs-Schlüssel, mac2 unter dem
 // NEUEN — nur derselbe Schlüssel-Inhaber kann beide (für die Adressatin
 // fälschbar: Klasse V, abstreitbar).
-async function buildMapping (p, newKey, oldKey, when, ent = {}) {
+async function buildMapping (p: Person, newKey: string, oldKey: string, when: number, ent: any = {}) {
   const t = p.contacts.get(newKey), old = p.contacts.get(oldKey)
   const body = { type: 'continuity-mapping@1', prior: old.channel.own.anchor, next: t.channel.own.anchor, to: newKey, revision: '1', issuedAt: C.iso(when) }
   const msg = jcs(body)
@@ -82,7 +82,7 @@ async function buildMapping (p, newKey, oldKey, when, ent = {}) {
 // ── die Kette: neues Tupel wird Kopf, das alte deaktiviert ──────────────
 // Tupel-Ebene bleibt (Stern-Salts, Probe-Sequenzen); KETTEN-Ebene wandert:
 // Kontakt-Gedächtnis, Evidenz (✓ akkumuliert), Offenlegungen, Gruppen.
-function chainTuple (p, newKey, oldKey) {
+function chainTuple (p: Person, newKey: string, oldKey: string) {
   const head = p.contacts.get(newKey), old = p.contacts.get(oldKey)
   if (!head || !old || old.deactivated) return false // idempotent
   old.deactivated = true
@@ -102,23 +102,23 @@ function chainTuple (p, newKey, oldKey) {
 }
 
 // ── Empfangs-Dispatch ───────────────────────────────────────────────────
-const iAmRecord = (t, newKey) => t.channel.own.anchor < newKey // lexikographisch kleinerer NEUER Anker
-const tupleOf = (p, rkid) => {
+const iAmRecord = (t: any, newKey: string) => t.channel.own.anchor < newKey // lexikographisch kleinerer NEUER Anker
+const tupleOf = (p: Person, rkid: string) => {
   const ctx = p.contexts.get(rkid)
   if (!ctx) return null
   const e = [...p.contacts.entries()].find(([, c]) => c.channel?.own?.anchor === ctx.anchor)
   return e ? { key: e[0], t: e[1], ctx } : null
 }
 
-export async function receiveContinuity (p, env, when, ent = {}) {
-  const opened = await DV.openEnvelope(p, env)                // Stufen 1–4, Cache-Lesung (lib-Parität)
+export async function receiveContinuity (p: Person, env: any, when: number, ent: any = {}) {
+  const opened = await C.openEnvelope(p, env)                 // Stufen 1–4, Cache-Lesung
   if (opened.duplicate) return { handled: true, duplicate: true }
   if (opened.error) return { handled: false }
   const r = await receiveContinuityInner(p, env, opened.doc, when, ent)
-  if (r?.handled && !r.error) DV.effectDone(p, opened.digest)
+  if (r?.handled && !(r as any).error) C.effectDone(p, opened.digest)
   return r
 }
-async function receiveContinuityInner (p, env, doc, when, ent = {}) {
+async function receiveContinuityInner (p: Person, env: any, doc: any, when: number, ent: any = {}) {
   const hit = tupleOf(p, env.rkid)
   if (!hit) return { handled: false }
   if (doc?.type === 'continuity-probe@1') return handleProbe(p, hit, doc, when, ent)
@@ -126,11 +126,12 @@ async function receiveContinuityInner (p, env, doc, when, ent = {}) {
   return { handled: false, doc }
 }
 
-async function handleProbe (p, { key, t }, doc, when, ent) {
-  if (!shaped(doc, { mac: 'string', probe: 'string', seq: 'string', blinded: 'array' }) || typeof doc.last !== 'boolean'
-    || !intStr(doc.probe) || !intStr(doc.seq)
-    || doc.blinded.length !== 256
-    || !doc.blinded.every((b) => typeof b === 'string')) return { handled: true, error: 'malformed probe' }
+async function handleProbe (p: Person, { key, t }: any, doc: any, when: number, ent: any) {
+  // form BEFORE fields (M-3): mac, sequence and chunk list as used below
+  if (!C.shaped(doc, { mac: 'string', probe: 'string', seq: 'string', blinded: 'array' }) || typeof doc.last !== 'boolean'
+    || !C.intStr(doc.probe) || !C.intStr(doc.seq)   // NaN in probeSeqIn wäre Replay-Zustandskorruption (Review 9, P-B1)
+    || doc.blinded.length !== 256                   // die Chunkform ist FEST: genau 256 Einträge (Review 10, P-B1-Rest)
+    || !doc.blinded.every((b: any) => typeof b === 'string')) return { handled: true, error: 'malformed probe' }
   // Senderseitiger k_p, aus Empfängersicht nachgerechnet (Richtung!)
   const kp = await kProbe(t.channel.own.x.priv, t.channel.counterpartKa, key, t.channel.own.anchor)
   const { mac, ...body } = doc
@@ -166,7 +167,7 @@ async function handleProbe (p, { key, t }, doc, when, ent) {
       t.contChosen = choice
       chained = chainTuple(p, key, choice)
       try { outbound.push(await buildMapping(p, key, choice, when, ent)) }
-      catch (err) { t.contMappingDue = { prior: choice, kind: 'choice' }; outboundError = String(err?.message ?? err) }
+      catch (err: any) { t.contMappingDue = { prior: choice, kind: 'choice' }; outboundError = String(err?.message ?? err) }
     } else consume()
   } else {
     // Nicht-Record: Match-Report (löst NIE eine Kette aus)
@@ -174,16 +175,16 @@ async function handleProbe (p, { key, t }, doc, when, ent) {
       consume()
       t.contReported = matches[0]
       try { outbound.push(await buildMapping(p, key, matches[0], when, ent)) }
-      catch (err) { t.contMappingDue = { prior: matches[0], kind: 'report' }; outboundError = String(err?.message ?? err) }
+      catch (err: any) { t.contMappingDue = { prior: matches[0], kind: 'report' }; outboundError = String(err?.message ?? err) }
     } else consume()
   }
   return { handled: true, matches: matches.length, chained, name: chained ? t.name : undefined, outbound, outboundError }
 }
 
-async function handleMapping (p, { key, t }, doc, when, ent) {
-  if (!shaped(doc, { mac1: 'string', mac2: 'string', prior: 'string', next: 'string', to: 'string' })) return { handled: true, error: 'malformed mapping' }
+async function handleMapping (p: Person, { key, t }: any, doc: any, when: number, ent: any) {
+  if (!C.shaped(doc, { mac1: 'string', mac2: 'string', prior: 'string', next: 'string', to: 'string' })) return { handled: true, error: 'malformed mapping' }
   const { mac1, mac2, ...body } = doc
-  const fail = (why) => { say(p, `Kontinuitäts-Mapping verworfen: ${why}`); return { handled: true, error: why } }
+  const fail = (why: string) => { say(p, `Kontinuitäts-Mapping verworfen: ${why}`); return { handled: true, error: why } }
   if (body.to !== t.channel.own.anchor) return fail('to ≠ eigener neuer Anker')
   if (body.next !== key) return fail('next ≠ neuer Anker der Gegenseite')
   // prior MUSS im Schnappschuss liegen (nie das frische Tupel, nie tiefere Kettenglieder)
@@ -198,11 +199,13 @@ async function handleMapping (p, { key, t }, doc, when, ent) {
   if (senderIsRecord) {
     // Record-Freeze: abweichendes prior derselben (next,to) = Äquivokation
     if (t.contRecordPrior && t.contRecordPrior !== body.prior) return fail('Äquivokation — Record-Wahl ist eingefroren')
+    // fehlbare Arbeit VOR der Mutation (B-2): erst das Alignment-Mapping
+    // bauen, dann Freeze + Kette in einem synchronen Zug
     t.contRecordPrior = body.prior
     chainTuple(p, key, body.prior)
     if (!t.contAligned) {
       try { const mapping = await buildMapping(p, key, body.prior, when, ent); t.contAligned = true; if (t.contMappingDue?.prior === body.prior) delete t.contMappingDue; outbound.push(mapping) }
-      catch (err) { t.contMappingDue = { prior: body.prior, kind: 'align' }; return { handled: true, chained: p.contacts.get(body.prior)?.deactivated === true, name: t.name, outbound, outboundError: String(err?.message ?? err) } }
+      catch (err: any) { t.contMappingDue = { prior: body.prior, kind: 'align' }; return { handled: true, chained: p.contacts.get(body.prior)?.deactivated === true, name: t.name, outbound, outboundError: String(err?.message ?? err) } }
     }
   } else {
     // Match-Report der Nicht-Record-Seite: darf die Wahl INFORMIEREN, kettet nie
@@ -218,20 +221,25 @@ async function handleMapping (p, { key, t }, doc, when, ent) {
 
 /**
  * The host's producing call for a mapping the receiver still owes
- * (lib-Review 6, B-3; Parität): a transient seal failure during probe/mapping
+ * (review 6, B-3): a transient seal failure during probe/mapping
  * handling persists the obligation in contMappingDue; this call — not a
  * redelivery, which the freshness rule forbids — builds and returns it.
  */
-export async function flushContinuity (p, newKey, when, ent = {}) {
+export async function flushContinuity (p: Person, newKey: string, when: number, ent: any = {}) {
   const t = p.contacts.get(newKey)
   if (!t?.contMappingDue) return { outbound: [] }
+  // Single-Flight (Review 7, B-3): zwei parallele Flushes liefern nie
+  // zwei Mappings für EINE Pflicht
   if (t.contFlushPending) return { outbound: [], pending: true }
   t.contFlushPending = true
   try {
     const due = t.contMappingDue
     const mapping = await buildMapping(p, newKey, due.prior, when, ent)
+    // der Flush stellt GENAU den Zustand her, den der gelungene
+    // Direktpfad hinterlassen hätte — kind-bewusst. Und er löscht NUR
+    // die Pflicht, die er selbst gebaut hat: ist während des await eine
+    // NEUERE an ihre Stelle getreten, bleibt sie stehen (Review 8, B-3)
     if (due.kind === 'align') t.contAligned = true
-    // Compare-and-Clear: nur die selbst gebaute Pflicht löschen (lib-Review 8 B-3)
     if (t.contMappingDue === due) delete t.contMappingDue
     return { outbound: [mapping] }
   } finally { t.contFlushPending = false }

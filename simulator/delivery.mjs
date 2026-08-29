@@ -31,17 +31,25 @@ const canonical = (s) => { try { return typeof s === 'string' && C.b64uOf(C.from
 export async function inspect (toPerson, env) {
   const st = []
   const push = (label, ok) => { st.push({ label, ok }); return ok }
+  // Stufe 1 kostet O(1): geschätzt aus der Stringlänge, VOR jedem
+  // Decode — wie die Bibliothek (lib-Review 7 M-1, Parität)
+  const ctEst = typeof env?.ciphertext === 'string' ? Math.floor(env.ciphertext.length * 3 / 4) : 0
+  if (!push(`1 size bound: ciphertext − tag ≤ 65536 B (~${Math.max(0, ctEst - 16)} B)`, ctEst - 16 <= 65536)) return { st, disp: 'failed(oversize)' }
   const ctLen = b64uLen(env?.ciphertext ?? '')
-  if (!push(`1 size bound: ciphertext − tag ≤ 65536 B (${Math.max(0, ctLen - 16)} B)`, ctLen >= 16 && ctLen - 16 <= 65536)) return { st, disp: 'failed(oversize)' }
-  if (!push('2 envelope: base64url canonical · epk 32 B · nonce 12 B · rkid known',
-    canonical(env.epk) && b64uLen(env.epk) === 32 && canonical(env.nonce) && b64uLen(env.nonce) === 12
-    && canonical(env.ciphertext) && !!toPerson.contexts.get(env.rkid))) return { st, disp: 'failed(malformed)' }
+  // GESCHLOSSENE Form wie die Bibliothek (lib-Review 6, M-1): exakt vier
+  // Felder, Ciphertext ≥ 17 B (Tag + mindestens ein Byte)
+  const closed = env !== null && typeof env === 'object' && !Array.isArray(env) && Object.keys(env).length === 4
+  if (!push('2 envelope: closed form · base64url canonical · epk 32 B · nonce 12 B · ct ≥ 17 B · rkid known',
+    closed && canonical(env.epk) && b64uLen(env.epk) === 32 && canonical(env.nonce) && b64uLen(env.nonce) === 12
+    && canonical(env.ciphertext) && ctLen >= 17 && !!toPerson.contexts.get(env.rkid))) return { st, disp: 'failed(malformed)' }
   const ctx = toPerson.contexts.get(env.rkid)
   const open = await C.unseal(env, ctx.x.priv)
-  if (!push('3 decryption · X25519 + HKDF(rltp/v1/seal) + AES-256-GCM tag', !open.error)) return { st, disp: `failed(${open.error})` }
+  if (!push('3 decryption · X25519 + HKDF(rltp/v1/seal) + AES-256-GCM tag', open.error !== 'decryption-failed' && open.error !== 'oversize')) return { st, disp: `failed(${open.error})` }
+  if (open.error === 'malformed') { push('4 parse — invalid UTF-8 or not JSON', false); return { st, disp: 'failed(malformed)' } }
   const doc = open.document
-  if (doc === null || typeof doc !== 'object') { push('4 parse — not a JSON object', false); return { st, disp: 'failed(malformed)' } }
-  const digest = await C.digestDoc(doc)
+  if (doc === null || typeof doc !== 'object' || Array.isArray(doc)) { push('4 parse — not a JSON object', false); return { st, disp: 'failed(malformed)' } }
+  let digest
+  try { digest = await C.digestDoc(doc) } catch { push('4 parse — no canonical form', false); return { st, disp: 'failed(malformed)' } }
   push(`4 parse + digest ${digest.slice(0, 14)}… · completed-effect cache`, true)
   if ((toPerson.deliveryCache ??= new Set()).has(digest)) {
     st.push({ label: '  → duplicate-known · prior outcome applies, no second effect', ok: true })
