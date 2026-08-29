@@ -1,0 +1,41 @@
+name: release
+# npm TRUSTED PUBLISHING via GitHub OIDC — no long-lived token anywhere.
+# A lib-v* tag whose version matches lib/package.json publishes
+# @real-life/trust-protocol with --provenance, so every tarball is
+# verifiably linked to the commit and workflow run that built it.
+#
+# Release procedure:
+#   git tag lib-v<version> && git push origin lib-v<version>
+# The prepack hook builds and runs the full vector contract before any
+# publish — a version that does not reproduce its vectors never reaches
+# the registry.
+on:
+  push:
+    tags: ['lib-v*']
+permissions:
+  id-token: write   # OIDC for npm trusted publishing
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      # trusted publishing needs npm >= 11.5.1
+      - run: npm install -g npm@latest
+      - name: tag must match lib/package.json
+        run: |
+          TAG="${GITHUB_REF_NAME#lib-v}"
+          PKG="$(node -p "require('./lib/package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "tag lib-v$TAG does not match package version $PKG" >&2
+            exit 1
+          fi
+      - run: npm ci --no-audit --no-fund
+        working-directory: lib
+      # prepack runs build + the full vector contract
+      - run: npm publish --provenance --access public
+        working-directory: lib

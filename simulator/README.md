@@ -18,6 +18,20 @@ python3 -m http.server 8199    # any static server works
 # → http://localhost:8199/
 ```
 
+**Single source of truth:** the protocol modules here are one-line
+shims onto `lib/` — the committed, buildless freeze of the library's
+compiled output (`lib/dist`). Never edit `simulator/lib/` or the shims;
+change `lib/src/*.ts`, then refresh the freeze:
+
+```sh
+cd lib && npm ci && npm run build && cd ..
+node scripts/build-simulator-lib.mjs      # re-freeze simulator/lib/
+node scripts/build-simulator-lib.mjs --check   # what CI enforces
+```
+
+Simulator-only code (the observable channel with its faults, the clock,
+the UI) stays real code in this directory.
+
 **Headless test suites in the agent sandbox** (`tests-ui-*.mjs`;
 `adversarial.mjs` needs plain node only): ESM needs a resolvable
 `@playwright/test`, and the sandbox has no `/usr/bin/chromium` —

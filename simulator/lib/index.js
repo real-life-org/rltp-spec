@@ -1,3 +1,5 @@
+// GENERATED from lib/dist by scripts/build-simulator-lib.mjs — DO NOT EDIT.
+// Source of truth: lib/src/*.ts. CI enforces freshness (--check).
 // @real-life/trust-protocol — the cryptographic core of RLTP.
 //
 // What this entry point IS: the wire-level primitives of the converged
@@ -24,12 +26,11 @@
 //   holder            the holder side: proofs, verdicts, recovery (§5a, §9.3)
 //
 // Specification, schemas and vectors: https://rltp.real-life.org
-
-export * from './core.js'
-export * from './crypto.js'
-export * from './identity.js'
-export * from './encounter.js'
-export * from './delivery.js'
-export * from './carrier-identity.js'
-export * from './carrier.js'
-export * from './holder.js'
+export * from './core.js';
+export * from './crypto.js';
+export * from './identity.js';
+export * from './encounter.js';
+export * from './delivery.js';
+export * from './carrier-identity.js';
+export * from './carrier.js';
+export * from './holder.js';

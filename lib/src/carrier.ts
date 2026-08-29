@@ -335,6 +335,10 @@ export class Carrier {
     draw: () => { entropy: Uint8Array, addressValue?: string },
   ): string | null {
     this.advance(now)
+    // syntax BEFORE policy and draw (port-review-5 B-1): a syntactically
+    // impossible address buys neither a gate consultation nor a single
+    // random byte — §5a.3's order is syntax → admission → randomness
+    if (!decodedX(rkid)) throw new Error('malformed rkid — refuse before any work (5a.3)')
     const held = this.bindings.has(rkid)
     const admitted = held ? (this.policy.admitHeld?.(rkid) ?? true) : (this.policy.admitNew?.() ?? true)
     if (!admitted) return null

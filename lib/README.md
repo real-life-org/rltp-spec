@@ -32,6 +32,9 @@ look in the code:
 | `identity` | Identity Layer | One root seed, every context derived — community anchor, pair anchor per relationship, member anchor per group. Contexts never link without their holder's deliberate act. |
 | `encounter` | Encounter Layer | The ceremony under fresh-always pair anchors: challenges, contact cards, the enactment binding both sides compute independently, encounter credentials. |
 | `delivery` | Delivery Contract | The sealed envelope, and the receive chain in its declared order — size bound *before* decryption, envelope form, decryption, parse and digest over the canonical form, completed-effect cache. |
+| `carrier-identity` | Identity §7a | The carrier-relationship principal: one Ed25519 control key per (relationship × carrier), derived so that no computable relation to the relationship's other principals or its `rkid` exists — which is why registration must *prove* the binding instead of computing it. |
+| `carrier` | Delivery §4.4 + §5a | The carrier side of the port as one transport-agnostic state machine: the five guarantees, the proof rule, the total binding lifecycle (unbound → live → closing → released), the verdict sets in their normative evaluation orders, wind-up and binding tombstones. The clock is injected. |
+| `holder` | Delivery §5a + Identity §9.3 | The holder's half: proof construction for all four purposes, the closed verdict set, and the two-exchange recovery flow for a lost carrier entry. |
 
 Everything is re-exported from the package root; the table is a map, not an
 import instruction.
@@ -74,7 +77,9 @@ it deliberately does not:
 
 | Module (0.1.x) | Casting | Implemented | Not in this package |
 |---|---|---|---|
-| `identity` | Identity 0.50 | context derivation under the closed label registry (§6.1, unchanged since 0.13) with the ordered persona pipeline (§6.2, Unicode 15.0 pinned) | recovery derivation (§5.3), service identities (§7), carrier relationship (§7a), the label register and its state |
+| `identity` | Identity 0.50 | context derivation under the closed label registry (§6.1, unchanged since 0.13) with the ordered persona pipeline (§6.2, Unicode 15.0 pinned) | recovery derivation (§5.3), service identities (§7), the label register and its state |
+| `carrier-identity` | Identity 0.51 (§7a) | the carrier-relationship principal derivation, identifier validation | the register's generation state (held by the holder's store) |
+| `carrier` + `holder` | Delivery 0.69 (§4.4, §5a) + Identity 0.51 (§9.3) | the port state machine, proofs for all four purposes, verdicts, recovery | transport adapters and their policies (a carrier's budgets enter through hooks) |
 | `encounter` | Encounter 0.29 — wire `0.25` (`rltp-card/0.25`, `encounter-scan@0.25`) | challenges, both card profiles, the enactment binding, encounter credentials | the ceremony state machine, acceptance rules, ack deadlines |
 | `delivery` | Delivery 0.64 | the sealed envelope (§5) and the generic receive stages 1–4 | the type-specific stages, residual bookkeeping, transport adapters |
 | `core`, `crypto` | cross-layer | canonical form, digest equality, timestamps, validator; primitives + `eddsa-jcs-2022` proof | — |

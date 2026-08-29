@@ -1,8 +1,14 @@
 #!/usr/bin/env node
-// Generates simulator/rltp-schemas.mjs — the browser bundle of schemas/.
-// schemas/ stays the single source of truth; scripts/validate.mjs enforces
+// Generates lib/src/schemas.ts — the library's schema bundle. schemas/
+// stays the single source of truth; scripts/validate.mjs enforces
 // freshness (a drifted bundle fails the coherence gate). Never edit the
 // generated file: change schemas/ and re-run this script.
+//
+// Since Faden 3 (29.08.2026) the simulator no longer gets its own
+// emission: simulator/rltp-schemas.mjs is a permanent shim onto the
+// frozen library copy (simulator/lib/schemas.js) — one generator, ONE
+// emission, and the frozen copy is freshness-checked byte-identically
+// by scripts/build-simulator-lib.mjs --check in CI.
 //
 //   usage: node scripts/build-schemas-module.mjs
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -21,12 +27,9 @@ export const SCHEMAS = freeze({
 ${entries.join('\n')}
 })
 `
-writeFileSync(join(ROOT, 'simulator/rltp-schemas.mjs'), out)
-// the library gets the SAME bundle as TypeScript — one generator, two
-// emissions, so the package can never carry schemas the gate did not see
 const tsOut = out
   .replace('const freeze = (o) =>', 'const freeze = (o: any): any =>')
   .replace('export const SCHEMAS = freeze({',
     'export const SCHEMAS: Readonly<Record<string, Readonly<Record<string, unknown>>>> = freeze({')
 writeFileSync(join(ROOT, 'lib/src/schemas.ts'), tsOut)
-console.log(`rltp-schemas.mjs + lib/src/schemas.ts: ${files.length} schemas bundled`)
+console.log(`lib/src/schemas.ts: ${files.length} schemas bundled`)

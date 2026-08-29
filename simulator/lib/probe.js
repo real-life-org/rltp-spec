@@ -1,3 +1,5 @@
+// GENERATED from lib/dist by scripts/build-simulator-lib.mjs — DO NOT EDIT.
+// Source of truth: lib/src/*.ts. CI enforces freshness (--check).
 // @real-life/trust-protocol/probe — the layers still being cast.
 //
 // ┌──────────────────────────────────────────────────────────────────┐
@@ -28,20 +30,13 @@
 //
 // When a layer converges, its module graduates to the main entry point
 // and this file loses a line. That is the intended direction of travel.
-
-export type { Person } from './probe/deps.js'
 // the LIVE schema bundle (deep-frozen): it tracks the running castings
 // and therefore belongs to the probe surface, not the pinned root —
 // the root pins each module to a named casting (see README, Versions),
 // this bundle moves with the repository (review 4, M-1)
-export { SCHEMAS } from './schemas.js'
-export { COMMUNITY_GENESIS } from './probe/deps.js'
-// the wire-artifact types GENERATED from the same schemas (wire.ts):
-// structural projections only — satisfying a type is necessary for
-// conformance, never sufficient; the schemas remain normative. They
-// live here for the same reason SCHEMAS does: they track the castings.
-export type * as wire from './wire.js'
-export * as introduce from './probe/introduce.js'
-export * as trust from './probe/trust.js'
-export * as continuity from './probe/continuity.js'
-export * as membership from './probe/membership.js'
+export { SCHEMAS } from './schemas.js';
+export { COMMUNITY_GENESIS } from './probe/deps.js';
+export * as introduce from './probe/introduce.js';
+export * as trust from './probe/trust.js';
+export * as continuity from './probe/continuity.js';
+export * as membership from './probe/membership.js';
