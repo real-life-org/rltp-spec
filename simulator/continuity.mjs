@@ -21,6 +21,7 @@
 // protokollisch eine neue Beziehung (Identity 9.3).
 import { jcs } from './rltp-core.mjs'
 import * as C from './rltp-crypto.mjs'
+import * as DV from './delivery.mjs'
 import { hmac } from './trust.mjs'
 
 const say = (p, m) => p.log.push(m)
@@ -110,11 +111,16 @@ const tupleOf = (p, rkid) => {
 }
 
 export async function receiveContinuity (p, env, when, ent = {}) {
+  const opened = await DV.openEnvelope(p, env)                // Stufen 1–4, Cache-Lesung (lib-Parität)
+  if (opened.duplicate) return { handled: true, duplicate: true }
+  if (opened.error) return { handled: false }
+  const r = await receiveContinuityInner(p, env, opened.doc, when, ent)
+  if (r?.handled && !r.error) DV.effectDone(p, opened.digest)
+  return r
+}
+async function receiveContinuityInner (p, env, doc, when, ent = {}) {
   const hit = tupleOf(p, env.rkid)
   if (!hit) return { handled: false }
-  const open = await C.unseal(env, hit.ctx.x.priv)
-  if (open.error) return { handled: false }
-  const doc = open.document
   if (doc?.type === 'continuity-probe@1') return handleProbe(p, hit, doc, when, ent)
   if (doc?.type === 'continuity-mapping@1') return handleMapping(p, hit, doc, when, ent)
   return { handled: false, doc }
@@ -130,26 +136,39 @@ async function handleProbe (p, { key, t }, doc, when, ent) {
   if (t.probeAsm?.probe !== doc.probe) t.probeAsm = { probe: doc.probe, blinded: [] }
   t.probeAsm.blinded.push(...doc.blinded)
   if (!doc.last) return { handled: true, partial: true }
-  const union = t.probeAsm.blinded; t.probeAsm = null
-  t.probeSeqIn = Number(doc.probe)
+  // NUR LESEN — probeAsm und probeSeqIn werden erst konsumiert, wenn
+  // alles Fehlbare (der Mapping-Bau unten) hinter uns liegt: sonst
+  // schneidet ein transienter Seal-Fehler die Beziehung dauerhaft von
+  // der Kettung ab, weil der Retry als Replay gilt (Review 5, B-1)
+  const union = t.probeAsm.blinded
+  const consume = () => { t.probeAsm = null; t.probeSeqIn = Number(doc.probe) }
   // Schnitt gegen die GEGENSEITEN-Anker des eigenen Prior-Candidate-Sets
   const matches = []
   for (const cp of t.priorCands?.counterpart ?? []) {
     if (union.includes(await hmac(kp, cp))) matches.push(cp)
   }
-  if (!matches.length) { say(p, `Probe von ${t.name}: kein Match — ehrlich eine neue Beziehung`); return { handled: true, matches: 0 } }
+  if (!matches.length) { consume(); say(p, `Probe von ${t.name}: kein Match — ehrlich eine neue Beziehung`); return { handled: true, matches: 0 } }
   const outbound = []
   let chained = false
   if (iAmRecord(t, key)) {
-    // Record-Seite: einmal wählen, endgültig; Kette atomar mit der Wahl
+    // Record-Seite: einmal wählen, endgültig; Mapping VOR der Wahl bauen
+    // (lib-Review 4/B-2, Parität): scheitert es, ist nichts gewählt
     if (!t.contChosen) {
-      t.contChosen = matches[0] // Wahl frei — hier: erster Match (reichste Historie wäre App-Sache)
-      chained = chainTuple(p, key, t.contChosen)
-      outbound.push(await buildMapping(p, key, t.contChosen, when, ent))
-    }
+      const choice = matches[0] // Wahl frei — hier: erster Match (reichste Historie wäre App-Sache)
+      const mapping = await buildMapping(p, key, choice, when, ent)
+      consume()
+      t.contChosen = choice
+      chained = chainTuple(p, key, choice)
+      outbound.push(mapping)
+    } else consume()
   } else {
     // Nicht-Record: Match-Report (löst NIE eine Kette aus)
-    if (!t.contReported) { t.contReported = matches[0]; outbound.push(await buildMapping(p, key, matches[0], when, ent)) }
+    if (!t.contReported) {
+      const mapping = await buildMapping(p, key, matches[0], when, ent)
+      consume()
+      t.contReported = matches[0]
+      outbound.push(mapping)
+    } else consume()
   }
   return { handled: true, matches: matches.length, chained, name: chained ? t.name : undefined, outbound }
 }
@@ -171,16 +190,18 @@ async function handleMapping (p, { key, t }, doc, when, ent) {
   if (senderIsRecord) {
     // Record-Freeze: abweichendes prior derselben (next,to) = Äquivokation
     if (t.contRecordPrior && t.contRecordPrior !== body.prior) return fail('Äquivokation — Record-Wahl ist eingefroren')
+    const needAlign = !t.contAligned
+    const mapping = needAlign ? await buildMapping(p, key, body.prior, when, ent) : null
     t.contRecordPrior = body.prior
     chainTuple(p, key, body.prior)
-    // Alignment-Pflicht: eigenes Mapping auf der record-gewählten Beziehung
-    if (!t.contAligned) { t.contAligned = true; outbound.push(await buildMapping(p, key, body.prior, when, ent)) }
+    if (needAlign && mapping) { t.contAligned = true; outbound.push(mapping) }
   } else {
     // Match-Report der Nicht-Record-Seite: darf die Wahl INFORMIEREN, kettet nie
     if (iAmRecord(t, key) && !t.contChosen) {
+      const mapping = await buildMapping(p, key, body.prior, when, ent)
       t.contChosen = body.prior
       chainTuple(p, key, body.prior)
-      outbound.push(await buildMapping(p, key, body.prior, when, ent))
+      outbound.push(mapping)
     }
   }
   return { handled: true, chained: p.contacts.get(body.prior)?.deactivated === true, name: t.name, outbound }

@@ -11,7 +11,7 @@ import {
   setTag, linkClusters, sharedGroups, rosterNames, rosterName,
   verifyEncounter, verifyMapping, forgeMapping, starMatch, starKey,
   verifyPairCard, verifyCtxMapping, makeCtxMapping,
-  contactKey, contactEntry, self, persona, diVerify, jcs, xSharedHex,
+  contactKey, contactEntry, communityIdentity, communityLabel, persona, diVerify, jcs, xSharedHex,
 } from './graph-web.mjs'
 
 let failed = 0
@@ -25,7 +25,7 @@ const sam = await addPerson(w, 'Sam', '#84cc16')
 
 // ── deferred anchor disclosure: the ceremony is pairwise-only ───────────
 const e1 = await encounter(w, me, peter, now)
-const selfMe = (await self(me)).anchor
+const selfMe = (await communityIdentity(me)).anchor
 assert(e1.R.a.anchor !== selfMe && e1.S === undefined,
   'Zeremonie: NUR pairwise — kein self-signiertes Artefakt entsteht (Review-2 B1)')
 assert(e1.R.a.anchor === (await persona(me, `pair/${e1.bind}`)).anchor,
@@ -51,7 +51,7 @@ assert((await encounter(w, me, peter, now + 999)) === null && [...me.contacts.va
 {
   await setTrust(w, peter, me, true, now + 1000) // Peters einseitiger Akt
   const entry = contactEntry(me, 'Peter')
-  const peterSelf = (await self(peter)).anchor
+  const peterSelf = (await communityIdentity(peter)).anchor
   assert(entry.selfAnchor === peterSelf, 'Promotion: Ich haelt jetzt Peters self-Anker')
   assert(await verifyMapping(me, entry.mapping),
     'DV-Zuordnung (3DH-MAC, reines WebCrypto): Adressat verifiziert mit eigenen Geheimnissen')
@@ -64,7 +64,7 @@ assert((await encounter(w, me, peter, now + 999)) === null && [...me.contacts.va
   assert(contactEntry(peter, 'Ich').selfAnchor === null, 'Einseitigkeit: Peter haelt meinen self-Anker weiterhin NICHT')
   // tamper: claiming a foreign self anchor breaks card binding and MACs
   const t = JSON.parse(JSON.stringify(entry.mapping))
-  t.body.self = (await self(sam)).anchor
+  t.body.self = (await communityIdentity(sam)).anchor
   assert(!(await verifyMapping(me, t)), 'Tampering: fremder self-Anker in der Zuordnung wird abgelehnt')
   // DENIABILITY: the recipient fabricates a LIE — "Peters self belongs to
   // Sams pair anchor" — using Peters genuine card, and it verifies
@@ -167,7 +167,7 @@ assert((await sharedGroups(me, contactKey(me, 'Peter'), w)).length === 2,
   for (const [l] of [...contactEntry(me, 'Lena').disclosed]) if (l.startsWith('group/')) contactEntry(me, 'Lena').disclosed.delete(l)
   assert((await sharedGroups(me, contactKey(me, 'Lena'), w)).join() === 'chor',
     'Tag (echtes HMAC): nach Befoerderung erkennt der Co-Mitglied-Kontakt die Mitgliedschaft')
-  assert((await sharedGroups(sam, (await self(lena)).anchor, w)).length === 0, 'Nicht-Kontakt erkennt nichts (kein self-Anker zugestellt)')
+  assert((await sharedGroups(sam, (await communityIdentity(lena)).anchor, w)).length === 0, 'Nicht-Kontakt erkennt nichts (kein self-Anker zugestellt)')
   await setTag(w, lena, 'chor', false)
   assert((await sharedGroups(me, contactKey(me, 'Lena'), w)).join() === 'chor', 'Tag aus: Artefakt bleibt erkennbar (publish is forever)')
 }
@@ -179,25 +179,25 @@ assert((await sharedGroups(me, contactKey(me, 'Peter'), w)).length === 2,
   const carl = await addPerson(w, 'Carl', '#14b8a6')
   await encounter(w, anna, bert, now += 60_000)
   await encounter(w, bert, carl, now += 60_000)
-  const carlSelf = (await self(carl)).anchor
+  const carlSelf = (await communityIdentity(carl)).anchor
   await setTrust(w, carl, bert, true, now + 1000)  // Carl promotes Bert — Bert HOLDS Carls self
   await setTrust(w, bert, anna, true, now + 2000)  // Bert's one-sided act toward Anna
   assert(!anna.friends.has(contactKey(anna, 'Bert')), 'Einseitigkeit: Berts Akt aendert Annas Trust nicht')
-  const snap = anna.starsReceived.get((await self(bert)).anchor)
+  const snap = anna.starsReceived.get((await communityIdentity(bert)).anchor)
   assert(!!snap && snap.count === 1, 'Stern-Zustellung: Anna HAELT Berts Schnappschuss (1 Eintrag)')
   assert(!snap.blinded.includes(carlSelf), 'VERBLINDET: kein roher Anker in der Fracht')
-  assert(!(await starMatch(anna, 'Bert', snap, (await self(sam)).anchor)), 'kein Match gegen falsche Kandidaten')
+  assert(!(await starMatch(anna, 'Bert', snap, (await communityIdentity(sam)).anchor)), 'kein Match gegen falsche Kandidaten')
   // god-check: the entry IS Carl, blinded under the Bert↔Anna key
   assert(await starMatch(anna, 'Bert', snap, carlSelf),
     'Schnittmengen-Test: haette Anna Carls Anker legitim, wuerde sie ihn erkennen')
   assert(!anna.starsReceived.has(carlSelf), 'keine Zustellung ohne Trust: Carls Stern liegt nicht bei Anna')
   await encounter(w, bert, sam, now += 60_000)
-  assert(anna.starsReceived.get((await self(bert)).anchor).count === 1,
+  assert(anna.starsReceived.get((await communityIdentity(bert)).anchor).count === 1,
     'Dritt-Schutz: Sam (unbefoerdert) erscheint NICHT in Berts zugestelltem Stern')
-  const snapOld = JSON.parse(JSON.stringify(anna.starsReceived.get((await self(bert)).anchor)))
+  const snapOld = JSON.parse(JSON.stringify(anna.starsReceived.get((await communityIdentity(bert)).anchor)))
   await setTrust(w, sam, bert, true, now + 1000)
-  const snap2 = anna.starsReceived.get((await self(bert)).anchor)
-  assert(snap2.count === 2 && await starMatch(anna, 'Bert', snap2, (await self(sam)).anchor),
+  const snap2 = anna.starsReceived.get((await communityIdentity(bert)).anchor)
+  assert(snap2.count === 2 && await starMatch(anna, 'Bert', snap2, (await communityIdentity(sam)).anchor),
     'laufende Zustellung: Sams Befoerderung von Bert erreicht Anna SOFORT (verblindet)')
   // EPOCHAL keys (review-2 M6): opaque entries are unlinkable across snapshots
   assert(snap2.salt !== snapOld.salt && !snap2.blinded.includes(snapOld.blinded[0]),
@@ -210,35 +210,39 @@ assert((await sharedGroups(me, contactKey(me, 'Peter'), w)).length === 2,
   // collusion breaks: the same third anchor blinds differently per recipient
   await encounter(w, bert, me, now += 60_000)
   await setTrust(w, bert, me, true, now + 2000)
-  const snapMe = me.starsReceived.get((await self(bert)).anchor)
+  const snapMe = me.starsReceived.get((await communityIdentity(bert)).anchor)
   assert(snapMe && snapMe.blinded.every((v) => !snap2.blinded.includes(v)),
     'KOLLUSION BRICHT: Annas und meine Berts-Sterne sind unvergleichbar (verschiedene k)')
   assert((await starKey(anna, 'Bert', snap2.salt)) !== (await starKey(me, 'Bert', snapMe.salt)),
     'verschiedene Beziehungs-Schluessel (auch bei gleichem Salt-Wert verschieden)')
   await setTrust(w, bert, anna, false)
-  assert(anna.starsReceived.has((await self(bert)).anchor), 'Trust aus: bereits Zugestelltes bleibt (Irreversibilitaet)')
-  assert(!JSON.stringify(anna.starsReceived.get((await self(bert)).anchor)).includes(carlSelf),
+  assert(anna.starsReceived.has((await communityIdentity(bert)).anchor), 'Trust aus: bereits Zugestelltes bleibt (Irreversibilitaet)')
+  assert(!JSON.stringify(anna.starsReceived.get((await communityIdentity(bert)).anchor)).includes(carlSelf),
     'VERBLINDET: der GESAMTE serialisierte Stern enthaelt keinen rohen Dritt-Anker')
-  const frozen = JSON.stringify(anna.starsReceived.get((await self(bert)).anchor))
+  const frozen = JSON.stringify(anna.starsReceived.get((await communityIdentity(bert)).anchor))
   await encounter(w, bert, peter, now += 60_000)
-  assert(JSON.stringify(anna.starsReceived.get((await self(bert)).anchor)) === frozen,
+  assert(JSON.stringify(anna.starsReceived.get((await communityIdentity(bert)).anchor)) === frozen,
     'Pause wirkt: Berts neue Encounter erreichen Anna NICHT mehr (Subskription gestoppt)')
 }
 
 // determinism of derived anchors
 const me2 = { name: 'Ich2', root: me.root, personas: new Map() }
-assert((await self(me2)).anchor === (await self(me)).anchor, 'Determinismus: gleiche Wurzel, gleicher Anker')
+assert((await communityIdentity(me2)).anchor === (await communityIdentity(me)).anchor, 'Determinismus: gleiche Wurzel, gleicher Anker')
 assert((await persona(me2, `group/${chor.genesisDigest}`)).anchor === (await persona(me, `group/${chor.genesisDigest}`)).anchor, 'Determinismus: Gruppen-Anker')
 
 // spec ORACLE (review-4 note): fixed root, fixed expected anchors —
 // a consistently wrong info string can no longer stay green
 {
   const oracle = { name: 'Orakel', root: new Uint8Array(32).fill(0x11), personas: new Map() }
-  assert((await self(oracle)).anchor === 'did:key:z6MkvTXs17eCnQds2bb2XbeE3STkhXFQXCjXBAZ2gf2vX1fx',
-    'Orakel: self via wot/identity/ed25519/v1 trifft den festen Erwartungs-Anker')
   const g = 'group/uEiDYLnFbXqm2cwuJWuk9yNzRmlzWDpCTH6yA_4aP_1z_RA'
   assert((await persona(oracle, g)).anchor === 'did:key:z6MkkEyP3KrJtLP3gvGGBhCPHrLLCsurqjHEJm84AWacmwYV',
     'Orakel: Digest-Gruppen-Label trifft den festen Erwartungs-Anker')
+  // Anti-Re-Fusions-Orakel (S-DID-Schnitt): der Community-Anker IST die
+  // gewöhnliche group/-Ableitung — nie mehr wot/identity/ed25519/v1
+  // (dessen Anker für diese Wurzel z6MkvTXs17eCnQds2bb2XbeE3STkhXFQXCjXBAZ2gf2vX1fx wäre)
+  assert(communityLabel(oracle) === g
+    && (await communityIdentity(oracle)).anchor === 'did:key:z6MkkEyP3KrJtLP3gvGGBhCPHrLLCsurqjHEJm84AWacmwYV',
+    'Orakel: Community-Anker = gewöhnliche group/<digest>-Ableitung, kein Recovery-Schlüssel')
   // RFC 7748 §5.2 vector through the WebCrypto X25519 path
   const hx = (h) => new Uint8Array(h.match(/../g).map((x) => parseInt(x, 16)))
   assert(await xSharedHex(hx('a546e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449ac4'),

@@ -94,12 +94,12 @@
       },
       "genesisDigest": {
        "type": "string",
-       "pattern": "^(u[A-Za-z0-9_-]{46}|z[1-9A-HJ-NP-Za-km-z]{44,48})$",
+       "pattern": "^(u[A-Za-z0-9_-]{45}[AQgw]|z[1-9A-HJ-NP-Za-km-z]{44,48})$",
        "description": "multibase(multihash sha2-256) per Encounter 2.3: emit u, accept u/z; algorithm and length are checked at parse"
       },
       "accept": {
        "type": "string",
-       "pattern": "^(u[A-Za-z0-9_-]{46}|z[1-9A-HJ-NP-Za-km-z]{44,48})$",
+       "pattern": "^(u[A-Za-z0-9_-]{45}[AQgw]|z[1-9A-HJ-NP-Za-km-z]{44,48})$",
        "description": "multibase(multihash sha2-256) per Encounter 2.3: emit u, accept u/z; algorithm and length are checked at parse"
       },
       "provenance": {

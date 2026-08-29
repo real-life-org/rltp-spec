@@ -12,7 +12,7 @@
     "subject": { "$ref": "#/$defs/didKey" },
     "accept": {
       "type": "string",
-      "pattern": "^(u[A-Za-z0-9_-]{46}|z[1-9A-HJ-NP-Za-km-z]{44,48})$",
+      "pattern": "^(u[A-Za-z0-9_-]{45}[AQgw]|z[1-9A-HJ-NP-Za-km-z]{44,48})$",
       "description": "document digest of the accept this admission consumes (= digest of admission.accept)"
     },
     "material": {

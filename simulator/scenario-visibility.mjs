@@ -63,8 +63,8 @@ assert(probe3.body.blinded.length === 256, 'Probe weiterhin formtreu')
 t('B4: Trust-Akt — anchor-mapping@2 + Schritt-5-Negativ')
 const am = V.issueAnchorMapping(bob, bob.relationships[0])
 const ram = V.receiveAnchorMapping(alice, alice.relationships[0], am)
-assert(ram.self && alice.relationships[0].counterpartSelf === ram.self, 'Alice hält Bobs offengelegten S-DID (6.3-Liste komplett)')
-const bad = JSON.parse(JSON.stringify(am)); bad.body.self = V.selfIdentity(carol).anchor
+assert(ram.self && alice.relationships[0].counterpartSelf === ram.self, 'Alice hält Bobs offengelegten Community-Anker (6.3-Liste komplett)')
+const bad = JSON.parse(JSON.stringify(am)); bad.body.self = V.communityIdentity(carol).anchor
 assert(V.receiveAnchorMapping(alice, alice.relationships[0], bad).error === 'card.anchor != self', 'fremder self → Schritt 5 lehnt ab (unclaimability)')
 
 t('B5: Grade + Stern — Schnittmengen nur, wo Wiedererkennung GEWÄHRT wurde')
@@ -79,11 +79,11 @@ const relBC = bob.relationships.find(r => r.head.counterpartAnchor === e4.dAncho
 const relCB = carol.relationships.find(r => r.head.counterpartAnchor === e4.sAnchor)
 V.receiveAnchorMapping(bob, relBC, V.issueAnchorMapping(carol, relCB))
 const relAB = alice.relationships.find(r => r.counterpartSelf)
-const relBA = bob.relationships.find(r => r.counterpartSelf === V.selfIdentity(alice).anchor) || bob.relationships[0]
+const relBA = bob.relationships.find(r => r.counterpartSelf === V.communityIdentity(alice).anchor) || bob.relationships[0]
 const star = V.buildStar(alice, relAB)
 const rs = V.receiveStar(bob, relBA, star)
 assert(!rs.error && rs.count === 1, 'Stern: count = 1 deliverable Kontakt')
-assert(rs.hits.length === 1 && rs.hits[0] === V.selfIdentity(carol).anchor, 'Bob findet den Schnitt: Carol — weil BEIDE ihren S-DID legitim halten')
+assert(rs.hits.length === 1 && rs.hits[0] === V.communityIdentity(carol).anchor, 'Bob findet den Schnitt: Carol — weil BEIDE ihren Community-Anker legitim halten')
 const star2 = V.buildStar(alice, relAB)
 const replay = V.receiveStar(bob, relBA, { body: { ...star.body }, proof: star.proof })
 assert(replay.error === 'salt not strictly greater', 'Salt-Replay abgelehnt (strictly greater)')

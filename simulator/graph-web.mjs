@@ -104,22 +104,30 @@ async function hkdf(root, info) {
 }
 
 // persona derived from the person's root (Decision 1).
-// Per Identity §5.3 the self context uses the FIXED historic info
-// string for every identity; labeled contexts use the rltp/anchor family.
+// EVERY context derives through the ordinary rltp/anchor family (Identity
+// 0.13 §5.1) — the S-DID cut removed the fused "self" context whose keys
+// came zero-input from the historic recovery strings. The stable social
+// anchor is now the COMMUNITY ANCHOR: an ordinary group context over the
+// person's personal-community genesis digest (§6.1), derived exactly like
+// conformance/runner.mjs suite 4 and simulator/visibility.mjs.
 // pair/<binding> is the relationship anchor of deferred disclosure: the
 // label is the ceremony's enactmentBinding, so it is recomputable from
 // the held credentials (backup stays "root seed + register").
+export const COMMUNITY_GENESIS = 'uEiDYLnFbXqm2cwuJWuk9yNzRmlzWDpCTH6yA_4aP_1z_RA'
+export const communityLabel = (person) => `group/${person?.communityGenesis || COMMUNITY_GENESIS}`
 export async function persona(person, label) {
   let p = person.personas.get(label)
   if (p) return p
-  const info = label === 'self' ? 'wot/identity/ed25519/v1' : `rltp/anchor/ed/${label}`
-  const seed = await hkdf(person.root, info)
+  const seed = await hkdf(person.root, `rltp/anchor/ed/${label}`)
   const { priv, pubRaw } = await edFromSeed(seed)
   p = { label, owner: person.name, anchor: anchorOf(pubRaw), priv, pubRaw, seed }
   person.personas.set(label, p)
   return p
 }
-export const self = (person) => persona(person, 'self')
+// the person's community anchor — the disclosure anchor of the visibility
+// layer. The disclosure-map KEY stays spelled 'self', mirroring the frozen
+// wire field name; the DERIVATION is an ordinary group context.
+export const communityIdentity = (person) => persona(person, communityLabel(person))
 
 // per-relationship X25519 chain (Identity §5.2 family: rltp/anchor/x/…):
 // both sides derive their pair-context X key from their roots; the ECDH
@@ -149,15 +157,17 @@ async function derivedKey(mySeed, theirXHex, label) {
 export async function relKey(person, bind, theirXHex, label) {
   return derivedKey(await pairXSeed(person, bind), theirXHex, label)
 }
-// the self context's X25519 half (Identity §5.3: historic info string)
-const selfXSeed = (person) => hkdf(person.root, 'wot/encryption/x25519/v1')
+// the community anchor's X25519 half — the ordinary rltp/anchor/x family
+// over the same group label (Identity 0.13 §5.1/§5.2), never the historic
+// recovery string
+const selfXSeed = (person) => hkdf(person.root, `rltp/anchor/x/${communityLabel(person)}`)
 // the self card binds the two halves of ONE identity: self Ed anchor ↔
 // self keyAgreement key. Its Ed signature is transferable — harmless: it
 // links no context to another, it only makes the identity's own X key
 // authentic (the substrate of deniable self-control proofs below).
 export async function selfCard(person, when) {
   if (!person.selfCard) {
-    const s = await self(person)
+    const s = await communityIdentity(person)
     const body = { type: 'rltp-sim/self-card@0', self: s.anchor, keyAgreement: await xPubHexOf(await selfXSeed(person)) }
     person.selfCard = await diSign(s, body, iso(when))
   }
@@ -244,7 +254,7 @@ export async function addPerson(world, name, color, seed) {
     starsReceived: new Map(), // from-self-anchor -> { edges: [peer self anchors] } — DELIVERED (F2)
   }
   world.persons.set(name, person)
-  await self(person) // exists from the start (it is the person, pre-any-group)
+  await communityIdentity(person) // exists from the start (it is the person, pre-any-group)
   return person
 }
 
@@ -296,7 +306,7 @@ async function deliverStar(world, from, to) {
   const snap = { salt, count, blinded }
   entry.sentStar = snap // sender-side journal: what I last delivered here
   logPacket(world, from.name, to.name, 'star (blinded)', snap)
-  to.starsReceived.set((await self(from)).anchor, snap)
+  to.starsReceived.set((await communityIdentity(from)).anchor, snap)
 }
 // recipient side: recompute the delivery key and test one anchor
 export async function starKey(viewer, senderName, salt) {
@@ -478,7 +488,7 @@ export async function setTag(world, person, groupId, on) {
   const g = world.groups.get(groupId)
   if (!g) return
   person.tags.add(groupId)
-  const anchor = (await self(person)).anchor
+  const anchor = (await communityIdentity(person)).anchor
   const tag = await hmac(g.genesisDigest, anchor)
   person.publishedTags.set(groupId, tag)
   // the tag lives in the GROUP's space, not the world (Anton's catch):
@@ -527,7 +537,7 @@ async function mappingBody(pairAnchor, selfAnchor, toPairAnchor, when) {
 export async function makeMapping(A, entry, toPairAnchor, when) {
   const pMine = await persona(A, `pair/${entry.bind}`)
   const card = await selfCard(A, when)
-  const body = await mappingBody(pMine.anchor, (await self(A)).anchor, toPairAnchor, when)
+  const body = await mappingBody(pMine.anchor, (await communityIdentity(A)).anchor, toPairAnchor, when)
   const msg = jcs(body)
   return { body, card,
     mac1: await hmac(await relKey(A, entry.bind, entry.theirX, 'rltp-sim/mac/map1'), msg),
@@ -583,7 +593,7 @@ export async function setTrust(world, A, B, on, when) {
   const e = myEntry.enc
   if (!e) return
   const t0 = when ?? e.when + 60_000
-  const sMine = await self(A)
+  const sMine = await communityIdentity(A)
   const mapping = await makeMapping(A, myEntry, key, t0)
   myEntry.sentMapping = mapping // sender-side journal: the one-way door I opened
   logPacket(world, A.name, B.name, 'anchor-mapping@2 (DV)', mapping)

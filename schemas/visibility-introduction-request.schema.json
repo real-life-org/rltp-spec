@@ -24,7 +24,7 @@
         },
         "act": {
           "type": "string",
-          "pattern": "^u[A-Za-z0-9_-]{43}$"
+          "pattern": "^u[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$"
         },
         "issuedAt": {
           "type": "string",
@@ -37,7 +37,7 @@
         },
         "cardDigest": {
           "type": "string",
-          "pattern": "^u[A-Za-z0-9_-]{46}$",
+          "pattern": "^u[A-Za-z0-9_-]{45}[AQgw]$",
           "description": "sha2-256 multihash (0x12 0x20 + 32 hash bytes) over JCS of the complete card document including its proof, u-base64url (2.1)"
         },
         "profile": {

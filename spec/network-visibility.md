@@ -18,11 +18,11 @@
   `self-card@1` · `continuity-probe@1` · `continuity-mapping@1` ·
   `introduction-request@1` · `introduction-reply@1` ·
   `introduction-ack@1` · `introduction-voucher@1`.
-- **Companions (pinned):** **Identity 0.28** (`pair/` registry
+- **Companions (pinned):** **Identity 0.51** (`pair/` registry
   §6.1 — REQUIRED; 0.13 is the S-DID cut, jointly cast with this
   document) · **Encounter 0.29** (fresh-always
   enactment, wire 0.25 — §6a here is the other half of its §4.4) ·
-  Access 0.53, Membership 0.16, Delivery 0.37 (the M-DID loop and
+  Access 0.53, Membership 0.16, Delivery 0.69 (the M-DID loop and
   the later cuts have landed), and Delivery's §4.4
   registry discharged the registration debt of 8.1, including the
   `ack-delay` publication path (`registry-declaration/0.1`).
@@ -94,7 +94,7 @@ relationship are the rule working, not an exception to it.
 
 ## 2. Terminology
 
-- **Anchor** — a context identifier of an identity (Identity 0.28
+- **Anchor** — a context identifier of an identity (Identity 0.51
   §6): a `pair/…`, `group/…`, or `persona/…` context.
 - **Anchor classes (DTGWG-aligned naming):** **R-DID** =
   pair-context anchor (pairwise, no correlation) · **P-DID** =
@@ -1293,7 +1293,7 @@ A conformant implementation:
 
 ## References
 
-- Identity Layer 0.28 — `spec/identity-layer.md` (§5.2, §6.1,
+- Identity Layer 0.51 — `spec/identity-layer.md` (§5.2, §6.1,
   §9.3, §11).
 - Encounter Layer 0.29 (wire 0.25) — `spec/encounter-layer.md`
   (fresh-always §4.4, commitment §7.2, versioned schemas).

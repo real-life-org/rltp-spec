@@ -1,7 +1,7 @@
 {
  "$schema": "https://json-schema.org/draft/2020-12/schema",
  "$id": "https://real-life.org/rltp/v1/schemas/rltp-delivery-document.schema.json",
- "title": "RLTP Delivery Document Profile (rltp-delivery@0.37)",
+ "title": "RLTP Delivery Document Profile (rltp-delivery@0.69)",
  "description": "RLTP document profile (Delivery 3): proof REQUIRED on delivery-ack and registry-declaration (their authenticity has no other carrier), MUST be absent on the other own types; own types' payload schemas carry \\$id = Type URI, companion-registered types dispatch through the 4.4 registry entry.",
  "type": "object",
  "required": [

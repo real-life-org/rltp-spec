@@ -54,11 +54,11 @@
       "properties": {
         "mac1": {
           "type": "string",
-          "pattern": "^u[A-Za-z0-9_-]{43}$"
+          "pattern": "^u[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$"
         },
         "mac2": {
           "type": "string",
-          "pattern": "^u[A-Za-z0-9_-]{43}$"
+          "pattern": "^u[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$"
         }
       }
     }

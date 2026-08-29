@@ -69,7 +69,7 @@ every casting is reviewed in full by an independent adversarial
 reviewer, findings are triaged, and the document is recast — never
 patched — until a casting is judged blocker-free and compatibly
 implementable. The companion documents have met that criterion — the
-**RLTP Delivery Contract** (0.27), which specifies the transmission
+**RLTP Delivery Contract** (0.69), which specifies the transmission
 leg by normative reference, and above this layer the **RLTP
 Membership Tasks** (0.16) and the **RLTP Access Layer** (0.53).
 
@@ -181,13 +181,13 @@ capitals, as shown here.
 
 Permanent identifiers are `https://real-life.org/rltp/v1#<Fragment>`.
 
-**Anchor** — a Layer-1 identifier of a person (Identity 0.28). In
+**Anchor** — a Layer-1 identifier of a person (Identity 0.51). In
 this casting, a `did:key` (2.3). **The enacting anchor of a
 ceremony is a freshly derived pair anchor** (Identity §6.1 `pair/`
 context) — fresh at every enactment, re-encounters included (4.4);
 relationship continuity is the visibility layer's post-ceremony
 act. No standing anchor appears on the ceremony wire; the
-community anchor's disclosure (Identity 0.28) is the visibility
+community anchor's disclosure (Identity 0.51) is the visibility
 layer's per-recipient act.
 
 **Contact card** — a person's signed self-description carrying the
@@ -242,13 +242,13 @@ Referenced: **Credential** (W3C VC 2.0, RLTP-owned type per 7.1),
 **Delivery port /
 RLTP Delivery Contract** *(services)*.
 
-### 2.3 Securing profile (bound to Identity 0.28)
+### 2.3 Securing profile (bound to Identity 0.51)
 
-The Layer-1 specification is cast: **RLTP Identity 0.28** defines
+The Layer-1 specification is cast: **RLTP Identity 0.51** defines
 derivation, the label registry (including the `pair/` contexts this
 casting enacts under), anchor form, and the anchor–key binding rule
 this section applies. The requirements below restate the consumed
-surface normatively — where they and Identity 0.28 disagree,
+surface normatively — where they and Identity 0.51 disagree,
 Identity governs:
 
 - An **anchor** is a **`did:key`** DID whose method-specific
@@ -1351,7 +1351,7 @@ Enactments MUST be possible without any service (the offline path, 5.8).
 
 - **Profile** `rltp-encounter@0.29`, wire forms `…/0.25` (Section 12
   — a deliberate break with no deployed predecessor); securing
-  profile bound to `rltp-identity@0.28` (2.3); **normatively
+  profile bound to `rltp-identity@0.51` (2.3); **normatively
   references the Delivery Contract** for the one-scan
   transmission — the Section-12 pin debt is discharged: Delivery
   names `encounter-scan@0.25` since its M-DID-loop recast.
@@ -1590,5 +1590,5 @@ W3C Data Integrity EdDSA Cryptosuites v1.0 · W3C Verifiable
 Credentials Data Model 2.0 · DTG Credential Specification (ToIP DTGWG,
 draft) · ToIP DTGWG Trust Ceremonies ADR 0001 and design note
 (Proposed) · did:key method draft · Multikey / multicodec registry ·
-**RLTP Delivery Contract 0.37 (normative)** · wot-spec v0.1 (superseded
+**RLTP Delivery Contract 0.69 (normative)** · wot-spec v0.1 (superseded
 parts, Appendix B).

@@ -1,0 +1,131 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://real-life.org/rltp/v1/carrier-proof/0.3",
+ "title": "RLTP Carrier Registration Proof (rltp-carrier-proof/0.3, rltp-delivery@0.69)",
+ "description": "Delivery Contract \u00a75a.3: the object a recipient signs to register, rebind, collect or conclude at a carrier. The signature input is the JCS serialization (RFC 8785) of this object with 'sig' omitted; the signature is Ed25519 under 'principal', carried as canonical base58btc with the 'z' prefix (Encounter \u00a72.3). The 'v' constant is the domain tag and is inside the signed bytes. This artifact travels below the port line \u2014 how it is carried is unspecified \u2014 but its bytes are fixed here, which is what makes the shipped transplant counter-vectors possible. WHAT THIS SCHEMA DOES NOT CHECK, stated here rather than left to be discovered: base58btc is not a positional encoding, so no pattern in this dialect can constrain a DECODED multicodec prefix or a DECODED byte length. The 'principal', 'rkid' and 'sig' patterns are therefore necessary conditions only \u2014 they fix the alphabet and the exact achievable length envelope, and nothing beyond it. Passing this schema is not acceptance; Delivery \u00a75a.3 and \u00a711 place the decoding obligation on the verifier, and vectors/carrier-proof.json ships the schema-valid, normatively invalid aliases that make the gap testable.",
+ "type": "object",
+ "required": [
+  "carrier",
+  "principal",
+  "principalChallenge",
+  "purpose",
+  "rkid",
+  "sig",
+  "type",
+  "v"
+ ],
+ "additionalProperties": false,
+ "properties": {
+  "v": {
+   "const": "rltp-carrier-proof/0.3",
+   "description": "domain tag; appears in no other signed artifact of this stack. A verifier MUST reject an object whose v is not byte-equal to this constant. Wire 0.3 (round-36 B-1): every purpose names the queue it acts on, so rkid is REQUIRED for all four; generation and addressChallenge remain forbidden in the session-scoped purposes, which change no succession. The /0.2 form was never instantiated outside this repository's vectors."
+  },
+  "type": {
+   "const": "carrier-registration-proof"
+  },
+  "purpose": {
+   "enum": [
+    "register",
+    "rebind",
+    "collect",
+    "conclude"
+   ],
+   "description": "closed set, inside the signed bytes: a proof made for one purpose is not a proof for another \u2014 transplantation resistance, not a statement of intent. `register` and `rebind` are distinct in these bytes and EQUIVALENT IN EFFECT: Delivery \u00a75a.3's outcome table is entered by the held state, never by the declared purpose, and a carrier MUST NOT refuse a proof because the two disagree. Which fields each purpose carries is stated once per field, in that field's own PURPOSE-MATRIX clause, and scripts/validate.mjs \u00a78 holds every such clause against these branches \u2014 round-38 B-1: this description used to restate the matrix itself, and it kept the withdrawn /0.2 split alive after the wire had moved."
+  },
+  "carrier": {
+   "type": "string",
+   "minLength": 1,
+   "maxLength": 1024,
+   "description": "the carrier controller identifier C, byte-exact per Identity \u00a77a.2 \u2014 no normalization, no alias, no DID resolution, never the next hop. Its full grammar (valid Unicode scalar values, no surrogates, no Cc/Cf/White_Space, 1..1024 UTF-8 bytes) is normative in Identity \u00a77a.2 and is not fully expressible here; a carrier MUST reject a proof whose carrier is not byte-identical to its own configured identifier."
+  },
+  "principal": {
+   "type": "string",
+   "pattern": "^did:key:z6Mk[1-9A-HJ-NP-Za-km-z]{44}$",
+   "description": "the control principal, an Ed25519 did:key derived per Identity \u00a77a.4. NECESSARY, NOT SUFFICIENT: base58btc is not positional, so no pattern in this dialect can require the DECODED multicodec prefix 0xed 0x01. The 47 base58 characters and the z6Mk lead are exactly the achievable envelope of a 34-byte value whose first byte is 0xed, and no more: z6Mk followed by 44 '1' characters decodes to prefix 0xec 0xfe, 44 'z' characters to 0xed 0x02, and both satisfy this pattern. A verifier MUST decode and check the prefix and the 32-byte key (Delivery \u00a75a.3); schema validity alone is not acceptance."
+  },
+  "rkid": {
+   "type": "string",
+   "pattern": "^z6LS[1-9A-HJ-NP-Za-km-z]{44}$",
+   "description": "PURPOSE-MATRIX: required for collect, conclude, rebind, register; forbidden for none. The recipient key-agreement Multikey (X25519) whose queue this proof concerns \u2014 every purpose names the queue it acts on (wire 0.3, round-36 B-1), so one key answers the question of which queue a proof binds or draws from. NECESSARY, NOT SUFFICIENT: z6LS followed by 44 '1' characters decodes to prefix 0xeb 0xfe, 44 'z' characters to 0xec 0x02, and this pattern accepts both. A verifier MUST decode and check 0xec 0x01 followed by 32 bytes (Delivery \u00a75a.3)."
+  },
+  "generation": {
+   "type": "integer",
+   "minimum": 1,
+   "maximum": 9007199254740991,
+   "description": "PURPOSE-MATRIX: required for rebind, register; forbidden for collect, conclude. the generation of the holder's canonical carrier-nonce entry (Identity \u00a77a.3), in that section's closed domain [1, 2^53-1]. WHAT THIS CANNOT CHECK: the canonical decimal SPELLING. 1.0 and 1e0 satisfy \"type\": \"integer\" after parsing, canonicalize to the same JCS bytes and let the shipped signature verify \u2014 so Delivery \u00a75a.3 puts the check on the RECEIVED BYTES at acceptance, refused(malformed), and vectors/carrier-proof.json ships the negatives. A rebind binds only on a strictly greater generation than the one the carrier last accepted; equal with the same principal is registered(idempotent); equal with a different principal, or lower, is refused(stale-generation). Those session-scoped acts authorize against a binding that already exists and touch no succession."
+  },
+  "principalChallenge": {
+   "type": "string",
+   "pattern": "^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$",
+   "description": "exactly 32 bytes from a cryptographically secure source, canonical unpadded base64url (43 characters); single-use, expiring on the carrier's declared challenge-lifetime"
+  },
+  "addressChallenge": {
+   "type": "string",
+   "pattern": "^[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$",
+   "description": "PURPOSE-MATRIX: required for rebind, register; forbidden for collect, conclude. the opened value of the challenge the carrier sealed to this rkid \u2014 the possession proof a key-agreement key cannot give by signing; exactly 32 bytes, canonical unpadded base64url."
+  },
+  "sig": {
+   "type": "string",
+   "pattern": "^z[1-9A-HJ-NP-Za-km-z]{64,88}$",
+   "description": "Ed25519 over the JCS bytes of this object with sig omitted, canonical base58btc with the z multibase prefix, exactly 64 signature bytes (Encounter \u00a72.3: a shortened or non-canonical rendering is not a signature). NECESSARY, NOT SUFFICIENT, and deliberately WIDER than the previous 86..88: a leading zero byte encodes as '1', so the achievable length envelope of a 64-byte value is 64 (all zero) to 88, and 86..88 would have rejected a legitimate signature with three leading zero bytes while still accepting 63- and 65-byte values, whose envelopes overlap it. Length cannot decide this: a verifier MUST decode and require exactly 64 bytes (Delivery \u00a75a.3)."
+  }
+ },
+ "allOf": [
+  {
+   "if": {
+    "properties": {
+     "purpose": {
+      "enum": [
+       "register",
+       "rebind"
+      ]
+     }
+    },
+    "required": [
+     "purpose"
+    ]
+   },
+   "then": {
+    "required": [
+     "rkid",
+     "generation",
+     "addressChallenge"
+    ]
+   }
+  },
+  {
+   "if": {
+    "properties": {
+     "purpose": {
+      "enum": [
+       "collect",
+       "conclude"
+      ]
+     }
+    },
+    "required": [
+     "purpose"
+    ]
+   },
+   "then": {
+    "required": [
+     "rkid"
+    ],
+    "not": {
+     "anyOf": [
+      {
+       "required": [
+        "generation"
+       ]
+      },
+      {
+       "required": [
+        "addressChallenge"
+       ]
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

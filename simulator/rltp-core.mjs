@@ -19,14 +19,35 @@
 // ── JCS (RFC 8785 subset for the ASCII I-JSON forms this stack ships) ──
 export const jcs = (o) => {
   if (o === undefined) throw new Error('jcs: undefined is not serializable')
+  // RFC 8785: eine Lone Surrogate ist kein Unicode-String — Fehler statt
+  // Kanonisierung (lib-Review 3, B-1; identisch geerbt)
+  if (typeof o === 'string' && !o.isWellFormed()) throw new Error('jcs: lone surrogate')
   if (typeof o === 'number' && !Number.isFinite(o)) throw new Error('jcs: non-finite number')
+  // Sparse Arrays kollidieren auf einen Digest ([empty] und [] wären
+  // gleich) — verwerfen statt still kanonisieren (lib-Review 4, B-3)
+  if (Array.isArray(o)) for (let i = 0; i < o.length; i++) if (!(i in o)) throw new Error('jcs: sparse array')
   return Array.isArray(o) ? '[' + o.map(jcs).join(',') + ']'
     : (o && typeof o === 'object')
-      ? '{' + Object.keys(o).sort().map((k) => {
+      ? (plainOr(o)) && '{' + Object.keys(o).sort().map((k) => {
         if (o[k] === undefined) throw new Error('jcs: undefined property ' + k)
+        if (!k.isWellFormed()) throw new Error('jcs: lone surrogate in key')
         return JSON.stringify(k) + ':' + jcs(o[k])
       }).join(',') + '}'
-      : JSON.stringify(o)
+      : term(o)
+}
+// Symbol/Funktion stringifizieren zu undefined — Fehler am Rand statt
+// leerer Digest-Eingabe (lib-Review 1 M-4 / Review 5 B-4, Parität)
+// nur ECHTE JSON-Objekte: Date/Map/Instanzen kollidierten mit {}
+// (lib-Review 5, B-3; Parität)
+const plainOr = (o) => {
+  const proto = Object.getPrototypeOf(o)
+  if (proto !== null && proto !== Object.prototype) throw new Error('jcs: not a plain JSON object')
+  return true
+}
+const term = (o) => {
+  const s = JSON.stringify(o)
+  if (typeof s !== 'string') throw new Error('jcs: value is not JSON-representable')
+  return s
 }
 
 // ── multibase encodings ─────────────────────────────────────────────────
@@ -70,8 +91,13 @@ export const fromB64u = (s) => {
 export const toU = (v) => {
   if (typeof v !== 'string' || v.length < 2) return null
   let bytes
-  if (v[0] === 'u') bytes = fromB64u(v.slice(1))
-  else if (v[0] === 'z') {
+  if (v[0] === 'u') {
+    try { bytes = fromB64u(v.slice(1)) } catch { return null }
+    // canonical base64url only — padding or non-zero trailing bits make a
+    // DIFFERENT string decode to the same bytes (lib review 1, B-1; the
+    // shipped reject vectors demand exactly this)
+    if (bytes && 'u' + b64uOf(bytes) !== v) return null
+  } else if (v[0] === 'z') {
     bytes = fromBase58(v.slice(1))
     if (bytes && 'z' + base58(bytes) !== v) return null // canonical base58btc only
   } else return null
@@ -123,8 +149,11 @@ export function makeValidator (SCHEMAS) {
     }
     if (typeof data === 'string') {
       if (schema.pattern && !new RegExp(schema.pattern).test(data)) E('pattern')
-      if (schema.minLength != null && data.length < schema.minLength) E('minLength')
-      if (schema.maxLength != null && data.length > schema.maxLength) E('maxLength')
+      // JSON Schema misst Stringlänge in CODEPUNKTEN, nicht UTF-16-
+      // Einheiten (Review 4, M-2: 101 Emoji sind 101 Zeichen, nicht 202)
+      const cpLen = (schema.minLength != null || schema.maxLength != null) ? [...data].length : 0
+      if (schema.minLength != null && cpLen < schema.minLength) E('minLength')
+      if (schema.maxLength != null && cpLen > schema.maxLength) E('maxLength')
     }
     if (Array.isArray(data)) {
       if (schema.minItems != null && data.length < schema.minItems) E('minItems')
@@ -142,11 +171,11 @@ export function makeValidator (SCHEMAS) {
       const keys = Object.keys(data)
       if (schema.minProperties != null && keys.length < schema.minProperties) E('minProperties')
       if (schema.maxProperties != null && keys.length > schema.maxProperties) E('maxProperties')
-      for (const r of schema.required || []) if (!(r in data)) E(`missing required ${r}`)
-      for (const [k, deps] of Object.entries(schema.dependentRequired || {})) if (k in data) for (const d of deps) if (!(d in data)) E(`dependentRequired ${k}→${d}`)
+      for (const r of schema.required || []) if (!Object.hasOwn(data, r)) E(`missing required ${r}`)
+      for (const [k, deps] of Object.entries(schema.dependentRequired || {})) if (Object.hasOwn(data, k)) for (const d of deps) if (!Object.hasOwn(data, d)) E(`dependentRequired ${k}→${d}`)
       if (schema.propertyNames) for (const k of keys) errs.push(...validate(k, schema.propertyNames, root, `${path}.<name:${k}>`))
       for (const k of keys) {
-        if (schema.properties && k in schema.properties) errs.push(...validate(data[k], schema.properties[k], root, `${path}.${k}`))
+        if (schema.properties && Object.hasOwn(schema.properties, k)) errs.push(...validate(data[k], schema.properties[k], root, `${path}.${k}`))
         else if (schema.additionalProperties === false) E(`additionalProperty ${k}`)
         else if (schema.additionalProperties && typeof schema.additionalProperties === 'object') errs.push(...validate(data[k], schema.additionalProperties, root, `${path}.${k}`))
       }

@@ -598,7 +598,7 @@
     },
     "oid": {
       "type": "string",
-      "pattern": "^oid:[A-Za-z0-9_-]{43}$",
+      "pattern": "^oid:[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$",
       "description": "self-addressing operation id: base64url(SHA-256) without padding over the JCS serialization with id empty and proof omitted"
     },
     "digest": {

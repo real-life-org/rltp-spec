@@ -244,12 +244,25 @@ section('carrier-proof.json — Delivery §5a.3 signature input, §4.4 rate mach
   const strip = (o) => { const { sig, ...rest } = o; return rest }
 
   // §5a.3 — canonical, domain-separated signature input
-  for (const [name, blk] of [['registration', CP.registration], ['collection', CP.collection]]) {
+  // round-37 M-2: all four purposes are executed, not merely claimed — the
+  // conclude proof was missing entirely while the fixture said otherwise.
+  for (const [name, blk] of [['registration', CP.registration], ['collection', CP.collection],
+                             ['conclusion', CP.conclusion]]) {
+    schemaOK({ ...blk.object, sig: blk.sig }, 'carrier-proof.schema.json', `${name} proof`)
     check(blk.object.v === CP.v, `${name}: the domain tag is the v constant inside the signed object`)
     check(jcs(strip(blk.object)) === blk.jcs, `${name}: signature input is the JCS serialization with sig omitted`)
     check(verifyRaw(blk.object.principal, Buffer.from(blk.jcs, 'utf8'), blk.sig),
       `${name}: the signature verifies under the control principal`)
   }
+  for (const [name, blk] of [['collection', CP.collection], ['conclusion', CP.conclusion]]) {
+    check(blk.object.rkid === CP.keys.rkid,
+      `${name}: the session-scoped purpose names the queue it acts on (wire 0.3, round-36 B-1)`)
+    check(blk.object.generation === undefined && blk.object.addressChallenge === undefined,
+      `${name}: it carries neither generation nor addressChallenge — it touches no succession`)
+  }
+  check(CP.conclusion.object.purpose === 'conclude',
+    'conclusion: the fourth purpose is shipped signed, not merely named (round-37 M-2)')
+
   const R = CP.registration
   const chalLen = (s) => typeof s === 'string' && s.length === 43 && Buffer.from(s, 'base64url').length === 32 &&
     Buffer.from(s, 'base64url').toString('base64url') === s
@@ -259,6 +272,204 @@ section('carrier-proof.json — Delivery §5a.3 signature input, §4.4 rate mach
     'registration: purpose=register carries rkid and the address challenge')
   check(Number.isSafeInteger(R.object.generation) && R.object.generation >= 1,
     'registration: the proof carries the register generation, in Identity 7a.3\'s domain (round-11 B-4)')
+
+  // round-18 B-1: the schema constrains the alphabet and the length envelope and
+  // NOTHING beyond it — base58btc is not positional, so the decoded multicodec and
+  // the decoded length are a VERIFIER obligation. These are the checks it names.
+  const decodeZ = (s) => {
+    if (typeof s !== 'string' || s[0] !== 'z') return null
+    try { return fromB58(s.slice(1)) } catch { return null }
+  }
+  const decodedOK = {
+    principal: (v) => {
+      if (typeof v !== 'string' || !v.startsWith('did:key:')) return false
+      const b = decodeZ(v.slice('did:key:'.length))
+      return !!b && b.length === 34 && b[0] === 0xed && b[1] === 0x01
+    },
+    rkid: (v) => { const b = decodeZ(v); return !!b && b.length === 34 && b[0] === 0xec && b[1] === 0x01 },
+    sig: (v) => { const b = decodeZ(v); return !!b && b.length === 64 },
+  }
+  const EAS = CP.encodingAcceptanceSurface
+  if (EAS) {
+    // the positive control first, so the negative check cannot pass by refusing everything
+    check(decodedOK.principal(R.object.principal) && decodedOK.rkid(R.object.rkid) && decodedOK.sig(R.sig),
+      'encoding acceptance surface [positive control]: the shipped proof decodes to ed01||32, ec01||32 and 64 signature bytes')
+    for (const c of EAS.cases) {
+      const probe = { ...R.object, sig: R.sig, [c.field]: c.value }
+      const cps = SCHEMAS['carrier-proof.schema.json']
+      const errs = validate(probe, cps, cps)
+      check(errs.length === 0,
+        `encoding acceptance surface [${c.field} ${c.decodedPrefixHex}/${c.decodedByteLength}B]: the value IS schema-valid — the shipped claim is not overstated`)
+      const raw = c.field === 'principal' ? decodeZ(c.value.slice('did:key:'.length)) : decodeZ(c.value)
+      check(!!raw && raw.length === c.decodedByteLength &&
+        raw.subarray(0, 2).toString('hex') === c.decodedPrefixHex,
+        `encoding acceptance surface [${c.field} ${c.decodedPrefixHex}/${c.decodedByteLength}B]: it decodes exactly as the vector declares`)
+      check(decodedOK[c.field](c.value) === false,
+        `encoding acceptance surface [${c.field} ${c.decodedPrefixHex}/${c.decodedByteLength}B]: the DECODED check refuses it — ${c.verdict}`)
+    }
+    // the length envelopes really do overlap, which is why length cannot decide
+    check(/64 \(all zero\) to 88/.test(EAS.whyLengthCannotDecide) && /OVERLAPS/.test(EAS.whyLengthCannotDecide),
+      'encoding acceptance surface: the vector states the overlap positively, not only by omission')
+    const sigPat = SCHEMAS['carrier-proof.schema.json'].properties.sig.pattern
+    check(sigPat === '^z[1-9A-HJ-NP-Za-km-z]{64,88}$',
+      'encoding acceptance surface: the sig pattern is the true achievable envelope — the old {86,88} rejected a legitimate signature with three leading zero bytes')
+  }
+
+  // round-29 M-1: the spelling negatives are EXECUTED as raw proof bytes —
+  // JSON.parse, schema, JCS, signature — instead of read as claims. Round 28
+  // asserted that all four reached the signature; two of them are not valid
+  // JSON numbers at all, and only running them showed it.
+  {
+    const GS = CP.generationSpelling
+    const canonical = (lex) => /^(0|[1-9][0-9]*)$/.test(lex) &&
+      Number.isSafeInteger(Number(lex)) && String(Number(lex)) === lex
+    for (const a of GS.accepts)
+      check(canonical(a), `generation spelling: "${a}" is canonical and accepted`)
+    const RG = CP.registration
+    // the shipped proof, re-serialized with the lexeme substituted verbatim
+    const rawWith = (lex) => JSON.stringify({ ...RG.object, sig: RG.sig })
+      .replace(/"generation":\s*1/, `"generation":${lex}`)
+    check(JSON.parse(rawWith('1')).generation === 1,
+      'generation spelling: the raw-byte harness reproduces the shipped proof when the lexeme is canonical')
+    for (const r of GS.rejects) {
+      check(!canonical(r.lexeme), `generation spelling: "${r.lexeme}" is not canonical — ${r.reason}`)
+      const raw = rawWith(r.lexeme)
+      let parsed = null, threw = false
+      try { parsed = JSON.parse(raw) } catch { threw = true }
+      check(threw === !r.validJson,
+        `generation spelling: "${r.lexeme}" ${r.validJson ? 'parses as JSON' : 'is not a valid JSON number and dies in the parser'} — executed, not declared`)
+      if (!r.validJson) {
+        check(/JSON parser/.test(r.rejectedBy),
+          `generation spelling: "${r.lexeme}" is recorded as rejected by the parser, which is where it actually fails`)
+        continue
+      }
+      const cps = SCHEMAS['carrier-proof.schema.json']
+      check((validate(parsed, cps, cps).length === 0) === r.schemaValid,
+        `generation spelling: "${r.lexeme}" is schema-valid — "type": "integer" cannot see the spelling`)
+      const { sig, ...obj } = parsed
+      check((jcs(obj) === RG.jcs) === r.jcsIdentical,
+        `generation spelling: "${r.lexeme}" canonicalizes to the SAME JCS bytes as the shipped proof`)
+      check(verifyRaw(obj.principal, Buffer.from(jcs(obj), 'utf8'), sig) === r.signatureVerifies,
+        `generation spelling: "${r.lexeme}" — the shipped signature VERIFIES over it, so nothing downstream can catch it`)
+      check(parsed.generation === r.parsesTo,
+        `generation spelling: "${r.lexeme}" parses to ${r.parsesTo}`)
+    }
+    check(GS.rejects.some((r) => r.validJson) && GS.rejects.some((r) => !r.validJson),
+      'generation spelling: both classes ship — the ones a parser stops, and the ones only a lexical check can')
+    const schema = SCHEMAS['carrier-proof.schema.json'].properties.generation
+    check(schema.type === 'integer' && schema.pattern === undefined,
+      'generation spelling: the shipped schema cannot express this, and says so rather than leaving it to be discovered')
+    check(/§5a.3/.test(GS.whereChecked) && /corrected here/.test(GS.whyBothClassesShip),
+      'generation spelling: the vector names where the check lives and records round 28\'s overclaim')
+  }
+
+  // round-29 B-1/B-2: the general atomicity rule, with its three counter-orders
+  {
+    const SA = CP.stateAtomicity
+    check(SA.cases.length === 3,
+      'state atomicity: all three seams ship — the one-rkid CAS, the declared queue bound, the declared tombstone bound (round-46 M-1: private bounds are no longer a conformance subject)')
+    for (const c of SA.cases) {
+      check(c.tornResult > c.boundValue && c.linearizedResult <= c.boundValue,
+        `state atomicity [${c.case}]: the torn order reaches ${c.tornResult} against a declared ${c.bound} of ${c.boundValue}; linearized it is ${c.linearizedResult}`)
+      check(c.tornOrder.length >= 3 && /reads/.test(c.tornOrder[0]) && /reads/.test(c.tornOrder[1]),
+        `state atomicity [${c.case}]: the torn order is the same shape every time — both read before either commits`)
+    }
+    const sweeps = SA.cases.find((c) => /deadline transitions/.test(c.case))
+    check(!!sweeps && sweeps.tornResult > sweeps.boundValue,
+      'state atomicity [deadlines]: two racing deadline transitions overfill the tombstone store — the transition is a check-and-commit like every other bound decision')
+    check(/joined into one sweep/.test(SA.rule) && /serialized/.test(SA.rule),
+      'state atomicity: the rule names both admissible shapes — one sweep with the combined k, or separate serialized sweeps — and forbids the interleaving')
+  }
+
+  // §5a.3 — the queue-binding lifecycle as ONE total machine (round-22).
+  // Totality is the test: every point of the enumerated domain must be answered
+  // by exactly one cell, and the shipped vectors must be paths through it.
+  const BL = CP.bindingLifecycle
+  if (BL) {
+    // round-23 M-1: the domain is pinned HERE, not read from the vector it
+    // checks. A totality count over a self-declared domain stays green when a
+    // whole state or input is dropped — `closing` and every one of its cells
+    // could vanish and the old check reported 27/27.
+    const STATES = ['unbound', 'live', 'closing', 'released']
+    // 0.67: the deadline is ONE transition (round-43 B-1) — the two-step
+    // give-up-sweep/release pair left the table with round-44 M-1.
+    const INPUTS = ['register-rebind', 'collect-conclude', 'orphan-expiry',
+      'deadline', 'eviction']
+    check(BL.states.length === STATES.length && STATES.every((x) => BL.states.includes(x)),
+      `lifecycle [domain]: the shipped states are exactly the ${STATES.length} this suite requires — a dropped state cannot pass by shrinking the domain`)
+    check(BL.inputs.length === INPUTS.length && INPUTS.every((x) => BL.inputs.includes(x)),
+      `lifecycle [domain]: the shipped inputs are exactly the ${INPUTS.length} this suite requires`)
+    const GUARDED = 'register-rebind'
+    const guardsFor = (input) => input === GUARDED ? ['gt', 'eq-same', 'eq-diff', 'lt'] : ['any']
+    const key = (st, inp, g) => `${st} × ${inp} × ${g}`
+    const index = new Map()
+    for (const c of BL.cells) {
+      const k = key(c.state, c.input, c.guard)
+      check(!index.has(k), `lifecycle: ${k} is declared once — a second cell would make the machine ambiguous`)
+      index.set(k, c)
+    }
+    let points = 0
+    for (const st of STATES) for (const inp of INPUTS) for (const g of guardsFor(inp)) {
+      points++
+      const c = index.get(key(st, inp, g))
+      check(!!c && typeof c.outcome === 'string' && c.outcome.length > 0 && typeof c.next === 'string',
+        `lifecycle [total]: ${key(st, inp, g)} has exactly one outcome and one next state`)
+      if (c) {
+        check(STATES.includes(c.next), `lifecycle: ${key(st, inp, g)} lands in a declared state (${c.next})`)
+        // round-23 B-2: every cell draws from ONE closed algebra
+        const ALG = [...BL.verdicts, ...BL.internalTransitions]
+        check(ALG.includes(c.outcome),
+          `lifecycle [algebra]: ${key(st, inp, g)} → "${c.outcome}" is in the closed outcome set`)
+      }
+    }
+    check(index.size === points,
+      `lifecycle: the table is TOTAL and no wider than its domain — ${points} points, ${index.size} cells`)
+    // the three cells three rounds found by composition
+    for (const f of BL.findingCases) {
+      if (f.state === 'any') {
+        check(/does not select a cell/.test(BL.purposeRule) && /MUST NOT refuse/.test(BL.purposeRule),
+          `lifecycle [${f.case}]: purpose is transplantation resistance, never a cell selector`)
+        const byState = STATES.filter((st) => index.has(key(st, GUARDED, 'gt')))
+        check(byState.length === STATES.length,
+          `lifecycle [${f.case}]: every state answers register/rebind, so no purpose/state mismatch can fall out of the table`)
+        continue
+      }
+      const c = index.get(key(f.state, f.input, f.guard))
+      check(c && c.outcome === f.expectedOutcome && c.next === f.expectedNext,
+        `lifecycle [${f.case}]: ${f.state} × ${f.guard} → ${f.expectedOutcome}, ${f.expectedNext}`)
+      if (f.tombstoneAfter === 'consumed') {
+        check(/CONSUMED/.test(c.note ?? ''),
+          'lifecycle [B-1]: the tombstone is consumed, not kept beside the new binding and not evicted — the exclusion the invariant needs')
+        check(/exactly one state/.test(BL.invariant) && /exactly the rkids in `released`/.test(BL.invariant),
+          'lifecycle: the state exclusion invariant is stated, which is what makes the release step\'s k-counting right')
+      }
+    }
+    // round-23 B-2: the algebra is closed and complete — every declared outcome
+    // is actually used, and no cell reaches outside it
+    {
+      const ALG = [...BL.verdicts, ...BL.internalTransitions]
+      check(new Set(ALG).size === ALG.length, 'lifecycle [algebra]: the closed set names each outcome once')
+      const used = new Set(BL.cells.map((c) => c.outcome))
+      for (const o of BL.internalTransitions)
+        check(used.has(o), `lifecycle [algebra]: the internal transition "${o}" is used by a cell — the set is not padded`)
+      check(BL.verdicts.includes('served') && BL.verdicts.includes('refused(no-such-queue)'),
+        'lifecycle [algebra]: the collect/conclude verdicts are IN the closed set — round-22 shipped a table whose own §11 forbade them')
+    }
+    // 0.65 scope re-cast: capacity is a carrier resource answer, bounded by
+    // two observable rules instead of a formula — guarantee 4 (traffic for
+    // unknown addresses cannot starve a held binding) and 5a.9's priority
+    // (a return outranks an arrival). The counter-example survives: a rebind
+    // of a held binding is the honest return path and is served.
+    {
+      const CR = BL.capacityRule
+      const cell = index.get(key(CR.counterExample.state, GUARDED, 'gt'))
+      check(cell && cell.outcome === CR.counterExample.outcome &&
+        CR.counterExample.outcome !== CR.counterExample.wrongOutcome,
+        `capacity rule [counter-example]: a rebind for a held binding is ${CR.counterExample.outcome}, not ${CR.counterExample.wrongOutcome} — refusing it for a limit new bindings exhausted would breach guarantee 4`)
+      check(/outranks an arrival/.test(CR.note) && /guarantee 4/.test(CR.note),
+        'capacity rule: the shipped note names both observable bounds — the starvation guarantee and the return priority')
+    }
+  }
 
   // §5a.3 — generation monotonicity across the port
   const GM = CP.generationMonotonicity
@@ -277,7 +488,7 @@ section('carrier-proof.json — Delivery §5a.3 signature input, §4.4 rate mach
     const TIE = GM.equalGenerationTie
     if (TIE) {
       check(TIE.carrierSeesNonces === false,
-        'equal-generation tie: the carrier never sees the nonces — any value reconstructing their order would be a cross-carrier join key (Identity §7a.4)')
+        'equal-generation tie: the carrier never sees the nonces, so it cannot apply the register\'s tie-break itself — this stack carries no value that would reconstruct their order, and whether one could be carried safely is DO-7 (Identity §7a.4)')
       let boundP = null, boundG = 0
       for (const st of TIE.steps) {
         if (st.registerOnly) {                       // the register converges; the carrier learns nothing
@@ -344,136 +555,317 @@ section('carrier-proof.json — Delivery §5a.3 signature input, §4.4 rate mach
       }
       check(REL.steps.some((st) => st.bindingLive === false && st.outcome === 'refused(stale-generation)'),
         'binding tombstone: a superseded generation is refused even though the binding itself is gone — resurrection by patience is closed (round-12 B-2)')
-      // round-14 B-1: the store is bounded, and the consequence of eviction is stated, not implied
+      // 0.65/0.66: the store is bounded by a DECLARED constant and the
+      // eviction ORDER is normative — longest-released first, ties by
+      // ascending bytewise rkid key bytes (round-43 B-2 restored what the
+      // first re-cast draft had loosened to a SHOULD). The ordinal
+      // bookkeeping that used to implement the order is carrier policy now;
+      // what this block derives is the order itself, from the release
+      // sweeps and the key bytes — the two facts every carrier holds.
       const EV = REL.evictionRule
-      check(EV && EV.bound === 'max-binding-tombstones' && /oldest/.test(EV.evicts),
-        'binding tombstone: the store is capacity-bounded and evicts the oldest by release time (round-14 B-1)')
+      check(EV && /max-binding-tombstones/.test(EV.bound) && /declared constant/.test(EV.bound),
+        'binding tombstone: the store bound is a DECLARED constant — a private bound made identical histories answer differently (round-43 B-2)')
+      check(/longest-released/.test(EV.evicts) && /bytewise/.test(EV.evicts),
+        'binding tombstone: the eviction order is total and normative — longest-released first, ties by rkid key bytes — while its bookkeeping is implementation')
       check(EV && /anti-resurrection guarantee ends/.test(EV.consequenceForEvictedRkid) &&
-        /both/.test(EV.reachableBy) && /orphan-horizon/.test(EV.attackerCostPerTombstone),
-        'binding tombstone: the eviction consequence is named with its preconditions — owner-only, and metered by a registration plus an orphan-horizon per tombstone')
-      check(!/binding-tombstone-retention/.test(REL.residual) && !/destroy/.test(REL.residual),
-        'binding tombstone: the shipped residual text no longer carries the withdrawn retention constant or the key-retention misreading (round-14 M-2)')
+        /both/.test(EV.reachableBy) && /PARALLEL/.test(EV.attackerCostPerTombstone),
+        'binding tombstone: the eviction consequence is named with its preconditions — owner-only, metered per registration, and the horizons run in PARALLEL')
+      const ST = EV && EV.store
+      if (ST) {
+        const keyBytes = (rkid) => {
+          check(rkid[0] === 'z', `tombstone eviction: ${rkid.slice(0, 8)}… is z-multibase`)
+          const raw = fromB58(rkid.slice(1))
+          check(raw && raw.length === 34 && raw[0] === 0xec && raw[1] === 0x01,
+            `tombstone eviction: ${rkid.slice(0, 8)}… decodes to an X25519 multikey (0xec01 + 32 bytes)`)
+          return raw.subarray(2)
+        }
+        for (const e of ST.entries) {
+          check(keyBytes(e.rkid).toString('hex').startsWith(e.keyBytesPrefix),
+            `tombstone eviction [${e.label}]: declared key-byte prefix ${e.keyBytesPrefix} reproduces from the rkid`)
+        }
+        // the order is DERIVED from the sweeps and the key bytes, never read
+        const order = (a, b) => (a.releaseSweep - b.releaseSweep) ||
+          Buffer.compare(keyBytes(a.rkid), keyBytes(b.rkid))
+        const sorted = ST.entries.slice().sort(order)
+        check(sorted[0].label === ST.evictedFirstLabel,
+          `tombstone eviction: the victim is ${ST.evictedFirstLabel} — the longest-released tombstone, tie decided by key bytes`)
+        check(sorted.map((e) => e.label).join(',') === ST.orderedFullLabels.join(','),
+          `tombstone eviction: the declared full order reproduces (${ST.orderedFullLabels.join(' < ')})`)
+        const multi = new Map()
+        for (const e of ST.entries) multi.set(e.releaseSweep, (multi.get(e.releaseSweep) ?? 0) + 1)
+        check([...multi.values()].some((n) => n >= 2),
+          'tombstone eviction: two tombstones share a release sweep — a rule ordered by the release moment alone would leave exactly this case undecided, which is what the bytewise tie-break is for')
+        const perms = (xs) => xs.length <= 1 ? [xs]
+          : xs.flatMap((x, i) => perms([...xs.slice(0, i), ...xs.slice(i + 1)]).map((r) => [x, ...r]))
+        check(perms(ST.entries).every((p) => p.slice().sort(order)[0].label === ST.evictedFirstLabel),
+          'tombstone eviction: the order is TOTAL — every permutation of the store evicts the same tombstone, so two carriers cannot keep different addresses')
+        // round-45 B-3: lowering the bound trims the store atomically, by the
+        // same order — derived here, not read from the vector.
+        const BR = REL.boundRevision
+        if (BR) {
+          const byL = new Map(ST.entries.map((e) => [e.label, e]))
+          const kept = BR.before.store.map((l) => byL.get(l)).sort(order)
+            .slice(BR.before.store.length - BR.revision.declared).map((e) => e.label)
+          const gone = BR.before.store.filter((l) => !kept.includes(l))
+          check(kept.join(',') === BR.after.store.join(',') && gone.join(',') === BR.after.evicted.join(','),
+            `tombstone bound revision: lowering ${BR.before.declared}→${BR.revision.declared} evicts ${gone.join(', ')} in the total order, at the instant the revision takes effect — standing state is not a running act (round-45 B-3)`)
+        }
+      }
+      // The list of withdrawn wordings used to live here and scanned two vector
+      // fields. Round 18 found the same retracted argument alive in a check
+      // MESSAGE of this very file — a place that guard could never see. It has
+      // therefore MOVED to scripts/validate.mjs section 3c, which scans every
+      // shipped vector, this runner and the spec at once. What stays here are
+      // the POSITIVE claims, which a text scan cannot make:
+      check(/PARALLEL/.test(EV.attackerCostPerTombstone),
+        'binding tombstone: the shipped prose states the parallel horizons positively, not only by omission')
+      const TIEN = GM.equalGenerationTie?.note ?? ''
+      check(/DO-7/.test(TIEN),
+        'equal-generation tie: the shipped note points at DO-7, where the open question lives')
+    }
+    // round-21 B-3: the recovery cost is the generation distance, derived here
+    const RD = REL.recoveryDistance
+    if (RD) {
+      check(RD.rotationsNeeded === RD.tombstoneGeneration - RD.recoveredCopyGeneration + 1,
+        `binding tombstone: a copy at generation ${RD.recoveredCopyGeneration} against a tombstone at ${RD.tombstoneGeneration} needs ${RD.rotationsNeeded} rotations — t - g + 1, not "one"`)
+      const firstOK = REL.steps.find((st) => st.outcome === 'registered')
+      check(firstOK && firstOK.generation === RD.recoveredCopyGeneration + RD.rotationsNeeded,
+        'binding tombstone: the shipped steps reach exactly that generation before the registration succeeds — the formula is the sequence, not a claim beside it')
+      check(/2\^53-1/.test(RD.atTheMaximum) && /not re-registrable/.test(RD.atTheMaximum),
+        'binding tombstone: the vector states the maximum case, where no number of rotations suffices')
+    }
+    // round-39 B-1/M-1: the promised selective-loss recovery, executed. It
+    // was a set claim in two documents and had no runnable path at all.
+    const CL = GM.carrierEntryLossRecovery
+    if (CL) {
+      const held = { g: CL.held.generation, P: CL.held.principal }
+      const apply = (req) => {                       // §5a.3's table, the live rows
+        const g = Number(req.match(/generation=(\d+)/)[1])
+        const P = req.match(/principal=(\w+)/)[1]
+        if (g > held.g) { held.g = g; held.P = P; return { outcome: 'rebound', bindingMoves: true } }
+        if (g === held.g && P === held.P) return { outcome: 'registered(idempotent)', bindingMoves: false }
+        return { outcome: 'refused(stale-generation)', disclosedGeneration: held.g, bindingMoves: false }
+      }
+      const got = CL.steps.map((st) => apply(st.request))
+      check(got.every((g, i) => g.outcome === CL.steps[i].outcome && g.bindingMoves === CL.steps[i].bindingMoves),
+        `carrier-entry loss: the promised recovery RUNS — ${CL.steps.length} exchanges from a fresh N at generation 1 against a live binding at ${CL.held.generation}, ending in rebound (round-39 B-1)`)
+      check(got[0].outcome === 'refused(stale-generation)' && got[0].disclosedGeneration === CL.held.generation
+        && CL.steps[0].disclosedGeneration === CL.held.generation,
+        'carrier-entry loss: the first attempt fails and the refusal CARRIES the held generation — without it the holder has nothing to exceed, and Identity §9.3\'s promise is unkeepable')
+      check(CL.steps[1].request.includes(`generation=${CL.held.generation + 1}`),
+        'carrier-entry loss: the second exchange rebinds at disclosed + 1 — one extra exchange is the entire cost of the repair')
+      // round-41 B-3/M-2: the count is a FUNCTION of the held state, and the
+      // categorical promise was wrong in BOTH directions — one exchange from
+      // unbound, more than two from closing without room. Executed per state.
+      const PS = CL.perHeldState
+      if (PS) {
+        const table = {                     // §5a.3's rows, by held state
+          live: (g, rec) => g > rec ? 'rebound' : 'refused(stale-generation)',
+          closing: (g, rec, room) => !room ? 'registration-refused(capacity)'
+            : (g > rec ? 'rebound' : 'refused(stale-generation)'),
+          released: (g, rec) => g > rec ? 'registered' : 'refused(stale-generation)',
+          unbound: () => 'registered',
+        }
+        for (const c of PS.cases) {
+          const h = c.held
+          const got = c.steps.map((st) =>
+            table[h.state](st.generation, h.record ?? 0, st.carrierHasRoom ?? !h.atCapacity))
+          check(got.every((x, i) => x === c.steps[i].outcome),
+            `recovery by state [${h.state}${h.record ? `(${h.record})` : ''}${h.atCapacity ? ', carrier at capacity' : ''}]: the shipped steps are what §5a.3's rows produce (${got.join(' → ')})`)
+          const disclosed = c.steps.filter((st) => st.discloses !== undefined)
+          check(disclosed.every((st) => st.discloses === h.record),
+            `recovery by state [${h.state}]: every disclosure carries the record actually held`)
+          check(typeof c.exchanges !== 'number' || c.steps.length === c.exchanges,
+            `recovery by state [${h.state}]: ${c.exchanges} exchange(s), and the sequence has exactly that many`)
+        }
+        const atCap = PS.cases.find((c) => c.held.atCapacity)
+        check(atCap && atCap.steps.slice(0, 2).every((st) => st.outcome === 'registration-refused(capacity)')
+          && atCap.steps[1].generation > atCap.steps[0].generation,
+          'recovery by state: at capacity a HIGHER generation does not help either — the refusal is retriable, about the carrier and not the generation, and no rotation is needed; 5a.9\'s priority rule ORDERS the wait, the plural carrier world bounds it (round-46 B-2)')
+        check(PS.cases.some((c) => c.exchanges === 1) && PS.cases.some((c) => c.exchanges === 2)
+          && PS.cases.some((c) => typeof c.exchanges === 'string'),
+          'recovery by state: the family contains a ONE-exchange state, a two-exchange state and a more-than-two state — which is why the promise could not stay a constant (round-41 B-3)')
+      }
+      // and the disclosure is not a way in: the same table refuses a party
+      // that cannot open the address challenge long before it is reached
+      check(/already required/.test(CL.disclosureIsNotAnAccessGrant),
+        'carrier-entry loss: the vector states WHY the disclosure grants nothing — both possession proofs precede the verdict that carries it')
     }
     const restored = GM.cases.find((c) => /restored device/.test(c.case))
     check(restored && restored.outcome === 'refused(stale-generation)' && restored.bindingMoves === false,
       'generation monotonicity: a device restored from an older backup proves everything and still cannot roll the binding back — the register\'s succession holds across the port')
   }
   check(CP.collection.object.purpose === 'collect' &&
-    CP.collection.object.rkid === undefined && CP.collection.object.addressChallenge === undefined,
-    'collection: purpose=collect omits rkid and addressChallenge — absence is part of the signed bytes')
+    typeof CP.collection.object.rkid === 'string' &&
+    CP.collection.object.addressChallenge === undefined && CP.collection.object.generation === undefined,
+    'collection: purpose=collect NAMES its queue (rkid) and omits the two succession fields — presence and absence are both part of the signed bytes (round-36 B-1)')
   check(CP.collection.jcs !== R.jcs && CP.collection.sig !== R.sig,
     'collection: a collection proof is byte-distinct from a registration proof (no cross-purpose replay)')
+  // the shape holds across every transplant too: they change values, never the form
   for (const n of CP.negatives.cases) {
+    if (n.object.v === CP.v) schemaOK({ ...n.object, sig: CP.registration.sig }, 'carrier-proof.schema.json', `transplant ${n.case}`)
     check(jcs(n.object) === n.jcs, `transplant vector shape: ${n.case}`)
     check(n.jcs !== R.jcs, `transplant changes the signed bytes: ${n.case}`)
     check(!verifyRaw(n.object.principal, Buffer.from(n.jcs, 'utf8'), R.sig),
       `the registration signature does NOT verify after: ${n.case}`)
   }
 
-  // §4.4 — the challenge CHARGE machine (rounds 7 and 8)
-  const CC = CP.challengeChargeMachine
-  if (CC) {
-    const MAXO = CC.declaration['max-open-challenges']
-    const LIFE = CC.lifetimeMs
-    const replayCharges = (steps) => {
-      let charges = []
-      return steps.map((st) => {
-        if (st.restart) { charges = new Array(MAXO).fill(LIFE); return { verdict: null, heldAfter: charges.length } }
-        const e = Math.max(0, st.elapsedMs)
-        charges = charges.map((c) => c - e).filter((c) => c > 0)
-        if (charges.length >= MAXO) return { verdict: 'registration-refused(capacity)', heldAfter: charges.length }
-        charges.push(LIFE)                       // taken at the budget check, before any key operation
-        return { verdict: st.outcome ?? 'issued', heldAfter: charges.length }
-      })
+  // §5a.3 — one challenge buys at most one verification (round-16 B-1);
+  // since the 0.65 re-cast this is the port-observable remainder of the
+  // charge machine: single-use, consumed before verification.
+  const CBV = CP.challengeConsumption
+  if (CBV) {
+    let live = false, issued = 0, verifications = 0
+    let ok16 = true
+    for (const st of CBV.sequence) {
+      if (st.newChallenge || st.challengeLive === true && !live && !st.consumesChallenge) { live = true; issued++ }
+      if (st.consumesChallenge) {
+        if (!live) ok16 = false                       // cannot consume what is not live
+        live = false                                   // consumed BEFORE verifying
+        if (st.verified) verifications++
+      } else if (st.verified) {
+        ok16 = false                                   // a verification without consuming is the attack
+      }
+      if (st.challengeLive !== live || st.verificationsSoFar !== verifications) ok16 = false
     }
-    for (const [name, seq] of Object.entries(CC.sequences)) {
-      const got = replayCharges(seq)
-      check(got.every((g, i) => g.verdict === seq[i].verdict && g.heldAfter === seq[i].heldAfter),
-        `challenge charge [${name}]: the declared sequence reproduces step for step (${seq.length} steps)`)
-      check(seq.every((st) => st.heldAfter <= MAXO),
-        `challenge charge [${name}]: never more than max-open-challenges charges are held`)
-    }
-    // round-7 B-1: completing an exchange must NOT refund the charge
-    const ser = CC.sequences.serialCompletions
-    const completedThenRefused = ser.findIndex((st) => st.verdict === 'registration-refused(capacity)')
-    check(completedThenRefused >= 0 && ser.slice(0, completedThenRefused).every((st) => st.verdict === 'issued'),
-      'challenge charge: completing max-open-challenges exchanges in sequence does NOT free the budget — the next request is refused (the counter-vector to serial recycling)')
-    check(ser.some((st) => st.elapsedMs > 0 && st.verdict === 'issued'),
-      'challenge charge: only the passage of challenge-lifetime returns a slot')
-    // round-8 B-2: a restart cannot be a way to obtain issuance
-    const rst = CC.sequences.acrossRestart
-    const ri = rst.findIndex((st) => st.restart)
-    check(ri > 0 && rst[ri].heldAfter === MAXO,
-      'challenge charge: a restart resumes with the FULL budget held — strictly less capacity than before, never more')
-    check(rst[ri + 1] && rst[ri + 1].verdict === 'registration-refused(capacity)',
-      'challenge charge: restart-loop closed — the first request after a restart is refused, so restarting buys no issuance')
-    check(rst[ri - 1].heldAfter < MAXO,
-      'challenge charge: the restart really increased the held count (the attack it forecloses is a real one)')
+    check(ok16, `challenge consumption: the declared sequence reproduces (${CBV.sequence.length} steps) — consume first, then verify`)
+    check(verifications <= issued,
+      `challenge consumption: ${verifications} verification(s) for ${issued} issued challenge(s) — one challenge buys at most one asymmetric attempt (round-16 B-1)`)
+    const replays = CBV.sequence.filter((st) => st.outcome === 'discarded')
+    check(replays.length >= 2 && replays.every((st) => st.verified === false),
+      'challenge consumption: responses after the first are discarded WITHOUT verification — the unbounded-verification attack is closed')
   }
 
-  // §4.4/§5a.5 — the reserve is PER BOUND ADDRESS (round-11 B-1)
-  const RS9 = CC && CC.reserveAndStarvation
-  if (RS9) {
-    const MAXO2 = RS9.declaration['max-open-challenges']
-    const LIFE2 = CC.lifetimeMs
-    let pool = []              // unreserved charges (remaining ms)
-    const perAddress = new Map()  // rkid -> remaining ms of its own charge
-    const got = RS9.sequence.map((st) => {
-      const e = Math.max(0, st.elapsedMs ?? 0)
-      pool = pool.map((c) => c - e).filter((c) => c > 0)
-      for (const [k, v] of [...perAddress]) { const r = v - e; if (r > 0) perAddress.set(k, r); else perAddress.delete(k) }
-      // one charge per named rkid, whether reserved or from the pool
-      if (perAddress.has(st.rkid)) return { verdict: 'registration-refused(capacity)', unreservedHeld: pool.length }
-      if (st.bound) { perAddress.set(st.rkid, LIFE2); return { verdict: 'issued', unreservedHeld: pool.length } }
-      if (pool.length >= MAXO2) return { verdict: 'registration-refused(capacity)', unreservedHeld: pool.length }
-      pool.push(LIFE2); perAddress.set(st.rkid, LIFE2)
-      return { verdict: 'issued', unreservedHeld: pool.length }
-    })
-    check(got.every((g, i) => g.verdict === RS9.sequence[i].verdict && g.unreservedHeld === RS9.sequence[i].unreservedHeld),
-      `challenge reserve: the declared sequence reproduces step for step (${RS9.sequence.length} steps)`)
-    // the residual is real for the pool …
-    const afterLapse = RS9.sequence.findIndex((st) => (st.elapsedMs ?? 0) >= LIFE2)
-    check(afterLapse > 0 && RS9.sequence[afterLapse].verdict === 'issued',
-      'starvation residual: at the lapse the attacker re-takes the unreserved pool — the denial is NOT self-healing, and the vector says so')
-    // … and reaches no bound address's own charge
-    const poolFullAt = RS9.sequence.findIndex((st) => !st.bound && st.verdict === 'registration-refused(capacity)')
-    const boundAfter = RS9.sequence.slice(poolFullAt).filter((st) => st.bound && st.verdict === 'issued')
-    check(poolFullAt > 0 && boundAfter.length >= 2 &&
-      new Set(boundAfter.map((st) => st.rkid)).size >= 2,
-      'challenge reserve: with the unreserved pool exhausted, TWO different bound addresses still get their own reserved charge — reserves do not compete with each other (round-11 B-1)')
-    const aHeld = RS9.sequence.filter((st) => st.rkid === 'rkid-A')
-    check(aHeld.some((st) => st.verdict === 'registration-refused(capacity)') &&
-      RS9.sequence.some((st) => st.rkid === 'rkid-B' && st.verdict === 'issued'),
-      'challenge reserve: holding one address\'s charge reaches that address only — the promise is now the accounting, not an assumption about behaviour')
-  }
-
-  // §4.4 — the queue-floor accounting (round-11 B-2/B-3)
+  // §4.4 guarantee 5 — the floor, executed as the PROMISE (0.65/0.66):
+  // below its declared queue-floor a queue's admission depends on nothing
+  // global; above it, a global refusal is legitimate. The committed-formula
+  // these cases were first written against is carrier policy now — the
+  // runner no longer recomputes a bookkeeping model, it checks the two
+  // observable halves of the guarantee on each case.
   const QF = CP.queueFloorAccounting
   if (QF) {
     const FLOOR = QF.declaration['queue-floor']
-    const TOTAL = QF.declaration['max-total-bytes']
     const QUOTA = QF.declaration['max-queue-bytes']
-    check(TOTAL >= QF.declaration['max-queues'] * FLOOR,
-      'queue floor: max-total-bytes >= max-queues * queue-floor holds for the declared set')
-    const committed = (live, closing) =>
-      live.reduce((a, u) => a + Math.max(u, FLOOR), 0) + closing.reduce((a, u) => a + u, 0)
+    check(FLOOR <= QUOTA, 'queue floor: queue-floor <= max-queue-bytes for the declared set')
     for (const c of QF.cases) {
-      const before = committed(c.live, c.closing)
-      const after = committed(c.live.map((u, i) => i === c.queue ? u + c.size : u), c.closing)
-      check(before === c.committedBefore && after === c.committedAfter,
-        `queue floor [${c.case}]: committed ${before} -> ${after}`)
-      const fits = after <= TOTAL && (c.live[c.queue] + c.size) <= QUOTA
-      check((fits ? 'admitted' : 'refused(capacity)') === c.outcome,
-        `queue floor [${c.case}]: ${c.outcome}`)
+      const after = c.live[c.queue] + c.size
+      const withinFloor = after <= FLOOR
+      if (withinFloor)
+        check(c.outcome === 'admitted',
+          `queue floor [${c.case}]: within the floor → admitted, whatever the global occupancy (guarantee 5)`)
+      else
+        check(c.outcome === 'admitted' || c.outcome === 'refused(capacity)',
+          `queue floor [${c.case}]: above the floor the room is elastic — ${c.outcome} is a legitimate answer there, and only there`)
+      check(after <= QUOTA || c.outcome !== 'admitted',
+        `queue floor [${c.case}]: nothing admits past max-queue-bytes`)
     }
-    // the property that makes the floor a guarantee rather than a promise
     const belowFloor = QF.cases.find((c) => c.live[c.queue] + c.size <= FLOOR)
-    check(belowFloor && belowFloor.committedBefore === belowFloor.committedAfter &&
-      belowFloor.outcome === 'admitted',
-      'queue floor: growth within a queue\'s floor does not move `committed` at all, so it can never be refused for global occupancy (round-11 B-2)')
-    const closingCase = QF.cases.find((c) => c.closing.length > 0)
-    check(closingCase && closingCase.committedAfter > closingCase.committedBefore,
-      'queue floor: a closing queue contributes its bytes to `committed` — they cannot be handed out twice (round-11 B-3)')
+    check(!!belowFloor, 'queue floor: the deciding case ships — a queue one byte below its floor, admitted regardless of global occupancy')
+    const aboveFloor = QF.cases.find((c) => c.live[c.queue] + c.size > FLOOR && c.outcome === 'refused(capacity)')
+    check(!!aboveFloor, 'queue floor: the elastic half ships too — above the floor a global refusal is conformant, and the boundary between the two is the declared constant')
+  }
+
+  // §4.4 — the five guarantees and the recast wind-up, executed (round-43 M-2)
+  const CG = CP.carrierGuarantees
+  if (CG) {
+    // g1 — the declaration is complete or it rejects
+    const G1 = CG.g1_declaration
+    check(G1.required.every((k) => k in G1.declaration),
+      `guarantee 1: the shipped declaration carries all ${G1.required.length} required constants`)
+    for (const r of G1.rejects.filter((r) => r.missing))
+      check(G1.required.includes(r.missing),
+        `guarantee 1: a declaration missing ${r.missing} rejects — a carrier does not act on values it has not published`)
+    check(G1.roleURI === 'https://real-life.org/trust-tasks/delivery-carrier/0.1',
+      'guarantee 1: the carrier declares under ONE fixed role URI — delivery-carrier/0.1, a role key and never a document type (round-44 B-1)')
+    check(G1.rejects.some((r) => r.wrongRole && r.wrongRole !== G1.roleURI),
+      'guarantee 1: constants under any other role URI are not a carrier declaration — the negative ships (round-45 M-1)')
+    // round-48 M-2: the declaration BINDS — executable, not asserted
+    const BH = G1.behaviour
+    if (BH) {
+      const SH = BH.statusHorizon
+      for (const st of SH.sequence.filter((x) => x.conformant !== undefined))
+        check(st.conformant === (st.t <= SH.declaredMs),
+          `guarantee 1 [status-horizon, t=${st.t}]: ${st.conformant ? 'an honest report inside the horizon conforms' : 'silence past the declared horizon does not'} (declared ${SH.declaredMs}ms)`)
+      for (const d of BH.enforcementDrift)
+        check(d.conformant === (d.declared === d.enforced),
+          `guarantee 1 [${d.constant}]: enforcing ${d.enforced} against a published ${d.declared} is ${d.conformant ? 'conformant' : 'nonconformant'} — the declaration binds in both directions`)
+      check(BH.enforcementDrift.some((d) => !d.conformant && d.why.includes('stricter')) &&
+        BH.enforcementDrift.some((d) => !d.conformant && d.why.includes('looser')),
+        'guarantee 1: both drift directions ship — stricter and looser than published are equally nonconformant')
+    }
+    // g2 — overlapping conditions name ONE verdict, by the normative order
+    const SUB = ['no-such-queue', 'bounds', 'duplicate', 'admission-resource', 'queue-saturated', 'capacity']
+    for (const c of CG.g2_precedence_submission.cases) {
+      const first = SUB.find((k) => c.holds.includes(k))
+      const expect = first === 'duplicate' ? 'duplicate' : `refused(${first})`
+      check(expect === c.verdict,
+        `guarantee 2/precedence [s: ${c.holds.join('+')}]: the order names ${c.verdict} — an implementation free to choose would be observably divergent (round-43 B-3)`)
+    }
+    const REG = ['malformed', 'admission-resource', 'possession-failed', 'capacity', 'stale-generation']
+    for (const c of CG.g2_precedence_registration.cases) {
+      // guarantee 4 strikes r2 and r4 for a held binding ONLY when the
+      // exhaustion came from unknown-address traffic (round-47 M-2) — a
+      // budget the binding's own traffic drained is DO-6, not starvation
+      const shielded = c.heldBinding && c.exhaustedBy === 'unknown-address traffic'
+      const holds = shielded
+        ? c.holds.filter((k) => k !== 'admission-resource' && k !== 'capacity')
+        : c.holds
+      const first = REG.find((k) => holds.includes(k))
+      const expect = first === 'capacity' ? 'registration-refused(capacity)' : `refused(${first})`
+      check(expect === c.verdict,
+        `guarantee 2/precedence [r: ${c.holds.join('+')}${c.heldBinding ? ', held binding' : ''}]: ${c.verdict}`)
+    }
+    // g2 family — closed, split across the two sets, member named by order
+    const GF = CG.g2_family
+    check(GF.registration.length === 2 && GF.submission.length === 3 &&
+      [...GF.registration, ...GF.submission].every((x) => /capacity|admission-resource|queue-saturated/.test(x)),
+      'guarantee 2: the retriable family is closed — two registration members, three submission members, and which answers is the evaluation order\'s choice, never the carrier\'s (round-45 B-2)')
+    // floor × meter — guarantee 5 binds s4 cross-queue
+    const XT = CP.queueFloorAccounting.crossTrafficMeter
+    if (XT) {
+      for (const c of XT.cases) {
+        const expect = c.withinFloor && c.meterDrainedBy === 'other' ? 'admitted'
+          : 'refused(admission-resource)'
+        check(c.outcome === expect,
+          `guarantee 5 × s4 [${c.case}]: ${c.outcome} — cross-queue traffic ends at the floor, the queue's own budget does not (round-45 B-1)`)
+      }
+      check(XT.cases.some((c) => c.meterDrainedBy === 'own' && c.outcome !== 'admitted'),
+        'guarantee 5 × s4: the queue\'s OWN meter still refuses below the floor — guarantee 5 is not an exemption from DO-6')
+    }
+    // g3 — the ordering rule is observable as zero asymmetric work on refusal
+    const g3r = CG.g3_order.sequence.find((st) => st.verdict.startsWith('refused'))
+    const g3a = CG.g3_order.sequence.find((st) => !st.verdict.startsWith('refused'))
+    check(g3r.asymmetricOpsPerformed === 0 && g3a.asymmetricOpsPerformed > 0,
+      'guarantee 3: a refused request costs no key operation — the decision precedes randomness, sealing and verification')
+    // g4 — the starvation guarantee and the return priority
+    const G4 = CG.g4_starvation.sequence
+    check(G4[0].verdict.startsWith('refused') && G4[0].retriable === true,
+      'guarantee 4 [flood]: unknown-address traffic exhausts something, retriably')
+    check(G4[1].verdict === 'served' && G4[2].verdict === 'rebound',
+      'guarantee 4: during the flood, the held binding is served and its return path rebinds — beyond the reach of unknown-address traffic')
+    check(G4[3].newcomer === 'registration-refused(capacity)' && G4[3].returner === 'rebound',
+      'guarantee 4/5a.9: at the limits, the return outranks the arrival — the same instant, two requests, and the one that resumes a held binding wins')
+    check(G4[4] && G4[4].verdict === 'rebound' && /r2/.test(G4[4].why),
+      'guarantee 4 × r2 (round-44 B-2): a meter drained by unknown-address traffic cannot refuse a held binding\'s rebind at r2 — the composition is executed, not implied')
+    // wind-up: the deadline is the release, in time
+    const WD = CG.windUpDeadline
+    const dl = WD.sequence[0].deadline
+    for (const st of WD.sequence) {
+      if (st.event === 'submission admitted')
+        check(st.depositLifeEndsAt === dl && st.t < dl,
+          `wind-up [t=${st.t}]: the deposit inherits the remaining time to ${dl} — never a fresh horizon`)
+      if (st.event === 'deadline')
+        check(st.t === dl && st.state === 'released' && st.undisposedAtRelease === 0 && st.tombstone === true,
+          'wind-up [deadline]: give-up and release are ONE transition at the fixed instant — nothing undisposed, tombstone created (round-43 B-1)')
+    }
+    const RET = WD.returnEndsIt.sequence
+    const back = RET.find((st) => /returns/.test(st.event))
+    check(back.state === 'live' && back.deadlineVoided === true && /1300/.test(String(back.depositLifeEndsAt)),
+      'wind-up [return]: the return ends the wind-up — the deadline is void and held deposits revert to admission-dated horizons')
+    check(/FRESH/.test(RET[RET.length - 1].why),
+      'wind-up [composition]: closing→live→closing runs only through a full new orphan-horizon and a FRESH deadline — the old instant is void, not paused')
+    check(WD.postDeadlineReturn.state === 'released',
+      'wind-up [after]: a return linearized after the deadline meets released(t) and takes the tombstone path — the boundary is exact, not raced')
   }
 
   // §5a.5 — `duplicate` is byte-exact over the sealed envelope (round-9 B-2)
@@ -496,53 +888,6 @@ section('carrier-proof.json — Delivery §5a.3 signature input, §4.4 rate mach
       'duplicate rule: re-sealing one document yields a fresh epk and nonce, so a key-blind carrier admits it — §6.2 absorbs the repetition at the receiver, on the document digest')
   }
 
-  // §4.4 — `rate` is a token bucket in integer MICRO-tokens (round-4 B-4)
-  const RS = CP.rateStateMachine
-  const MAX = RS.declaration['admission-rate-max']
-  const W = RS.windowMs
-  const CAP = MAX * W
-  check(RS.capacityMicro === CAP && RS.initialMicro === CAP, 'rate: a fresh queue starts with a full bucket, capacity max*windowMs')
-  check(W % MAX !== 0, 'rate: the shipped configuration is deliberately NOT evenly divisible — the fault of the previous casting could not have shown up under PT1M/3')
-
-  const replay = (steps) => {
-    let micro = RS.initialMicro
-    const seen = []
-    for (const s of steps) {
-      if (s.restart) { seen.push({ verdict: null, microAfter: micro }); continue }  // only micro persists
-      micro = Math.min(CAP, micro + Math.max(0, s.elapsedMs) * MAX)
-      const verdict = micro >= W ? 'admitted' : 'refused(admission-resource)'
-      if (verdict === 'admitted') micro -= W                                        // a refusal subtracts nothing
-      seen.push({ verdict, microAfter: micro })
-    }
-    return seen
-  }
-  const admits = (seq) => seq.filter((s) => s.verdict === 'admitted').length
-  for (const [name, seq] of Object.entries(RS.sequences)) {
-    const got = replay(seq)
-    check(got.every((g, i) => g.verdict === seq[i].verdict && g.microAfter === seq[i].microAfter),
-      `rate [${name}]: the declared sequence reproduces step for step (${seq.length} steps)`)
-    check(seq.every((s) => s.microAfter >= 0 && s.microAfter <= CAP),
-      `rate [${name}]: the bucket never leaves [0, max*windowMs] — no clock jump creates capacity`)
-  }
-  // The heart of B-4: capacity is a function of elapsed time, not of polling instants
-  const polled = RS.sequences.polledAt334And667
-  const together = RS.sequences.bothAt667
-  check(polled && together && admits(polled) === admits(together),
-    `rate: polling at 334 ms and 667 ms admits exactly as much as asking twice at 667 ms (${admits(polled)} admissions each) — no remainder is lost`)
-  check(polled.some((s) => s.verdict.startsWith('refused')) && polled.some((s) => s.verdict === 'admitted'),
-    'rate: the sequence exercises both outcomes')
-  const zeroRefusals = polled.filter((s, i) => i > 0 && s.elapsedMs === 0 && s.verdict.startsWith('refused'))
-  check(zeroRefusals.every((s, i) => {
-    const idx = polled.indexOf(s)
-    return polled[idx - 1].microAfter === s.microAfter
-  }), 'rate: a refusal at zero elapsed time changes no state — a flood cannot deepen a queue\'s own penalty')
-  // Restart: no elapsed credit crosses it, and the bucket never resumes fuller
-  const rst = RS.sequences.acrossRestart
-  const ri = rst.findIndex((s) => s.restart)
-  check(ri > 0 && rst[ri].microAfter === rst[ri - 1].microAfter,
-    'rate: a restart carries only `micro` — it neither refills nor resets to full')
-  check(rst[ri + 1] && rst[ri + 1].elapsedMs === 0 && rst[ri + 1].verdict === 'refused(admission-resource)',
-    'rate: no elapsed credit crosses the restart — the first request after it is judged on the persisted counter alone')
 }
 
 // ── suite 2: seal vector reproduces byte-for-byte ────────────────────────
@@ -989,6 +1334,32 @@ section('acceptance-anchoring.json — registration generations, acceptance anch
     else if (n.mustFail === 'quorum-signature') check(!quorumOK(doc), `negative: ${n.name}`)
     else if (n.mustFail === 'identity-signature') check(!idSigOK(doc), `negative: ${n.name}`)
   }
+}
+
+// ── suite: durationGrammar — the declared durations are executable ───────
+section('carrier-proof.json — the duration grammar maps to exact milliseconds')
+{
+  const DG = J('vectors/carrier-proof.json').durationGrammar
+  // the grammar, executed: P, then an OPTIONAL <d>D, then an OPTIONAL T part
+  // with <h>H <m>M <s>S descending; at least one component present overall;
+  // 1–3 digits per value; no fraction; 1D = 86400 s (round-34 M-1: both parts
+  // are optional — a mandatory day component would leave challenge-lifetime
+  // and status-horizon with no satisfiable value)
+  const RE = /^P(?:(\d{1,3})D)?(?:T(?:(\d{1,3})H)?(?:(\d{1,3})M)?(?:(\d{1,3})S)?)?$/
+  const ms = (s) => {
+    const m = RE.exec(s)
+    if (!m) return null
+    const [, d, h, mi, se] = m
+    if (!d && !h && !mi && !se) return null                       // at least one component
+    if (/T$/.test(s)) return null                                 // a bare T is no component
+    return ((+(d || 0)) * 86400 + (+(h || 0)) * 3600 + (+(mi || 0)) * 60 + (+(se || 0))) * 1000
+  }
+  for (const a of DG.accept) check(ms(a.lexeme) === a.ms, `duration grammar: ${a.lexeme} = ${a.ms} ms exactly`)
+  for (const r of DG.reject) check(ms(r.lexeme) === null, `duration grammar: ${r.lexeme} rejected — ${r.why}`)
+  check(DG.accept.every((a) => Number.isInteger(a.ms)),
+    'duration grammar: every accepted value is an integer number of milliseconds — durations are compared, never rounded')
+  check(/rejected, not rounded/.test(DG.rejectionRule),
+    'duration grammar: an out-of-grammar lexeme is rejected, never rounded or truncated (round-32 B-2)')
 }
 
 // ── result ───────────────────────────────────────────────────────────────

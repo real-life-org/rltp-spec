@@ -28,6 +28,7 @@
 //   probe signs plainly and says so.
 import { jcs, makeValidator, tsec } from './rltp-core.mjs'
 import * as C from './rltp-crypto.mjs'
+import * as DV from './delivery.mjs'
 import { snapshotPriors } from './continuity.mjs'
 
 const te = new TextEncoder(), td = new TextDecoder()
@@ -143,11 +144,14 @@ export async function introduce (m, anchorA, anchorB, when, ent = {}) {
 
 // ── 2. receiving the offer (each side, independently) ───────────────────
 export async function receiveOffer (p, env) {
-  const ctx = p.contexts.get(env.rkid)
-  if (!ctx) return { error: 'wrong-recipient' }
-  const open = await C.unseal(env, ctx.x.priv)
-  if (open.error) return { error: open.error }
-  const offer = open.document
+  const opened = await DV.openEnvelope(p, env)                // Stufen 1–4, Cache-Lesung (lib-Parität)
+  if (opened.duplicate) return { duplicate: true }
+  if (opened.error) return { error: opened.error }
+  const r = await receiveOfferInner(p, env, opened.doc)
+  if (!r.error) DV.effectDone(p, opened.digest)
+  return r
+}
+async function receiveOfferInner (p, env, offer) {
   const from = [...p.contacts.entries()].find(([anchor, c]) => c.channel && offer.proof?.verificationMethod?.startsWith(anchor))
   if (!from) return { error: 'offer not from a held contact' }
   if (!(await C.diVerify(offer, from[0]))) return { error: 'offer proof fails' }

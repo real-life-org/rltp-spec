@@ -32,6 +32,7 @@
 // marked @probe are not wire-normative.
 import { jcs, makeValidator, toU, sameDigest, tsec, calOK } from './rltp-core.mjs'
 import * as C from './rltp-crypto.mjs'
+import * as DV from './delivery.mjs'
 import { SCHEMAS } from './rltp-schemas.mjs'
 
 const V = makeValidator(SCHEMAS)
@@ -101,11 +102,16 @@ export async function preludeRequest (p, contactAnchor, genesisDigest, when, ent
 // ── receive dispatch: every membership doc travels the channel sealed ───
 // Returns { handled, outbound?: [{to, env}], prompt?: entry }.
 export async function receiveDoc (p, env, when, ent = {}) {
+  const opened = await DV.openEnvelope(p, env)                // Stufen 1–4, Cache-Lesung (lib-Parität)
+  if (opened.duplicate) return { handled: true, duplicate: true }
+  if (opened.error) return { handled: false }
+  const r = await receiveDocInner(p, env, opened.doc, when, ent)
+  if (r?.handled && !r.error) DV.effectDone(p, opened.digest)
+  return r
+}
+async function receiveDocInner (p, env, doc, when, ent = {}) {
   const ctx = channelCtxOf(p, { recipient: env.rkid }) ?? p.contexts.get(env.rkid)
   if (!ctx) return { handled: false }
-  const open = await C.unseal(env, ctx.x.priv)
-  if (open.error) return { handled: false }
-  const doc = open.document
   if (typeof doc?.type !== 'string' || !doc.type.startsWith(TT + 'membership-')) return { handled: false, doc }
   // the sender is identified by the CHANNEL the envelope arrived on (rkid
   // names our own pair context of exactly one relationship) — membership
@@ -136,7 +142,7 @@ export async function receiveDoc (p, env, when, ent = {}) {
     case 'invite/0.2': return handleInvite(p, doc, from, when)
     case 'accept/0.2': return handleAccept(p, doc, from, when, ent)
     case 'welcome@probe': return handleWelcome(p, doc, from)
-    case 'vouch@2': return handleVouch(p, doc, from)
+    case 'vouch/0.1': return handleVouch(p, doc, from)
   }
   return { handled: false, doc }
 }
@@ -230,23 +236,25 @@ async function handleAccept (p, doc, from, when, ent = {}) {
   if (Buffer_(jcs(doc)) > 16384 || Buffer_(jcs({ invite: inv })) > 16384) return fail('size budget')
   if (!g.roster.has(inv.issuer)) return fail('inviter not a member')
   if (g.roster.has(acc.subject)) { say(p, 'Same-Subject-Admission: idempotent'); return { handled: true, idempotent: true } }
-  g.roster.set(acc.subject, { name: acc.card.name, card: acc.card, addedAt: C.iso(when), candidacy: acc.candidacy === true,
-    acceptDigest: await C.digestDoc(doc), contactAnchor: th.contactAnchor })
-  { const c = contactByAnchor(p, th.contactAnchor); if (c) (c.sharedGroups ??= []).push(g.genesisDigest) } // der Inviter WEISS, wer beigetreten ist
-  g.threads.delete(doc.issuer)
-  say(p, `${acc.card.name} ist Mitglied von „${g.label}" — Admission kanonisch, Consent konsumiert`)
-  // WELCOME (probe): roster snapshot to the new member over the channel
-  const outbound = []
+  // ATOMARITÄT (lib-Review 4/B-2, Parität): alles Fehlbare VOR der
+  // ersten Mutation — scheitert das Welcome, ist nichts gewachsen
+  const newEntry = { name: acc.card.name, card: acc.card, addedAt: C.iso(when), candidacy: acc.candidacy === true,
+    acceptDigest: await C.digestDoc(doc), contactAnchor: th.contactAnchor }
   const contact = contactByAnchor(p, th.contactAnchor)
+  const rosterAfter = [...g.roster.entries(), [acc.subject, newEntry]]
   const wBody = {
     id: uuid(), type: TT + 'membership-welcome@probe',
     issuer: g.myMemberCtx.anchor, recipient: acc.subject,
     threadId: doc.threadId, issuedAt: C.iso(when),
     payload: { genesisDigest: g.genesisDigest, group: g.groupDid, label: g.label, genesis: g.genesis, vouchThreshold: g.vouchThreshold ?? 1,
-      roster: [...g.roster.entries()].map(([anchor, m]) => ({ anchor, name: m.name, addedAt: m.addedAt, founder: !!m.founder, candidacy: !!m.candidacy, acceptDigest: m.acceptDigest ?? null })) },
+      roster: rosterAfter.map(([anchor, m]) => ({ anchor, name: m.name, addedAt: m.addedAt, founder: !!m.founder, candidacy: !!m.candidacy, acceptDigest: m.acceptDigest ?? null })) },
   }
-  outbound.push(await sendDoc(p, contact, await C.diSign(g.myMemberCtx, wBody, C.iso(when)), ent))
-  return { handled: true, admitted: acc.subject, outbound }
+  const welcome = await sendDoc(p, contact, await C.diSign(g.myMemberCtx, wBody, C.iso(when)), ent)
+  g.roster.set(acc.subject, newEntry)
+  { const c = contactByAnchor(p, th.contactAnchor); if (c) (c.sharedGroups ??= []).push(g.genesisDigest) } // der Inviter WEISS, wer beigetreten ist
+  g.threads.delete(doc.issuer)
+  say(p, `${acc.card.name} ist Mitglied von „${g.label}" — Admission kanonisch, Consent konsumiert`)
+  return { handled: true, admitted: acc.subject, outbound: [welcome] }
 }
 const Buffer_ = (s) => new TextEncoder().encode(s).length
 
@@ -270,7 +278,8 @@ async function handleWelcome (p, doc, from) {
   return { handled: true, joined: gd }
 }
 
-// ── vouch@2: die Bürgschaft — ein konformes DTG EndorsementCredential ───
+// ── die Bürgschaft (Task membership-vouch/0.1, Artefakt vouch@2) ────────
+// ein konformes DTG EndorsementCredential ──────────────────────────────
 // (AdmissionVouch, Access 4.2/4.3): genesisDigest bindet die Gruppe,
 // accept bindet die KONSENTIERTE Kandidatur (keine stehende Bürgschaft),
 // provenance ist selbst-attestiert (met | introduced). Signiert unter dem
@@ -300,7 +309,7 @@ export async function vouchFor (p, genesisDigest, candidateAnchor, provenance, w
   g.myVouches.set(candidateAnchor, cred)
   const contact = p.contacts.get(m.contactAnchor)
   const doc = {
-    id: uuid(ent.docId), type: TT + 'membership-vouch@2',
+    id: uuid(ent.docId), type: TT + 'membership-vouch/0.1',
     issuer: g.myMemberCtx.anchor, recipient: candidateAnchor,
     threadId: uuid(ent.threadId), issuedAt: iso, payload: { vouch: cred },
   }

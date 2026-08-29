@@ -25,17 +25,27 @@ const xPubOf = (mk) => crypto.createPublicKey({ key: Buffer.concat([X_SPKI, from
 const ecdh = (xPriv, peerMk) => crypto.diffieHellman({ privateKey: xPriv, publicKey: xPubOf(peerMk) })
 const relKey = (ownCtx, counterpartMk, info) => hkdf(ecdh(ownCtx.keys.x.privateKey, counterpartMk), info)
 
-// ── self identity (Identity §4/§5: derived from the person's root IKM) ──
+// ── community anchor (Identity 0.13 §5.1/§6.1, the S-DID cut) ───────────
+// The disclosure anchor of the visibility layer is the person's COMMUNITY
+// ANCHOR: an ORDINARY group-context derivation over their personal
+// community's genesis digest — never the recovery context's fixed
+// zero-input strings (`wot/identity/ed25519/v1` …), which carry no social
+// surface. Same derivation as conformance/runner.mjs suite 4; the default
+// genesis digest is the one from vectors/visibility.json (`self`), whose
+// vector key name mirrors the frozen wire field spelling `self`.
+export const COMMUNITY_GENESIS = 'uEiDYLnFbXqm2cwuJWuk9yNzRmlzWDpCTH6yA_4aP_1z_RA'
 const ED_PKCS8 = Buffer.from('302e020100300506032b657004220420', 'hex')
 const X_PKCS8 = Buffer.from('302e020100300506032b656e04220420', 'hex')
 const priv = (seed, p8) => crypto.createPrivateKey({ key: Buffer.concat([p8, seed]), format: 'der', type: 'pkcs8' })
 const rawPub = (k, len = 32) => { const s = crypto.createPublicKey(k).export({ format: 'der', type: 'spki' }); return s.subarray(s.length - len) }
-export function selfIdentity (p) {
+export function communityIdentity (p) {
   if (p.__self) return p.__self
-  const edSeed = hkdf(p.rootIkm, 'wot/identity/ed25519/v1')
-  const xSeed = hkdf(p.rootIkm, 'wot/encryption/x25519/v1')
+  const label = 'group/' + (p.communityGenesis || COMMUNITY_GENESIS)
+  const edSeed = hkdf(p.rootIkm, 'rltp/anchor/ed/' + label)
+  const xSeed = hkdf(p.rootIkm, 'rltp/anchor/x/' + label)
   const ed = priv(edSeed, ED_PKCS8), x = priv(xSeed, X_PKCS8)
   p.__self = {
+    label,
     keys: { ed, x },
     anchor: 'did:key:z' + base58(Buffer.concat([Buffer.from([0xed, 1]), rawPub(ed)])),
     keyAgreement: 'z' + base58(Buffer.concat([Buffer.from([0xec, 1]), rawPub(x)])),
@@ -157,13 +167,13 @@ export function receiveContinuityMapping (p, rel, mapping) {
 
 // ── 6 anchor-mapping@2 — the Trust act (pair→self, double-DH, DV) ────────
 export function selfCard (p) {
-  const self = selfIdentity(p)
+  const self = communityIdentity(p)
   const body = { type: 'self-card@1', anchor: self.anchor, keyAgreement: self.keyAgreement }
   const sig = crypto.sign(null, Buffer.from(jcs(body), 'utf8'), self.keys.ed)
   return { body, proof: { proofValue: 'z' + base58(sig) } }
 }
 export function issueAnchorMapping (p, rel) {
-  const self = selfIdentity(p)
+  const self = communityIdentity(p)
   const t = rel.head
   const body = {
     type: 'anchor-mapping@2', pair: t.ownCtx.anchor, self: self.anchor, to: t.counterpartAnchor,
@@ -191,7 +201,7 @@ export function receiveAnchorMapping (p, rel, m) {
   const mac2 = hmacU(hkdf(ecdh(t.ownCtx.keys.x.privateKey, cb.keyAgreement), 'rltp/visibility/mac/map2'), jcs(b))
   if (mac1 !== m.proof.mac1 || mac2 !== m.proof.mac2) return { error: 'mac' }
   rel.counterpartSelf = b.self                                                                       // holder-local: 6a.1 convergence net input
-  // S-DID convergence net (6a.1 step 2): merge any other relationship whose
+  // Community-anchor convergence net (6a.1 step 2): merge any other relationship whose
   // counterpart disclosed the same self — a holder-local act, no wire artifact
   const twin = p.relationships.find((r) => r !== rel && r.counterpartSelf === b.self)
   if (twin) { rel.tuples.push(...twin.tuples); p.relationships = p.relationships.filter((r) => r !== twin) }
@@ -231,7 +241,7 @@ export function receiveStar (p, rel, star) {
   if (hmacU(k, jcs(star.body)) !== star.proof.mac) return { error: 'mac' }
   t.starHighWater = Number(star.body.salt)
   // intersection only: test the anchors this holder legitimately holds
-  const held = p.relationships.map((r) => r.counterpartSelf).filter(Boolean).concat([selfIdentity(p).anchor])
+  const held = p.relationships.map((r) => r.counterpartSelf).filter(Boolean).concat([communityIdentity(p).anchor])
   const hits = held.filter((a) => star.body.blinded.includes(hmacU(k, a)))
   return { count: Number(star.body.count), hits } // a hit proves shared HOLDING, never a relationship (5.2)
 }

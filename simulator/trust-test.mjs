@@ -34,7 +34,7 @@ const keyOf = (p, name) => [...p.contacts.entries()].find(([, c]) => c.name === 
   check(!pkt.error && pkt.env, 'Vertrauensakt Anton→Berta: Disclosure versiegelt auf dem Kanal')
   const r = await deliverTrust(world, berta, pkt.env, T0 + 11_000)
   const bA = berta.contacts.get(keyOf(berta, 'Anton'))
-  check(r.disclosed && bA.selfAnchor === (await T.selfContext(anton)).anchor, 'Berta hält Antons stabilen Anker — Mapping VERIFIZIERT übernommen')
+  check(r.disclosed && bA.selfAnchor === (await T.communityContext(anton)).anchor, 'Berta hält Antons stabilen Anker — Mapping VERIFIZIERT übernommen')
   check(bA.trustReceived && !bA.trustGiven, 'Richtung stimmt: ← vertraut dir, nichts zurückgegeben')
   check(anton.contacts.get(keyOf(anton, 'Berta')).trustGiven, 'Antons Journal: Einweg-Tür offen (trustGiven)')
   const again = await T.setTrust(anton, keyOf(anton, 'Berta'), T0 + 12_000)
@@ -60,7 +60,7 @@ const keyOf = (p, name) => [...p.contacts.entries()].find(([, c]) => c.name === 
   check(!pkt.error && pkt.env, 'vorgestellt + beidseitig (⇄): Vertrauensakt ERLAUBT (Offenlegung ist meine Entscheidung)')
   const r = await deliverTrust(world, carla, pkt.env, T0 + 25_000)
   const cIntro = [...carla.contacts.values()].find((c) => c.provenance !== 'ceremony' && c.name === 'Berta')
-  check(r.disclosed && cIntro.selfAnchor === (await T.selfContext(berta)).anchor, 'Mapping verifiziert auch über den VORGESTELLTEN Kanal — kein Zeremonie-Credential nötig')
+  check(r.disclosed && cIntro.selfAnchor === (await T.communityContext(berta)).anchor, 'Mapping verifiziert auch über den VORGESTELLTEN Kanal — kein Zeremonie-Credential nötig')
 }
 
 // ── 3. Stern + gemeinsame Kontakte (geblendet, empfänger-privat) ────────
@@ -77,7 +77,7 @@ const keyOf = (p, name) => [...p.contacts.entries()].find(([, c]) => c.name === 
   const cA = carla.contacts.get(keyOf(carla, 'Anton'))
   check(cA.starReceived?.count === 2, 'Carla sieht: Anton hält 2 offengelegte Kontakte (Zählung ehrlich)')
   check(cA.starInfo?.knownNames?.length === 1 && cA.starInfo.knownNames[0] === 'Berta', 'gemeinsamer Kontakt erkannt: Berta (nur weil Carla B.self LEGITIM hält)')
-  check(!cA.starReceived.blinded.includes((await T.selfContext(berta)).anchor), 'kein roher Dritt-Anker im Schnappschuss — alles geblendet')
+  check(!cA.starReceived.blinded.includes((await T.communityContext(berta)).anchor), 'kein roher Dritt-Anker im Schnappschuss — alles geblendet')
   // Stern-Refresh beim Bestandswachstum: Bertas Stern an Anton wuchs, als
   // Carla ihr B… nein: als Anton Berta.self schon hielt — prüfe Refresh-Kette:
   const aB = anton.contacts.get(keyOf(anton, 'Berta'))
@@ -95,7 +95,7 @@ const keyOf = (p, name) => [...p.contacts.entries()].find(([, c]) => c.name === 
   check(await T.verifyMapping(berta, forged), 'FORGE verifiziert identisch — ein geleaktes Mapping beweist Dritten nichts')
   // aber Manipulation am echten stirbt
   const real = berta.contacts.get(keyOf(berta, 'Anton')).mapping
-  const tampered = { ...real, body: { ...real.body, self: (await T.selfContext(berta)).anchor } }
+  const tampered = { ...real, body: { ...real.body, self: (await T.communityContext(berta)).anchor } }
   check(!(await T.verifyMapping(berta, tampered)), 'manipulierter body: MAC-Prüfung schlägt fehl')
 }
 
@@ -135,7 +135,7 @@ const keyOf = (p, name) => [...p.contacts.entries()].find(([, c]) => c.name === 
   const cred = gB.myVouches.get(candAnchor)
   const evil = await C.diSign(gB.myMemberCtx, { ...structuredClone((({ proof, ...r }) => r)(cred)),
     credentialSubject: { id: candAnchor, endorsement: { ...cred.credentialSubject.endorsement, accept: await C.digestDoc({ x: 'anders' }) } } }, C.iso(T0 + 83_000))
-  const evilDoc = await C.diSign(gB.myMemberCtx, { id: globalThis.crypto.randomUUID(), type: 'https://real-life.org/trust-tasks/membership-vouch@2',
+  const evilDoc = await C.diSign(gB.myMemberCtx, { id: globalThis.crypto.randomUUID(), type: 'https://real-life.org/trust-tasks/membership-vouch/0.1',
     issuer: gB.myMemberCtx.anchor, recipient: candAnchor, threadId: globalThis.crypto.randomUUID(), issuedAt: C.iso(T0 + 83_000), payload: { vouch: evil } }, C.iso(T0 + 83_000))
   const bCarla = berta.contacts.get(keyOf(berta, 'Carla'))
   const rEvil = await G.receiveDoc(carla, await C.seal(evilDoc, bCarla.channel.counterpartKa), T0 + 84_000)
@@ -143,7 +143,7 @@ const keyOf = (p, name) => [...p.contacts.entries()].find(([, c]) => c.name === 
   // Negative: Nicht-Mitglied bürgt — Anton ist kein Mitglied, hat aber einen Kanal zu Carla
   const outsider = await C.pairContext(anton.rootIkm, C.rand(32))
   const oCred = await C.diSign(outsider, { ...structuredClone((({ proof, ...r }) => r)(cred)), issuer: outsider.anchor }, C.iso(T0 + 85_000))
-  const oDoc = await C.diSign(outsider, { id: globalThis.crypto.randomUUID(), type: 'https://real-life.org/trust-tasks/membership-vouch@2',
+  const oDoc = await C.diSign(outsider, { id: globalThis.crypto.randomUUID(), type: 'https://real-life.org/trust-tasks/membership-vouch/0.1',
     issuer: outsider.anchor, recipient: candAnchor, threadId: globalThis.crypto.randomUUID(), issuedAt: C.iso(T0 + 85_000), payload: { vouch: oCred } }, C.iso(T0 + 85_000))
   const aCarla = anton.contacts.get(keyOf(anton, 'Carla'))
   const rOut = await G.receiveDoc(carla, await C.seal(oDoc, aCarla.channel.counterpartKa), T0 + 86_000)

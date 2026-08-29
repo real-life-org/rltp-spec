@@ -71,9 +71,16 @@ export const ecdh = async (xPriv, theirPubRaw) => {
 }
 
 // ── identity contexts (Identity §6; fresh-always pair class) ────────────
+// EVERY context derives through the ordinary rltp/anchor family (Identity
+// 0.13 §5.1). The S-DID cut removed the fused 'self' context that derived
+// zero-input from the historic recovery strings: the stable social anchor
+// is the community anchor below, an ordinary group context.
+export const COMMUNITY_GENESIS = 'uEiDYLnFbXqm2cwuJWuk9yNzRmlzWDpCTH6yA_4aP_1z_RA'
+export const communityContext = (rootIkm, genesisDigest) =>
+  labeledContext(rootIkm, 'group/' + (genesisDigest || COMMUNITY_GENESIS))
 export async function labeledContext (rootIkm, label) {
-  const edInfo = label === 'self' ? 'wot/identity/ed25519/v1' : 'rltp/anchor/ed/' + label
-  const xInfo = label === 'self' ? 'wot/encryption/x25519/v1' : 'rltp/anchor/x/' + label
+  const edInfo = 'rltp/anchor/ed/' + label
+  const xInfo = 'rltp/anchor/x/' + label
   const ed = await edFromSeed(await hkdf(rootIkm, edInfo))
   const x = await xFromSeed(await hkdf(rootIkm, xInfo))
   return { label, ed, x, anchor: anchorOfEd(ed.pubRaw), keyAgreement: mkOfX(x.pubRaw) }

@@ -16,7 +16,7 @@
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
 - **Conformance profile:** `rltp-replication@0.26` (draft)
 - **Companion pins:** Access Layer 0.53 (wire 0.24; registration
-  artifact 0.26) · Identity Layer 0.28 · Delivery Contract 0.37 ·
+  artifact 0.26) · Identity Layer 0.51 · Delivery Contract 0.69 ·
   Membership Tasks 0.16 · Encounter Layer 0.29 (wire 0.25)
 - **Supersedes:** 0.25 (archived,
   `spec/archive/replication-contract-0.25-redaktionsguss.md`;
@@ -64,7 +64,7 @@ is collected in Appendix B.
 
 The contract **converged on 2026-08-26** after twenty-five
 adversarial review rounds — four against this document alone, then
-twenty-one jointly with the Access Layer (castings 0.31–0.50) and
+twenty-one jointly with the Access Layer (castings 0.31–0.51) and
 the Delivery Contract (0.22); rounds 24 and 25 were consecutive
 blocker-free rounds, satisfying the convergence criterion. Every
 finding and triage lives in
@@ -1391,7 +1391,7 @@ A future snapshot profile MUST preserve P1's equal-verdict rule —
 validity **and canonicality** — over snapshot input; that is the
 registration bar, and why the registry ships empty rather than
 half-open. **Seam state:** the Delivery-side mirror rule is
-carried by the pinned Delivery 0.37 (§4.4: a registered type's
+carried by the pinned Delivery 0.69 (§4.4: a registered type's
 defined effect MUST NOT write replicated state directly;
 replicated effects pass exclusively through this admission) — the
 seam is closed on both sides; the remaining adapter-declaration
@@ -1692,8 +1692,8 @@ become an adapter without changing this contract.
   correlate activity; this contract does not claim otherwise. What
   bounds the exposure is identity discipline, not the absence of
   observers. On the Delivery side that discipline is now cast:
-  the **carrier-relationship identity** (Identity 0.28 §7a,
-  consumed by Delivery 0.37 §5a) gives one control principal per
+  the **carrier-relationship identity** (Identity 0.51 §7a,
+  consumed by Delivery 0.69 §5a) gives one control principal per
   (relationship × carrier), so a carrier cannot join two of a
   person's delivery relationships through the identities it is
   shown. It closes that list join and, by its own statement,
@@ -1886,7 +1886,7 @@ become an adapter without changing this contract.
 
 **Coordination debts (recorded decisions, owed elsewhere):**
 
-1. **Discharged (Access 0.31–0.50, 26.08.2026):** the removal
+1. **Discharged (Access 0.31–0.51, 26.08.2026):** the removal
    disposition over concurrent authorship, the evidence-transport
    rule, the service fail-closed wording, and the registration
    generation machinery (generations, tombstone, CAS acceptance;
@@ -1948,7 +1948,7 @@ attacks that forced it — is recorded in
 
 [RFC2119] · [RFC8174] BCP 14 · [RFC8785] JCS · RLTP Access Layer
 0.53, wire 0.24 (§§3.2–3.6, 5.1–5.4, 7.1–7.3, 9, 10) · RLTP
-Identity Layer 0.28 (§§4, 7) · RLTP Delivery Contract 0.37 (§§4.4,
+Identity Layer 0.51 (§§4, 7) · RLTP Delivery Contract 0.69 (§§4.4,
 6) · RLTP Membership Tasks 0.16 · RLTP Encounter Layer 0.29, wire
 0.25 (§2.3 interim securing profile) · Decision record:
 `design/portvertrags-paar-entscheide-2026-08.md` (Revision 2);

@@ -22,8 +22,8 @@
   byte changes.
 - **Position:** Layer 3 of RLTP, above the Encounter Layer 0.29
   (wire 0.25) and
-  the Identity layer (0.28), carried by the Delivery Contract
-  (0.37) where operations or keys must
+  the Identity layer (0.51), carried by the Delivery Contract
+  (0.69) where operations or keys must
   reach parties outside the replica; the Membership Tasks (0.16,
   jointly cast) register the task types that transport this
   layer's admission documents and are a normative companion.
@@ -94,7 +94,7 @@ Membership seam. The **M-DID loop** (castings 0.26–0.30: the
 per-group member anchor, `member-mapping@1`, the `vouch@2` DTG
 adoption) converged on 2026-08-25 jointly with Encounter 0.28 and
 Membership Tasks 0.16. The **replication-seam loop** (castings
-0.31–0.50, jointly with the Replication Contract and the Delivery
+0.31–0.51, jointly with the Replication Contract and the Delivery
 Contract) converged on 2026-08-26: joint rounds 24 and 25 were
 blocker-free. Every named residual (Section 15; the TOFU and
 re-registration classes, the cooperation and darkness residuals,
@@ -3110,7 +3110,7 @@ This layer requires, and does not define:
 
 - **Delivery port:** authenticated end-to-end-encrypted delivery
   to derived identities with durable buffering and explicit
-  disposition — satisfied by the Delivery Contract (0.37), whose
+  disposition — satisfied by the Delivery Contract (0.69), whose
   task types for this layer are the Membership Tasks (0.16,
   jointly cast) plus the
   type registered below.
@@ -3819,7 +3819,7 @@ so the type is dispatchable today, not `unknown-type`:
   `0.24` (Section 11 — two new shapes, one renamed policy-body
   value, no changed shape);
   normatively references the **Membership Tasks (0.16) and
-  Delivery Contract (0.37) of the current joint state** (document
+  Delivery Contract (0.69) of the current joint state** (document
   shapes, welcome seal, admission transport; document profile,
   sealed envelope, dispositions — their profile strings are
   pinned on their side, M2-style); where Encounter artifacts are
@@ -4519,7 +4519,7 @@ so the type is dispatchable today, not `unknown-type`:
 - **OI-5 Encounter-presentation minimal disclosure.**
 - **OI-7 Member-identity model** — **settled by the M-DID loop:**
   per-group member identity (5.1), the founding occasion
-  registered in Identity 0.28, and the verifiable link is
+  registered in Identity 0.51, and the verifiable link is
   `member-mapping@1` (5.5) — designated-verifier by design.
   Method agnosticism beyond `did:key` remains open.
 - **OI-10 Shrink-robust policy forms** (relative thresholds;
@@ -4589,7 +4589,7 @@ so the type is dispatchable today, not `unknown-type`:
   acceptance. Until then this layer
   requires of its own implementers: key all group state by
   genesis digest. Resolved elsewhere: delivery envelope by the
-  Delivery Contract (0.37); policy-proof transport and
+  Delivery Contract (0.69); policy-proof transport and
   leave/dissolve notices are Membership MO-2 and MO-3.)*
 
 ## References

@@ -20,11 +20,24 @@
 // simulator.
 
 export const PHONE_CSS = `
+  .devhead { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+    width: 100%; padding: 0 2px 6px; }
+  .devid { min-width: 0; }
+  .devname { font-size: 15px; font-weight: 700; color: oklch(95% 0.01 247); line-height: 1.2; }
+  .devsub { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 10px;
+    color: oklch(62% 0.01 247); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .devctls { display: flex; align-items: center; gap: 6px; flex: none; }
+  .devbtn { font: inherit; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 10px;
+    padding: 5px 9px; border-radius: 6px; border: 1px solid oklch(35% 0.02 265);
+    background: transparent; color: oklch(88% 0.01 247); cursor: pointer; white-space: nowrap; }
+  .devbtn.on { background: oklch(38% 0.11 145); border-color: oklch(45% 0.12 145); }
+  .devbtn.warn { background: oklch(35% 0.09 55); border-color: oklch(45% 0.1 55); }
   .phone-shell { background: oklch(12% 0.01 265); border-radius: 24px; padding: 6px;
     box-shadow: 0 18px 40px -16px rgba(0,0,0,.7); }
   .phone-screen { background: oklch(98% 0.003 265); color: oklch(22% 0.004 265);
     border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; height: 470px; position: relative; }
-  .phone-screen.off::after { content: '✈ offline'; position: absolute; top: 7px; right: 12px;
+  .phone-screen.off .phone-status .st-owner { color: oklch(50% 0.12 70); }
+  .phone-screen.off--unused::after { content: '✈ offline'; position: absolute; top: 7px; right: 12px;
     font-size: 9px; font-weight: 700; color: oklch(60% 0.14 60); }
   .phone-status { display: flex; align-items: center; justify-content: space-between;
     padding: 7px 14px 2px; font-size: 10px; font-family: ui-monospace, monospace; color: oklch(44% 0.008 265); }
@@ -115,11 +128,62 @@ export const PHONE_CSS = `
   .wempty { font-size: .68rem; color: var(--muted); padding: .2rem 0 .35rem; }
 `
 
+
+// ── the APP layer: the components the product itself is built from.
+// They lived in network.html and therefore could not be shared — the
+// same drift that made the device header grow instead of being designed.
+// Whoever builds a screen builds it FROM THESE, and a fix here reaches
+// every simulator at once.
+export const APP_CSS = `
+  .incoming { background: oklch(97% 0.02 264); border: 1.5px solid oklch(55% 0.21 264 / .45); border-radius: 12px;
+    padding: 9px 10px; margin-bottom: 8px; }
+  .incoming .iq { font-size: 12px; font-weight: 700; margin-bottom: 3px; }
+  .incoming .ih { font-size: 10.5px; color: oklch(44% 0.008 265); line-height: 1.4; margin-bottom: 7px; }
+  .incoming .ibtns { display: flex; gap: 6px; }
+  .incoming button { font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; padding: 5px 12px;
+    border-radius: 8px; border: 1px solid transparent; }
+  .incoming .yes { background: oklch(55% 0.21 264); color: #fff; }
+  .incoming .no { background: transparent; color: oklch(44% 0.008 265); border-color: oklch(88% 0.005 265); }
+  .sentrow { font-size: 11px; color: oklch(44% 0.008 265); padding: 6px 2px 0; }
+  .kpi { display: flex; gap: 7px; margin-bottom: 10px; }
+  .kpi .k { flex: 1; background: #fff; border: 1px solid oklch(92% 0.005 265); border-radius: 11px;
+    padding: 8px 6px; text-align: center; }
+  .kpi .n { font-size: 17px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .kpi .l { font-size: 9.5px; color: oklch(48% 0.008 265); text-transform: uppercase; letter-spacing: .04em; }
+  .sect { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
+    color: oklch(48% 0.008 265); margin: 12px 2px 6px; }
+  .card { background: #fff; border: 1px solid oklch(92% 0.005 265); border-radius: 12px; overflow: hidden; }
+  .card .prow { cursor: default; }
+  .fab { position: absolute; right: 12px; bottom: 58px; width: 46px; height: 46px; border-radius: 50%;
+    border: none; background: oklch(55% 0.21 264); color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 16px rgba(0,0,0,.28); z-index: 4; }
+  .cdlg { position: absolute; inset: 0; background: oklch(25% 0.01 265 / .42); display: flex;
+    align-items: center; justify-content: center; z-index: 5; }
+  .cdlg-card { background: #fff; border-radius: 18px; padding: 20px 16px 14px; width: 86%;
+    text-align: center; box-shadow: 0 18px 40px -18px rgba(0,0,0,.45); }
+  .cdlg .avpair { display: flex; justify-content: center; margin-bottom: 10px; }
+  .cdlg .avpair .av { width: 52px; height: 52px; border-radius: 50%; color: #fff; display: flex;
+    align-items: center; justify-content: center; font-size: 21px; font-weight: 700; border: 3px solid #fff; }
+  .cdlg .avpair .av + .av { margin-left: -10px; }
+  .cdlg h4 { margin: 0 0 4px; font-size: 15px; }
+  .cdlg p { margin: 0 0 6px; font-size: 11.5px; line-height: 1.5; color: oklch(46% 0.008 265); }
+  .cdlg .bs { display: flex; gap: 8px; margin-top: 10px; }
+  .cdlg .bs button { flex: 1; font: inherit; font-size: 12.5px; font-weight: 700; padding: 10px;
+    border-radius: 11px; border: 1px solid oklch(88% 0.005 265); background: transparent;
+    color: oklch(40% 0.008 265); cursor: pointer; }
+  .cdlg .bs button.grn { background: oklch(52% 0.14 150); border-color: transparent; color: #fff; }
+  .toast { position: absolute; top: 32px; left: 12px; right: 12px; z-index: 7; pointer-events: none;
+    background: oklch(25% 0.01 265 / .92); color: #fff; font-size: 10.5px; line-height: 1.4;
+    padding: 8px 12px; border-radius: 10px; text-align: center; }
+  .profact button.trust { background: oklch(52% 0.14 150); border-color: transparent; color: #fff; }
+`
+
 export function injectPhoneCss (doc = globalThis.document) {
   if (doc.getElementById('rltp-phone-css')) return
   const el = doc.createElement('style')
   el.id = 'rltp-phone-css'
-  el.textContent = PHONE_CSS
+  el.textContent = PHONE_CSS + APP_CSS
   doc.head.appendChild(el)
 }
 
@@ -160,10 +224,24 @@ export const bottomSheet = (inner) => `<div class="phdlg"><div class="phdlg-card
 
 // the full phone: label row above (owner + controls), shell, status bar
 // (app name centered, OWNER top right — Anton's rule), body, tab bar
-export const phoneShell = ({ owner, color, clock, app = 'Web of Trust', online = true, body, tabs = '', sheet = '', labelExtra = '' }) => `
-  <div class="devlabel">${esc(owner)}${labelExtra}</div>
+// the DEVICE HEADER — the grammar taken from the ceremony simulator,
+// which is the best version we have: an identity block on the left
+// (name large, technical id small underneath), a group of equally
+// sized controls on the right, space between them. Whoever adds a
+// control adds it TO THE GROUP, never to the row — that is the
+// difference between a layout that is designed and one that grew.
+export const deviceHeader = ({ name, sub = '', controls = [] }) => `
+  <div class="devhead">
+    <div class="devid"><div class="devname">${esc(name)}</div>${sub ? `<div class="devsub">${esc(sub)}</div>` : ''}</div>
+    <div class="devctls">${controls.join('')}</div>
+  </div>`
+export const devBtn = ({ label, onclick, on = false, warn = false, title = '' }) =>
+  `<button class="devbtn${on ? ' on' : ''}${warn ? ' warn' : ''}" onclick="${onclick}"${title ? ` title="${esc(title)}"` : ''}>${esc(label)}</button>`
+
+export const phoneShell = ({ owner, color, clock, app = 'Web of Trust', online = true, body, tabs = '', sheet = '', header = '', labelExtra = '' }) => `
+  ${header || `<div class="devlabel">${esc(owner)}${labelExtra}</div>`}
   <div class="phone-shell"><div class="phone-screen ${online ? '' : 'off'}">
-    <div class="phone-status"><span>${esc(clock)}</span><span>${esc(app)}</span><span>${esc(owner)}</span></div>
+    <div class="phone-status"><span>${esc(clock)}</span><span>${esc(app)}</span><span class="st-owner">${online ? esc(owner) : '✈ offline'}</span></div>
     <div class="phone-body">${body}</div>
     ${tabs}
     ${sheet}

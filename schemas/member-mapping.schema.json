@@ -33,7 +33,7 @@
         },
         "memberOp": {
           "type": "string",
-          "pattern": "^oid:[A-Za-z0-9_-]{43}$",
+          "pattern": "^oid:[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$",
           "description": "oid: of a canonical admission of the named anchor, or the genesis (Access 5.5 \u2014 deterministic key choice)"
         },
         "self": {
@@ -46,7 +46,7 @@
         },
         "toOp": {
           "type": "string",
-          "pattern": "^oid:[A-Za-z0-9_-]{43}$",
+          "pattern": "^oid:[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$",
           "description": "oid: of a canonical admission of the named anchor, or the genesis (Access 5.5 \u2014 deterministic key choice)"
         },
         "card": {
@@ -114,11 +114,11 @@
       "properties": {
         "mac1": {
           "type": "string",
-          "pattern": "^u[A-Za-z0-9_-]{43}$"
+          "pattern": "^u[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$"
         },
         "mac2": {
           "type": "string",
-          "pattern": "^u[A-Za-z0-9_-]{43}$"
+          "pattern": "^u[A-Za-z0-9_-]{42}[AEIMQUYcgkosw048]$"
         }
       }
     }

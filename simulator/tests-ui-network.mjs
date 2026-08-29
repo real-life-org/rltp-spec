@@ -34,7 +34,7 @@ await page.waitForFunction(() => window.__probe.wire.length === 2);
 check(true, 'Antons EIN Akt: zwei versiegelte Angebote auf dem Draht');
 
 // Flugmodus über den Netz-Toggle
-await page.locator('#dev-A .toggle').click();
+await page.locator('#dev-A .devctls .devbtn').first().click();
 await page.waitForFunction(() => window.__probe.A.online === false);
 check((await page.locator('#dev-A .phone-screen.off').count()) === 1, 'Anton im Flugmodus (Screen zeigt ✈ offline)');
 
@@ -67,18 +67,14 @@ check(await page.evaluate(() => {
 }), 'Voucher liegt bei; die gekreuzten Anker sind frisch (Anton kennt sie nicht)');
 
 // 🗂 Wallet in der App: Profile → „My data"
-await tab('J', 'Profile');
-await page.locator('#dev-J .prow', { hasText: 'Everything this device holds' }).click();
 await page.locator('#dev-J .wcat button', { hasText: 'Introductions' }).click();
 await page.locator('#dev-J .witem .wtitle', { hasText: 'voucher · about Emil' }).waitFor();
-check(true, 'Wallet (in-App): Introductions öffnet — Voucher über Emil mit JSON');
+check(true, 'Artefakt-Panel unter dem Gerät: Introductions öffnet — Voucher über Emil mit JSON');
 check((await page.locator('#dev-J .witem .wtitle', { hasText: 'released card · for Emil' }).count()) === 1, 'Wallet: die freigegebene eigene Karte liegt unter Sent');
 await page.locator('#dev-J .wchip', { hasText: 'Sent' }).click();
 check((await page.locator('#dev-J .witem .wtitle', { hasText: 'voucher' }).count()) === 0, 'Wallet-Filter Sent: empfangene Artefakte ausgeblendet');
 await page.locator('#dev-J .wchip', { hasText: 'All' }).click();
-await page.locator('#dev-J .backbtn').click();
-await page.locator('#dev-J .profhead .pname', { hasText: 'Jonathan' }).waitFor();
-check(true, 'Wallet-Back führt zurück ins eigene Profil');
+check(true, 'Artefakt-Ebene liegt außerhalb des Geräts — kein Navigieren nötig');
 
 // Kontakt-Detail des vorgestellten Kontakts: Meta-Zeile Rang 2 + Voucher
 await tab('J', 'Contacts');
@@ -102,7 +98,11 @@ check((await page.locator('#dev-J .pbadge.byme', { hasText: '⇄ introduced' }).
 check((await page.locator('#dev-J .pmeta', { hasText: 'first real meeting' }).count()) >= 1, 'Meta-Zeile benennt den Kontinuitäts-Pfad zu ✓');
 
 // Tabs + Statusleiste
-check((await page.locator('#dev-A .phone-status span:last-child', { hasText: 'Anton' }).count()) === 1, 'Statusleiste oben rechts: Name des Geräte-Inhabers');
+// Anton ist hier im Flugmodus: seine Zeile sagt das, statt den Namen zu
+// überlagern — bei einem Online-Gerät steht dort der Inhaber
+check((await page.locator('#dev-J .phone-status .st-owner').textContent()) === 'Jonathan'
+  && (await page.locator('#dev-A .phone-status .st-owner').textContent()).includes('offline'),
+  'Statusleiste oben rechts: Inhabername — offline ERSETZT ihn, statt ihn zu überlagern');
 await tab('J', 'Profile');
 await page.locator('#dev-J .profhead .pname', { hasText: 'Jonathan' }).waitFor();
 check((await page.locator('#dev-J .sentrow', { hasText: 'root seed' }).count()) === 1, 'Profil-Tab: eigene Identität aus den Gerätedaten (Anker + Backup-Zeile)');
@@ -164,15 +164,13 @@ check(await page.evaluate(() => {
 }), 'Und die Gegenseite: Jonathans Emil trägt dieselbe gemeinsame Gruppe');
 
 // Wallet: Membership-Kategorie mit Genesis
-await tab('J', 'Profile');
-await page.locator('#dev-J .prow', { hasText: 'Everything this device holds' }).click();
 await page.locator('#dev-J .wcat button', { hasText: 'Membership' }).click();
 await page.locator('#dev-J .witem .wtitle', { hasText: 'genesis · Orga-Untergruppe' }).waitFor();
 check(true, 'Wallet (Jonathan): Genesis unter Membership');
 check(await page.evaluate(() => window.__probe.A.groups.size === 0), 'Anton (Vermittler) hält NICHTS von der Gruppe');
 
 // ── Stufe 2: der explizite Vertrauensakt (Einweg-Tür, DV) ───────────────
-await page.locator('#dev-A .toggle').first().click(); // Anton zurück ans Netz
+await page.locator('#dev-A .devctls .devbtn').first().click(); // Anton zurück ans Netz
 await page.waitForFunction(() => window.__probe.A.online === true);
 
 await tab('A', 'Contacts');
@@ -236,8 +234,6 @@ await page.locator('#dev-E .prow .pname2', { hasText: 'Jonathan' }).waitFor();
 check((await page.locator('#dev-E .pbadge.byme', { hasText: 'candidacy' }).count()) === 0, 'Kandidatur erfüllt — das Warte-Badge fällt');
 
 // Wallet: Trust-Kategorie
-await tab('J', 'Profile');
-await page.locator('#dev-J .prow', { hasText: 'Everything this device holds' }).click();
 await page.locator('#dev-J .wcat button', { hasText: 'Trust' }).click();
 await page.locator('#dev-J .witem .wtitle', { hasText: 'anchor-mapping · from Anton' }).waitFor();
 check((await page.locator('#dev-J .witem .wtitle', { hasText: 'contact update · from Anton' }).count()) === 1, 'Wallet Trust: Mapping (abstreitbar) + geblendeter Stern');
@@ -327,7 +323,7 @@ await tab('E', 'Contacts');
 check((await page.locator('#dev-E .pbadge.trustb', { hasText: '← trusts you' }).count()) === 1, 'und Emil sieht es: ← trusts you — der Kreis ist geschlossen');
 
 // ── Offline: der automatische Two-Way-Scan (Re-Verifikation J ⇠⇢ A) ────
-await page.locator('#dev-A .toggle').first().click(); // Anton in den Flugmodus
+await page.locator('#dev-A .devctls .devbtn').first().click(); // Anton in den Flugmodus
 await page.waitForFunction(() => window.__probe.A.online === false);
 await page.locator('#dev-A .fab').click();            // Anton zeigt (optisch geht offline)
 await page.locator('#dev-A .phone-screen', { hasText: 'Show your code or scan' }).waitFor();
@@ -347,7 +343,7 @@ await page.waitForFunction(() =>
   [...window.__probe.A.contacts.values()].some(c => !c.deactivated && c.name === 'Jonathan' && c.state === '→')
   && (window.__probe.A.pendingDocs?.length ?? 0) === 1, { timeout: 8000 });
 check(true, 'offline bestätigt: ehrlich einseitig, Gegen-Credential wartet auf Netz');
-await page.locator('#dev-A .toggle').first().click(); // Anton zurück ans Netz
+await page.locator('#dev-A .devctls .devbtn').first().click(); // Anton zurück ans Netz
 await page.waitForFunction(() => {
   const act = (p) => [...p.contacts.values()].filter(c => !c.deactivated);
   const jo = act(window.__probe.A).find(c => c.name === 'Jonathan');
@@ -356,6 +352,58 @@ await page.waitForFunction(() => {
 }, { timeout: 20000 });
 check(true, 'Netz zurück: Credentials fließen nach, Probe kettet die Re-Verifikation — beidseitig ✓, keine Dublette');
 
-console.log(fails ? `\n${fails} FAILED` : '\nNETZWERK-UI-DURCHLAUF (APP-FLOW, UI ENGLISCH) BESTANDEN');
+// ── Baustein 7: Delivery-Stufen sichtbar + Fault-Injection ──────────────
+check(await page.evaluate(() => window.__probe.wire.some(w => (w.stages?.length ?? 0) >= 5 && w.disp === 'unique')),
+  'Draht-Panel: jede Zustellung trägt die Contract-Stufen 1–4 + Dispatch (Port aus dem Zeremonie-Sim)');
+check((await page.locator('.fbtn').count()) === 4, 'Fault-Panel: hold · dup · tamper · lose');
+
+// dup-Fault: A vertraut Emil — die Zustellung läuft doppelt, der
+// completed-effect-Cache antwortet duplicate-known (kein zweiter Effekt)
+await page.locator('.fbtn', { hasText: 'Deliver everything twice' }).click();
+await page.locator('#dev-A .cdlg button', { hasText: 'Done' }).click(); // Feier-Dialog der Re-Verifikation schließen
+await tab('A', 'Contacts');
+await page.locator('#dev-A .prow', { hasText: 'Emil' }).click();
+await page.locator('#dev-A .profact button.trust').click();
+await page.locator('#dev-A .phdlg-btns button', { hasText: /^Trust$/ }).click();
+await page.waitForFunction(() => window.__probe.wire.some(w => w.kind.includes('DUPLICATE (fault)') && w.disp === 'duplicate-known'), { timeout: 8000 });
+check(true, 'dup-Fault: zweite Zustellung → duplicate-known, prior outcome applies — kein zweiter Effekt');
+check(await page.evaluate(() => {
+  const e = [...window.__probe.E.contacts.values()].filter(c => !c.deactivated).find(c => c.name === 'Anton');
+  return e && e.trustReceived && e.selfAnchor;
+}), 'der Effekt selbst kam genau einmal an: Emil hält Antons Offenlegung');
+await page.locator('.fbtn', { hasText: 'Deliver everything twice' }).click();
+
+// ── Baustein 8: die Sim-Uhr — laufen, altern, driften ───────────────────
+check((await page.locator('.clockbar .rbtn').count()) === 4
+  && (await page.locator('.devctls .devbtn').count()) === 6, 'Zeitsteuerung aufgeteilt: Weltzeit + Raffer im Kopf, Drift-Knopf an JEDEM Gerät');
+check((await page.locator('.stored').count()) === 3, 'Artefakt-Ebene: ein Panel unter jedem Gerät (außerhalb der App)');
+
+// Skew ist geräte-relativ und sofort in der Statusleiste sichtbar
+const clockOf = (id) => page.locator(`#dev-${id} .phone-status span`).first().textContent();
+const beforeSkew = await clockOf('A');
+await page.locator('#dev-A .devctls .devbtn:last-child').click();
+check((await clockOf('A')) !== beforeSkew && (await clockOf('A')) !== (await clockOf('J')),
+  'Skew: Antons Gerät liest eine andere Uhr als Jonathans — Drift ist der Normalfall');
+await page.locator('#dev-A .devctls .devbtn:last-child').click();
+await page.locator('#dev-A .devctls .devbtn:last-child').click(); // zurück auf ±0 (zyklisch wie im Zeremonie-Sim)
+
+// Alterung wird echt: der gezeigte Code rotiert bei PT5M von selbst
+// (offene Dialoge zuerst schließen — der FAB weicht ihnen)
+for (const sel of ['#dev-J .cdlg button', '#dev-J .phdlg-btns button']) {
+  const b = page.locator(sel).first();
+  if (await b.count()) await b.click();
+}
+await page.locator('#dev-J .fab').waitFor({ timeout: 8000 });
+await page.locator('#dev-J .fab').click();
+const shown = await page.evaluate(() => window.__probe.shows.J.ctx.anchor);
+await page.locator('.rbtn', { hasText: '600×' }).click();
+await page.waitForFunction((a) => window.__probe.shows?.J?.ctx.anchor !== a, shown, { timeout: 20000 });
+check(await page.evaluate(() => window.__probe.J.log.some(l => l.includes('rotated by itself'))),
+  'laufende Zeit: der gezeigte Code erreicht PT5M und prägt sich neu — Anzeige rotiert, Retention bleibt');
+await page.locator('.rbtn', { hasText: 'paused' }).click();
+check(await page.evaluate(() => window.__probe.J.showLog.size >= 2),
+  'das Show-Log hält beide Challenges auflösbar (5.3: rotation changes what is displayed, never what is retained)');
+
+console.log(fails ? `\n${fails} FAILED` : '\nNETZWERK-UI-DURCHLAUF (APP-FLOW + DELIVERY + SIM-UHR) BESTANDEN');
 await browser.close();
 process.exit(fails ? 1 : 0);

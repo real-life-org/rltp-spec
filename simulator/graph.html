@@ -268,11 +268,13 @@
 <script src="https://cdn.jsdelivr.net/npm/d3-force@3/dist/d3-force.min.js"></script>
 <script type="module">
 import * as W from './graph-web.mjs'
+window.__W = W
 import { injectPhoneCss } from './rltp-phone.mjs'
 injectPhoneCss()
 
 // ── world & cast ────────────────────────────────────────────────────────
 const world = W.createWorld()
+window.__gworld = world
 const COLORS = { Anna:'#3b82f6', Peter:'#ef4444', Frida:'#f59e0b', Sam:'#84cc16', Lena:'#ec4899' }
 const EXTRA = ['#14b8a6','#8b5cf6','#fb923c','#06b6d4','#f43f5e']
 let now = Date.parse('2026-08-21T10:00:00Z')
@@ -281,7 +283,7 @@ const tick = (ms=60_000) => (now += ms)
 const P = {}
 
 // ── persistence: action log in localStorage, deterministic replay ───────
-const KEY = 'rltp-graph-sim-v2' // v2: deferred anchor disclosure — v1 logs replay against different holdings
+const KEY = 'rltp-graph-sim-v3' // v3: S-DID cut (community anchors) — older logs replay against different derivations and diverge silently
 const hex = (b) => [...b].map((x) => x.toString(16).padStart(2, '0')).join('')
 const unhex = (h) => new Uint8Array(h.match(/../g).map((x) => parseInt(x, 16)))
 const LOG = []
@@ -1161,7 +1163,7 @@ async function renderPhone() {
     if (meta) { const m = document.createElement('span'); m.className = 'pmeta'; m.textContent = meta; box.appendChild(m) }
     return box
   }
-  const aSelf = A.personas.get('self')?.anchor
+  const aSelf = A.personas.get(W.communityLabel(A))?.anchor
   if (phoneTab === 'profile') {
     // the persona: the third audience size — trust toward EVERYONE
     const ph = document.createElement('div'); ph.className = 'profhead'
@@ -1438,7 +1440,7 @@ function renderWallet() {
   // 1 · identity: the derived anchors (FPP: R/M/P identifiers)
   add('id', 'Identity · anchors', 'one identity per context, all derived from one seed',
     [...A.personas.entries()].map(([label, p]) => ({
-      title: label === 'self' ? 'personal community anchor'
+      title: label === W.communityLabel(A) ? 'personal community anchor (M-DID, ordinary group context)'
         : label.startsWith('group/') ? `membership anchor · ${[...world.groups.values()].find((g) => `group/${g.genesisDigest}` === label)?.label ?? label}`
         : label.startsWith('persona/') ? `persona anchor · ${label.slice('persona/'.length)}`
         : label.startsWith('pair/') ? `relationship anchor · ${peerOfPair(label) ?? short(p.anchor)}`
@@ -1447,7 +1449,7 @@ function renderWallet() {
         ? (A.publicPersona?.active ? 'public' : 'publishing stopped — published data stays out') + ' · ' + short(p.anchor)
         : short(p.anchor),
       json: J({ label, anchor: p.anchor,
-        derivation: label === 'self' ? "HKDF-SHA256(root, 'wot/identity/ed25519/v1')" : `HKDF-SHA256(root, 'rltp/anchor/ed/${label}')`,
+        derivation: `HKDF-SHA256(root, 'rltp/anchor/ed/${label}')`,
         backup: 'root seed only (12 words) — anchors are re-derivable', ...(label.startsWith('persona/') && A.publicPersona ? { profile: A.publicPersona.doc } : {}) }),
     })))
 
@@ -1500,7 +1502,7 @@ function renderWallet() {
   }
   for (const [gid, tag] of A.publishedTags) dis.push({ dir: 'out', title: `published tag · ${world.groups.get(gid)?.label ?? gid}`,
     sub: (A.tags.has(gid) ? 'published' : 'publication stopped — artifact stays') + ' · readable by digest-knowers only',
-    json: J({ mechanism: 'HMAC-SHA256(genesisDigest, self-anchor) — executed', tag, anchor: A.personas.get('self')?.anchor }) })
+    json: J({ mechanism: 'HMAC-SHA256(genesisDigest, self-anchor) — executed', tag, anchor: A.personas.get(W.communityLabel(A))?.anchor }) })
   add('dis', 'Disclosures & tags', 'anchor mappings — what trust discloses', dis)
 
   const box = document.getElementById('walletList'); box.innerHTML = ''

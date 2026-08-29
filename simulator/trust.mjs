@@ -22,6 +22,7 @@
 //   Ehrlicher Rest: 1-Bit-Orakel über gehaltene Anker + die Zählung.
 import { jcs } from './rltp-core.mjs'
 import * as C from './rltp-crypto.mjs'
+import * as DV from './delivery.mjs'
 
 const te = new TextEncoder()
 const S = globalThis.crypto.subtle
@@ -34,13 +35,15 @@ export async function hmac (keyBytes, msg) {
   const k = await S.importKey('raw', keyBytes, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
   return C.b64uOf(new Uint8Array(await S.sign('HMAC', k, te.encode(msg))))
 }
-// der stabile Self-Kontext (WoT-App-Ableitungspfade, ein Seed für alles)
-export async function selfContext (p) {
-  if (!p.selfCtx) p.selfCtx = await C.labeledContext(p.rootIkm, 'self')
+// der stabile soziale Anker = COMMUNITY-ANKER (Identity 0.13, S-DID-Schnitt):
+// gewöhnlicher Gruppen-Kontext über die Genesis der persönlichen Community —
+// nie mehr die zero-input-Recovery-Strings
+export async function communityContext (p) {
+  if (!p.selfCtx) p.selfCtx = await C.communityContext(p.rootIkm, p.communityGenesis)
   return p.selfCtx
 }
 export const selfCard = async (p, whenIso) => {
-  const s = await selfContext(p)
+  const s = await communityContext(p)
   return C.signCard(s, C.cardBody(s, { name: p.name }), whenIso)
 }
 // Beziehungs-Schlüssel: X25519 zwischen den pair-Kontexten des Kanals
@@ -55,7 +58,7 @@ const mappingBody = (pairAnchor, selfAnchor, toPairAnchor, whenIso) =>
   ({ type: 'anchor-mapping@2', pair: pairAnchor, self: selfAnchor, to: toPairAnchor, issuedAt: whenIso })
 export async function makeMapping (p, counterpartAnchor, when) {
   const contact = p.contacts.get(counterpartAnchor)
-  const s = await selfContext(p)
+  const s = await communityContext(p)
   const whenIso = C.iso(when)
   const card = await selfCard(p, whenIso)
   const body = mappingBody(contact.channel.own.anchor, s.anchor, counterpartAnchor, whenIso)
@@ -99,9 +102,10 @@ export async function forgeMapping (forger, victimCard, pairAnchor, when) {
 }
 
 // ── der geblendete Stern ────────────────────────────────────────────────
-export async function buildStar (p, contact) {
-  contact.starSeq = (contact.starSeq ?? 0) + 1
-  const salt = String(contact.starSeq)
+// reine Berechnung — Commit von Journal/Sequenz erst nach allem Fehlbaren
+// (lib-Review 5 B-5, Parität)
+export async function buildStarPure (p, contact, seq) {
+  const salt = String(seq)
   const k = await relKey(contact, 'rltp/trust/blind/star/' + salt)
   const blinded = []
   let count = 0
@@ -111,7 +115,11 @@ export async function buildStar (p, contact) {
     blinded.push(await hmac(k, e.selfAnchor))
   }
   blinded.sort()
-  const snap = { salt, count, blinded }
+  return { salt, count, blinded }
+}
+export async function buildStar (p, contact) {
+  const snap = await buildStarPure(p, contact, (contact.starSeq ?? 0) + 1)
+  contact.starSeq = (contact.starSeq ?? 0) + 1
   contact.sentStar = snap // Sender-Journal: was ich hier zuletzt geliefert habe
   return snap
 }
@@ -149,18 +157,22 @@ export async function setTrust (p, counterpartAnchor, when, ent = {}) {
   if (!contact.channel?.own) return { error: 'kein eigener Kanal — einseitig (◇) hast du nichts freigegeben' }
   if (contact.trustGiven) return { error: 'bereits geschenkt (Einweg-Tür)' }
   const whenIso = C.iso(when)
-  contact.trustGiven = whenIso
+  // Einweg-Tür schließt NACH dem Siegel (lib-Review 5 B-5, Parität)
   const mapping = await makeMapping(p, counterpartAnchor, when)
-  contact.sentMapping = mapping // Sender-Journal: die geöffnete Einweg-Tür
-  const star = await buildStar(p, contact)
+  const star = await buildStarPure(p, contact, (contact.starSeq ?? 0) + 1)
   const body = {
     id: uuid(ent.id), type: TT + 'trust-disclosure@probe',
     issuer: contact.channel.own.anchor, recipient: counterpartAnchor,
     issuedAt: whenIso, payload: { mapping, star },
   }
   const doc = await C.diSign(contact.channel.own, body, whenIso)
+  const env = await C.seal(doc, contact.channel.counterpartKa, ent)
+  contact.trustGiven = whenIso
+  contact.sentMapping = mapping // Sender-Journal: die geöffnete Einweg-Tür
+  contact.starSeq = (contact.starSeq ?? 0) + 1
+  contact.sentStar = star
   say(p, `Vertrauen geschenkt an ${contact.name}: stabiler Anker offengelegt (DV-Mapping) + Kontakt-Updates aktiv`)
-  return { to: contact, env: await C.seal(doc, contact.channel.counterpartKa, ent) }
+  return { to: contact, env }
 }
 export function setTrustPaused (p, counterpartAnchor, paused) {
   const contact = p.contacts.get(counterpartAnchor)
@@ -171,29 +183,42 @@ export function setTrustPaused (p, counterpartAnchor, paused) {
 // Bestand geändert (neuer Self-Anker gehalten) → Stern überall auffrischen,
 // wo ich vertraue und nicht pausiert habe. Ohne das frieren Sterne in der
 // Toggle-Reihenfolge ein (Antons Erstlauf-Befund im Graph-Simulator).
+// pro Empfänger resilient: EIN Fehlschlag verwirft nie die schon
+// gebauten Sterne; failures gehören dem Host (lib-Review 5 M-1, Parität)
 export async function starRefreshAll (p, when, ent = {}) {
   const outbound = []
+  const failures = []
   for (const [anchor, contact] of p.contacts) {
     if (!contact.trustGiven || contact.trustPaused) continue
-    const star = await buildStar(p, contact)
-    const whenIso = C.iso(when)
-    const body = {
-      id: uuid(), type: TT + 'trust-star@probe',
-      issuer: contact.channel.own.anchor, recipient: anchor,
-      issuedAt: whenIso, payload: { star },
-    }
-    outbound.push({ to: contact, env: await C.seal(await C.diSign(contact.channel.own, body, whenIso), contact.channel.counterpartKa, ent) })
+    try {
+      const star = await buildStarPure(p, contact, (contact.starSeq ?? 0) + 1)
+      const whenIso = C.iso(when)
+      const body = {
+        id: uuid(), type: TT + 'trust-star@probe',
+        issuer: contact.channel.own.anchor, recipient: anchor,
+        issuedAt: whenIso, payload: { star },
+      }
+      const env = await C.seal(await C.diSign(contact.channel.own, body, whenIso), contact.channel.counterpartKa, ent)
+      contact.starSeq = (contact.starSeq ?? 0) + 1
+      contact.sentStar = star
+      outbound.push({ to: contact, env })
+    } catch (e) { failures.push({ to: contact.name ?? anchor, error: String(e?.message ?? e) }) }
   }
-  return outbound
+  return Object.assign(outbound, { failures })
 }
 
 // ── Empfangs-Dispatch (Form wie groups.receiveDoc) ──────────────────────
 export async function receiveTrustDoc (p, env, when, ent = {}) {
+  const opened = await DV.openEnvelope(p, env)                // Stufen 1–4, Cache-Lesung (lib-Parität)
+  if (opened.duplicate) return { handled: true, duplicate: true }
+  if (opened.error) return { handled: false }
+  const r = await receiveTrustDocInner(p, env, opened.doc, when, ent)
+  if (r?.handled && !r.error) DV.effectDone(p, opened.digest)
+  return r
+}
+async function receiveTrustDocInner (p, env, doc, when, ent = {}) {
   const ctx = p.contexts.get(env.rkid)
   if (!ctx) return { handled: false }
-  const open = await C.unseal(env, ctx.x.priv)
-  if (open.error) return { handled: false }
-  const doc = open.document
   if (typeof doc?.type !== 'string' || !doc.type.startsWith(TT + 'trust-')) return { handled: false, doc }
   const fromEntry = [...p.contacts.entries()].find(([, c]) => c.channel?.own?.anchor === ctx.anchor)
   if (!fromEntry) return { handled: true, error: 'kein Kanal' }
@@ -209,9 +234,11 @@ export async function receiveTrustDoc (p, env, when, ent = {}) {
       from.starReceived = doc.payload.star
       await refreshStarInfo(p)
       say(p, `${from.name} vertraut dir: stabiler Anker geprüft übernommen (nur für dich beweisend)`)
-      // mein Bestand wuchs → mein lieferbarer Stern auch: auffrischen
+      // Inbound-Effekt komplett; starRefreshAll ist pro Empfänger
+      // resilient, failures gehören dem Host (lib-Review 5 M-1, Parität)
       const outbound = await starRefreshAll(p, when, ent)
-      return { handled: true, disclosed: m.body.self, fromName: from.name, outbound }
+      const outboundError = outbound.failures.length ? outbound.failures.map((f) => `${f.to}: ${f.error}`).join(' · ') : undefined
+      return { handled: true, disclosed: m.body.self, fromName: from.name, outbound: [...outbound], outboundError }
     }
     case 'star@probe': {
       from.starReceived = doc.payload.star

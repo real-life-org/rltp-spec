@@ -1,8 +1,8 @@
 {
  "$schema": "https://json-schema.org/draft/2020-12/schema",
  "$id": "https://real-life.org/trust-tasks/registry-declaration/0.1",
- "title": "RLTP payload registry-declaration (rltp-delivery@0.37)",
- "description": "Per-party declaration of fixed operational constants for a served role (Delivery 4.4); first registered constant: the introduction mediator's ack-delay (Visibility 8.4)",
+ "title": "RLTP payload registry-declaration (rltp-delivery@0.69)",
+ "description": "Per-party declaration of fixed operational constants for a served role (Delivery 4.4). The schema is deliberately generic \u2014 it fixes the envelope of a declaration, never the constant names, which each role's specification registers. The first constant registered this way was the introduction mediator's ack-delay (Visibility 8.4); the carrier role of Delivery 4.4 has since registered seven carrier constants, and further roles may register others without touching this file.",
  "type": "object",
  "additionalProperties": false,
  "required": [

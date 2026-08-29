@@ -1,9 +1,9 @@
 {
- "note": "Delivery §5a.3 — the canonical, domain-separated registration proof. The signature input is the JCS serialization (RFC 8785) of the object with \"sig\" omitted; the signature is Ed25519 under \"principal\". The \"v\" constant is inside the signed bytes and is the domain tag.",
- "v": "rltp-carrier-proof/0.2",
- "domainTagNote": "rltp-carrier-proof/0.1 appears in no other signed artifact of this stack. A verifier MUST reject an object whose v is not byte-equal to this constant.",
- "challengeEncoding": "exactly 32 raw bytes, canonical unpadded base64url — exactly 43 characters",
- "sigEncoding": "Ed25519 over the JCS bytes, carried as canonical base58btc with the z multibase prefix — the same signature encoding and canonicity rule Encounter 2.3 imposes on every signature of this stack",
+ "note": "Delivery \u00a75a.3 \u2014 the canonical, domain-separated registration proof. The signature input is the JCS serialization (RFC 8785) of the object with \"sig\" omitted; the signature is Ed25519 under \"principal\". The \"v\" constant is inside the signed bytes and is the domain tag.",
+ "v": "rltp-carrier-proof/0.3",
+ "domainTagNote": "rltp-carrier-proof/0.3 appears in no other signed artifact of this stack. A verifier MUST reject an object whose v is not byte-equal to this constant. Wire 0.3 (round-36 B-1): every purpose names the queue it acts on, so rkid is present in all four; generation and addressChallenge remain absent in the session-scoped purposes, which change no succession. The /0.2 form was never instantiated outside this repository.",
+ "challengeEncoding": "exactly 32 raw bytes, canonical unpadded base64url \u2014 exactly 43 characters",
+ "sigEncoding": "Ed25519 over the JCS bytes, carried as canonical base58btc with the z multibase prefix \u2014 the same signature encoding and canonicity rule Encounter 2.3 imposes on every signature of this stack",
  "keys": {
   "principalSeedNote": "the Ed25519 seed of the control principal of identity-derivation.json carrierRelationship case 1 (did:web:carrier.example)",
   "principalSeed": "d42821bb84883a20dc04ea47e60c9e3feebf2a384c4d2f838282e8f5c65ffe6d",
@@ -16,7 +16,7 @@
  },
  "registration": {
   "object": {
-   "v": "rltp-carrier-proof/0.2",
+   "v": "rltp-carrier-proof/0.3",
    "type": "carrier-registration-proof",
    "purpose": "register",
    "carrier": "did:web:carrier.example",
@@ -26,11 +26,11 @@
    "principalChallenge": "jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28",
    "addressChallenge": "XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U"
   },
-  "jcs": "{\"addressChallenge\":\"XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U\",\"carrier\":\"did:web:carrier.example\",\"generation\":1,\"principal\":\"did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"register\",\"rkid\":\"z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.2\"}",
-  "sig": "z2nKkoA2T4Ydfx9cb59GDjnBg2bKLa4TWWX7LHiGn3uneenVFM7YpjhRPKF5wW1KFnzNT6eCLZqCP6E9bRbV2EoVe"
+  "jcs": "{\"addressChallenge\":\"XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U\",\"carrier\":\"did:web:carrier.example\",\"generation\":1,\"principal\":\"did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"register\",\"rkid\":\"z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.3\"}",
+  "sig": "z4cd7YYY3nuagpvrLpsGELSTEduS2cGFdFMvrCGgzGRcmzp7sMczYNjGMrXq1JMofGs456DK2wJSxdNNp9o9eqU5A"
  },
  "generationMonotonicity": {
-  "note": "Delivery §5a.3 — a rebind binds only on a STRICTLY HIGHER generation than the one the carrier last accepted. Equal generation with the same principal is registered(idempotent); equal generation with a different principal is refused (the carrier cannot decide a tie the register decides by nonce bytes); lower is refused(stale-generation). This is what stops a device restored from an older backup — which still holds root IKM, the older nonce and the rkid private key, and can therefore prove everything — from rolling the binding back.",
+  "note": "Delivery \u00a75a.3 \u2014 a rebind binds only on a STRICTLY HIGHER generation than the one the carrier last accepted. Equal generation with the same principal is registered(idempotent); equal generation with a different principal is refused (the carrier cannot decide a tie the register decides by nonce bytes); lower is refused(stale-generation). This is what stops a device restored from an older backup \u2014 which still holds root IKM, the older nonce and the rkid private key, and can therefore prove everything \u2014 from rolling the binding back.",
   "acceptedGeneration": 2,
   "acceptedPrincipal": "did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF",
   "cases": [
@@ -49,7 +49,7 @@
     "bindingMoves": false
    },
    {
-    "case": "the same generation, a DIFFERENT principal — a tie the carrier cannot decide",
+    "case": "the same generation, a DIFFERENT principal \u2014 a tie the carrier cannot decide",
     "generation": 2,
     "principal": "did:key:z6Mkgb4pvMrkdzNXstkP8HcqhZgXGRnzZHNceeq1vmm7fyvi",
     "outcome": "refused(stale-generation)",
@@ -64,7 +64,7 @@
    }
   ],
   "equalGenerationTie": {
-   "note": "Delivery §5a.3 / Identity §7a.3 — the composite the two state machines did not cover separately. The register decides an equal-generation race by the smallest nonce bytes; the carrier cannot see them and MUST NOT be given a value that reconstructs their order (any such value is order-preserving in the nonce, hence identical at every carrier of that relationship — a cross-carrier join key, Identity §7a.4). So refused(stale-generation) at an equal generation is a WAIT STATE, and the healing path is a rotation. A rotation draws a FRESH random nonce (Identity §7a.3) and the principal depends on (C, N) and not on the generation (§7a.4) — so the healing step derives a NEW principal, and this vector carries that derivation rather than reusing a value.",
+   "note": "Delivery \u00a75a.3 / Identity \u00a77a.3 \u2014 the composite the two state machines did not cover separately. The register decides an equal-generation race by the smallest nonce bytes; the carrier cannot see them, and this stack carries NO value from which that ordering could be reconstructed \u2014 not because such a value is impossible (a carrier-scoped order-preserving map is constructible; the categorical impossibility claim of an earlier casting is withdrawn) but because none is designed: what one would have to satisfy is written down as Delivery \u00a712 DO-7. So refused(stale-generation) at an equal generation is a WAIT STATE, and the healing path is a rotation.",
    "registerCanonicalNonce": "4317e83fb14b67a0dce7e4b2f8fb6f2088142cb0567837e65b57769c4e35937b",
    "registerSupersededNonce": "9b9fa1f637b4fe1654ca40069569e6e9be10e655f10a4e50851a1ae5aad0b042",
    "carrierSeesNonces": false,
@@ -78,7 +78,7 @@
      "boundGeneration": 1
     },
     {
-     "step": "the registers merge: the SMALLER nonce is canonical (Identity §7a.3) — the carrier learns nothing of this",
+     "step": "the registers merge: the SMALLER nonce is canonical (Identity \u00a77a.3) \u2014 the carrier learns nothing of this",
      "generation": 1,
      "principal": "did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF",
      "outcome": null,
@@ -95,7 +95,7 @@
      "boundGeneration": 1
     },
     {
-     "step": "it rotates — a FRESH nonce at generation + 1, so the principal is newly derived and differs from both tie candidates",
+     "step": "it rotates \u2014 a FRESH nonce at generation + 1, so the principal is newly derived and differs from both tie candidates",
      "generation": 2,
      "principal": "did:key:z6Mku1eGfUgbn6WN2T5J7nPe6VXt1BbwQwdPpYVMthyMhs7Z",
      "outcome": "rebound",
@@ -112,7 +112,7 @@
    "rotationEdSeed": "b1b4c0eb7f79babda447e1692322c9aa88fae70bad810ae19b41c0e5f2b15c12",
    "rotationPrincipal": "did:key:z6Mku1eGfUgbn6WN2T5J7nPe6VXt1BbwQwdPpYVMthyMhs7Z",
    "tieAtTheMaximum": {
-    "note": "Delivery §5a.3 / Identity §7a.3 — the doubly theoretical corner: a tie AT the generation maximum, where no rotation is available. The exit is not re-addressing (a holder cannot elect that) but the rule that was already there: entries are superseded, NEVER DELETED, so every device retains the bound entry and can derive its principal. The binding stands and stays collectable; what is lost is only the ability to change which of two principals holds it.",
+    "note": "Delivery \u00a75a.3 / Identity \u00a77a.3 \u2014 the doubly theoretical corner: a tie AT the generation maximum, where no rotation is available. The exit is not re-addressing (a holder cannot elect that) but the rule that was already there: entries are superseded, NEVER DELETED, so every device retains the bound entry and can derive its principal. The binding stands and stays collectable; what is lost is only the ability to change which of two principals holds it.",
     "generation": 9007199254740991,
     "rotationAvailable": false,
     "boundPrincipalIsRegisterCanonical": false,
@@ -120,13 +120,13 @@
     "collectableByEveryDevice": true,
     "why": "collection and conclusion require possession of the BOUND principal's key; every device derives it from the retained superseded entry, so deposits arrive, are collected and are concluded",
     "remainingLevers": [
-     "Identity §7a.2's move to a different configured C (different principals, N untouched)",
-     "a genuinely new relationship chain — a social event of the companions, never an instruction"
+     "Identity \u00a77a.2's move to a different configured C (different principals, N untouched)",
+     "a genuinely new relationship chain \u2014 a social event of the companions, never an instruction"
     ]
    }
   },
   "releasedAndReRegistered": {
-   "note": "Delivery §5a.3/§5a.9 — after the two-phase wind-up releases queue and binding, a device from an old backup still holds the older nonce and the rkid private key and can prove everything. The binding tombstone (rkid, highest generation ever accepted) is what keeps 'possession of a superseded generation is possession of nothing' true past the release.",
+   "note": "Delivery \u00a75a.3/\u00a75a.9 \u2014 after the two-phase wind-up releases queue and binding, a device from an old backup still holds the older nonce and the rkid private key and can prove everything. The binding tombstone (rkid, highest generation ever accepted) is what keeps a superseded generation from buying NEW authorization past the release. Stated exactly (round-19 M-2): a principal the carrier is still bound to keeps collecting until a strictly higher generation rebinds; what supersession forbids is registering, rebinding and resurrecting..",
    "highestEverAccepted": 2,
    "steps": [
     {
@@ -142,7 +142,7 @@
      "why": "the tombstone outlives the binding"
     },
     {
-     "step": "the same device presents generation 2 — equal, not greater",
+     "step": "the same device presents generation 2 \u2014 equal, not greater",
      "generation": 2,
      "outcome": "refused(stale-generation)",
      "bindingLive": false
@@ -154,28 +154,235 @@
      "bindingLive": true
     }
    ],
-   "residual": "The tombstone does not expire in time; it is released only by the capacity rule of Delivery §4.4 — at max-binding-tombstones the OLDEST by release time is evicted. For an evicted rkid the anti-resurrection guarantee ends, and that consequence is reachable only by a party holding BOTH halves (the principal's Ed25519 key, derivable only from the root IKM and that nonce, and the rkid's X25519 private key) — that is the person or a device holding their state, never a third party. Forcing eviction costs the attacker a full registration plus an orphan-horizon of waiting per tombstone, so it is metered and slow.",
+   "residual": "The tombstone does not expire in time; it leaves in exactly two ways (5a.3): CONSUMED by a registration carrying a strictly greater generation \u2014 the released x register/rebind cell, which never keeps it beside the new binding \u2014 or EVICTED at the declared max-binding-tombstones bound, where the normative TOTAL ORDER decides: the longest-released tombstone goes first, ties broken by ascending unsigned bytewise order of the decoded rkid key bytes (round-43 B-2: the first 0.65 draft left order and bound to storage policy, which re-opened the round-15/19 divergence \u2014 same observable history, different answer to the same old proof). HOW an implementation realizes the order across restarts is its own affair; THAT it holds is conformance. For an evicted rkid the anti-resurrection guarantee ends, and that consequence is reachable only by a party holding BOTH halves \u2014 the person or a device holding their state, never a third party.",
    "evictionRule": {
-    "bound": "max-binding-tombstones",
-    "evicts": "the oldest tombstone by release time",
+    "bound": "max-binding-tombstones (a declared constant, 4.4 guarantee 1)",
+    "evicts": "the longest-released tombstone; ties broken by ascending unsigned bytewise order of the decoded rkid key bytes. A total order over facts the carrier already holds \u2014 release sequence and key bytes \u2014 with no prescribed bookkeeping: ordinals, counters or logs are implementation, the ORDER is the promise.",
     "consequenceForEvictedRkid": "the anti-resurrection guarantee ends for that address",
     "reachableBy": "only a party holding both the principal key and the rkid private key",
-    "attackerCostPerTombstone": "one full registration (both proofs, one challenge charge, registration capacity) plus one orphan-horizon of waiting"
+    "attackerCostPerTombstone": "one full registration per tombstone (both possession proofs, the carrier's own admission gate, its capacity answer). The orphan-horizon waits run in PARALLEL \u2014 bindings prepared together release together after ONE horizon \u2014 so a carrier that wants a one-wave flush to be expensive declares max-binding-tombstones well above the number of bindings it serves at once.",
+    "order": "total: release order, oldest first; ties by ascending bytewise rkid key bytes",
+    "store": {
+     "max": 3,
+     "note": "Real X25519 multikeys (documented samples). tomb-a and tomb-c release in the SAME sweep, so the bytewise rkid order decides between them \u2014 the vector exercises the tie-break as part of the order, not post hoc. The eviction order is DERIVED by the runner from releaseSweep and the decoded key bytes; ordinals and counters are implementation and ship no more (0.65 scope re-cast, round-43 B-2).",
+     "entries": [
+      {
+       "label": "tomb-a",
+       "rkid": "z6LSqeKjJ4nPBH1RmU7PdmikGVL2x8AXYx1XwUCx94VTXrXN",
+       "keyBytesPrefix": "cf8a23cd",
+       "releaseSweep": 1
+      },
+      {
+       "label": "tomb-c",
+       "rkid": "z6LSsoCMFHiCUt4c9oM16wpiddTW8yoH8K7SL6iwSNpcDpWG",
+       "keyBytesPrefix": "ef876570",
+       "releaseSweep": 1
+      },
+      {
+       "label": "tomb-b",
+       "rkid": "z6LSsDW5mJgy5zHwdv93sTab5QZS6XaD6MSeXaXLnrcu2nHg",
+       "keyBytesPrefix": "e6e5b317",
+       "releaseSweep": 2
+      }
+     ],
+     "evictedFirstLabel": "tomb-a",
+     "orderedFullLabels": [
+      "tomb-a",
+      "tomb-c",
+      "tomb-b"
+     ]
+    }
+   },
+   "recoveryDistance": {
+    "note": "Round-21 B-3: the cost of coming back after the release is not 'one rotation' \u2014 it is the generation distance. Derived from the steps above rather than asserted.",
+    "tombstoneGeneration": 2,
+    "recoveredCopyGeneration": 1,
+    "rotationsNeeded": 2,
+    "formula": "t - g + 1 rotations of N, where t is the generation the tombstone recorded and g the one the recovered copy carries",
+    "atTheMaximum": "where t is 2^53-1 no generation is strictly greater, so no number of rotations suffices: that address is not re-registrable at that carrier. Identity 7a.3's terminal rule applies and the lever is 7a.2's move to a different configured carrier string."
+   },
+   "boundRevision": {
+    "note": "round-45 B-3 \u2014 lowering max-binding-tombstones trims the store at the instant the revision takes effect, in one linearized transition, by the same total order. 'Prospective, never retroactive' governs running acts; a store is standing state.",
+    "before": {
+     "declared": 3,
+     "store": [
+      "tomb-a",
+      "tomb-c",
+      "tomb-b"
+     ]
+    },
+    "revision": {
+     "declared": 1
+    },
+    "after": {
+     "store": [
+      "tomb-b"
+     ],
+     "evicted": [
+      "tomb-a",
+      "tomb-c"
+     ],
+     "why": "tomb-a and tomb-c are the longest-released (sweep 1, tie by key bytes) and go in order; the trim is atomic \u2014 a carrier that waits for the next release holds a different store than one that trims, after identical histories"
+    }
+   }
+  },
+  "carrierEntryLossRecovery": {
+   "note": "round-39 B-1: Identity \u00a79.3 promises that losing the carrier entry ALONE \u2014 pair context held, so the rkid private key is held \u2014 is replaceable. The lost entry IS {nonce, generation}, so the holder knows neither the old principal nor the generation to exceed. Nothing before this vector executed that path, and executed it fails: a fresh N at generation 1 against a live binding at generation g is refused(stale-generation), not success. The contract now makes the refusal CARRY the held generation, which costs one extra exchange and nothing else. Round-41 M-2/B-3: the first shipping of this vector fixed state=live and generation=4 only, so the categorical 'two exchanges' promise stayed green while the lifecycle makes the count a FUNCTION of the held state. The per-state family below is that function, executed.",
+   "held": {
+    "state": "live",
+    "generation": 4,
+    "principal": "P_old"
+   },
+   "steps": [
+    {
+     "step": 1,
+     "request": "register(rkid, generation=1, principal=P_new)",
+     "why": "the holder lost {nonce, generation}; a fresh N can only start at 1",
+     "outcome": "refused(stale-generation)",
+     "disclosedGeneration": 4,
+     "bindingMoves": false
+    },
+    {
+     "step": 2,
+     "request": "rebind(rkid, generation=5, principal=P_new)",
+     "why": "disclosed + 1 \u2014 strict monotonicity is an ORDERING rule, and the address challenge is the access rule, which this holder passes",
+     "outcome": "rebound",
+     "bindingMoves": true
+    }
+   ],
+   "withoutDisclosure": {
+    "outcome": "no terminating strategy",
+    "why": "the holder can only guess; every guess at or below the held generation is refused identically, and the promise of Identity \u00a79.3 is unkeepable"
+   },
+   "disclosureIsNotAnAccessGrant": "reaching this verdict already required a signature under the named principal AND the opened address challenge, which only the holder of the rkid private key can produce. That party may rebind at ANY higher generation whether or not it learns the current one, so the number grants nothing it did not already have.",
+   "perHeldState": {
+    "note": "how many exchanges the promised replacement costs, by the state the carrier holds for that rkid. The number is a function of the state, not a constant. A return may additionally meet the carrier's retriable capacity refusal; 5a.9's priority rule (a return outranks an arrival) ORDERS that wait \u2014 no newcomer is served while the returner waits; nothing promises that room appears, and the practical bound is the plural carrier world (round-46 B-2) \u2014 and the third case executes it: capacity refusals are retriable and end when the carrier has room, and no rotation helps or is needed.",
+    "cases": [
+     {
+      "held": {
+       "state": "live",
+       "record": 4
+      },
+      "exchanges": 2,
+      "steps": [
+       {
+        "generation": 1,
+        "outcome": "refused(stale-generation)",
+        "discloses": 4
+       },
+       {
+        "generation": 5,
+        "outcome": "rebound"
+       }
+      ],
+      "why": "the carrier holds a record to exceed, and the holder cannot know it without the disclosure"
+     },
+     {
+      "held": {
+       "state": "closing",
+       "record": 4
+      },
+      "exchanges": 2,
+      "steps": [
+       {
+        "generation": 1,
+        "outcome": "refused(stale-generation)",
+        "discloses": 4
+       },
+       {
+        "generation": 5,
+        "outcome": "rebound"
+       }
+      ],
+      "why": "a closing binding is still held, so the generation question is the same one; the return also ends the wind-up (5a.9)"
+     },
+     {
+      "held": {
+       "state": "closing",
+       "record": 4,
+       "atCapacity": true
+      },
+      "exchanges": "more than 2",
+      "steps": [
+       {
+        "generation": 1,
+        "outcome": "registration-refused(capacity)"
+       },
+       {
+        "generation": 5,
+        "outcome": "registration-refused(capacity)"
+       },
+       {
+        "generation": 5,
+        "outcome": "rebound",
+        "carrierHasRoom": true
+       }
+      ],
+      "why": "the carrier is at its own limits, so the first answers are registration-refused(capacity) \u2014 retriable, not about the generation, and no rotation helps: the holder retries, outranking every new registration (5a.9), and rebinds once the carrier has room"
+     },
+     {
+      "held": {
+       "state": "unbound"
+      },
+      "exchanges": 1,
+      "steps": [
+       {
+        "generation": 1,
+        "outcome": "registered"
+       }
+      ],
+      "why": "the binding was released and its tombstone evicted, so no record survives to exceed and the fresh N binds at once \u2014 the categorical promise was wrong in this direction too"
+     },
+     {
+      "held": {
+       "state": "released",
+       "record": 4
+      },
+      "exchanges": 2,
+      "steps": [
+       {
+        "generation": 1,
+        "outcome": "refused(stale-generation)",
+        "discloses": 4
+       },
+       {
+        "generation": 5,
+        "outcome": "registered"
+       }
+      ],
+      "why": "the tombstone carries t=4 and is exactly the record to exceed; the successful registration consumes it"
+     }
+    ]
    }
   }
  },
  "collection": {
-  "note": "purpose=collect: rkid and addressChallenge are ABSENT — those acts are authorized per session, not per address. Their absence is part of the JCS bytes.",
+  "note": "purpose=collect: rkid IS present \u2014 it names the queue this collection acts on (round-36 B-1: a principal may hold several addresses at one carrier, so resolving the queue through the principal left two conformant carriers free to answer the same bytes differently). addressChallenge and generation remain ABSENT: this act changes no succession, and their absence is part of the JCS bytes.",
   "object": {
-   "v": "rltp-carrier-proof/0.2",
+   "v": "rltp-carrier-proof/0.3",
    "type": "carrier-registration-proof",
    "purpose": "collect",
    "carrier": "did:web:carrier.example",
    "principal": "did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF",
-   "principalChallenge": "jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28"
+   "principalChallenge": "jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28",
+   "rkid": "z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU"
   },
-  "jcs": "{\"carrier\":\"did:web:carrier.example\",\"principal\":\"did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"collect\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.2\"}",
-  "sig": "z4dxTZMFfWS2xh87D8agN48pbfk62L4C5WXyy9rVVoEcUC4mMb5xfARp6utkuk9rzx7hpASRDBNHYBBTn48o5NtV1"
+  "jcs": "{\"carrier\":\"did:web:carrier.example\",\"principal\":\"did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"collect\",\"rkid\":\"z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.3\"}",
+  "sig": "zBdC1BTTJZULJWR7D2s29JTVCFZYTZ672TGm3oxnSm3eUeUYaPFBidRyBFrN9UhCFV1q99oSTM8kvhw7gLuGNMAy"
+ },
+ "conclusion": {
+  "note": "round-37 M-2: the fourth purpose, shipped signed. `conclude` names its queue (wire 0.3) and carries neither `generation` nor `addressChallenge` \u2014 it ends a session against a binding that already exists and touches no succession.",
+  "object": {
+   "v": "rltp-carrier-proof/0.3",
+   "type": "carrier-registration-proof",
+   "purpose": "conclude",
+   "carrier": "did:web:carrier.example",
+   "principal": "did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF",
+   "principalChallenge": "jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28",
+   "rkid": "z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU"
+  },
+  "jcs": "{\"carrier\":\"did:web:carrier.example\",\"principal\":\"did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"conclude\",\"rkid\":\"z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.3\"}",
+  "sig": "z2UthhFvPJJvUwa2CVtWt4x3j4JizXDr5787e4K9HmNTnqm2Ei43M9ABiHGeL4zQzLTv5yfKUU4EREUkSUCcLh1eP"
  },
  "negatives": {
   "note": "Each negative changes one value; the JCS bytes therefore differ from the registration bytes and the shipped signature MUST NOT verify over them. This is the executable form of \"the proof is not transplantable\".",
@@ -183,7 +390,7 @@
    {
     "case": "transplanted to a second rkid",
     "object": {
-     "v": "rltp-carrier-proof/0.2",
+     "v": "rltp-carrier-proof/0.3",
      "type": "carrier-registration-proof",
      "purpose": "register",
      "carrier": "did:web:carrier.example",
@@ -193,12 +400,12 @@
      "principalChallenge": "jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28",
      "addressChallenge": "XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U"
     },
-    "jcs": "{\"addressChallenge\":\"XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U\",\"carrier\":\"did:web:carrier.example\",\"generation\":1,\"principal\":\"did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"register\",\"rkid\":\"z6LSmCqFSY168DbSGvV6j7mxKyf6yPJsVwQt3Hy4BHpHpjfR\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.2\"}"
+    "jcs": "{\"addressChallenge\":\"XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U\",\"carrier\":\"did:web:carrier.example\",\"generation\":1,\"principal\":\"did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"register\",\"rkid\":\"z6LSmCqFSY168DbSGvV6j7mxKyf6yPJsVwQt3Hy4BHpHpjfR\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.3\"}"
    },
    {
     "case": "transplanted to a second carrier",
     "object": {
-     "v": "rltp-carrier-proof/0.2",
+     "v": "rltp-carrier-proof/0.3",
      "type": "carrier-registration-proof",
      "purpose": "register",
      "carrier": "did:web:other-carrier.example",
@@ -208,12 +415,12 @@
      "principalChallenge": "jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28",
      "addressChallenge": "XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U"
     },
-    "jcs": "{\"addressChallenge\":\"XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U\",\"carrier\":\"did:web:other-carrier.example\",\"generation\":1,\"principal\":\"did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"register\",\"rkid\":\"z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.2\"}"
+    "jcs": "{\"addressChallenge\":\"XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U\",\"carrier\":\"did:web:other-carrier.example\",\"generation\":1,\"principal\":\"did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"register\",\"rkid\":\"z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.3\"}"
    },
    {
     "case": "transplanted to a second principal",
     "object": {
-     "v": "rltp-carrier-proof/0.2",
+     "v": "rltp-carrier-proof/0.3",
      "type": "carrier-registration-proof",
      "purpose": "register",
      "carrier": "did:web:carrier.example",
@@ -223,12 +430,12 @@
      "principalChallenge": "jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28",
      "addressChallenge": "XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U"
     },
-    "jcs": "{\"addressChallenge\":\"XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U\",\"carrier\":\"did:web:carrier.example\",\"generation\":1,\"principal\":\"did:key:z6Mkgb4pvMrkdzNXstkP8HcqhZgXGRnzZHNceeq1vmm7fyvi\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"register\",\"rkid\":\"z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.2\"}"
+    "jcs": "{\"addressChallenge\":\"XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U\",\"carrier\":\"did:web:carrier.example\",\"generation\":1,\"principal\":\"did:key:z6Mkgb4pvMrkdzNXstkP8HcqhZgXGRnzZHNceeq1vmm7fyvi\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"register\",\"rkid\":\"z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.3\"}"
    },
    {
     "case": "purpose changed from register to rebind",
     "object": {
-     "v": "rltp-carrier-proof/0.2",
+     "v": "rltp-carrier-proof/0.3",
      "type": "carrier-registration-proof",
      "purpose": "rebind",
      "carrier": "did:web:carrier.example",
@@ -238,7 +445,7 @@
      "principalChallenge": "jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28",
      "addressChallenge": "XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U"
     },
-    "jcs": "{\"addressChallenge\":\"XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U\",\"carrier\":\"did:web:carrier.example\",\"generation\":1,\"principal\":\"did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"rebind\",\"rkid\":\"z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.2\"}"
+    "jcs": "{\"addressChallenge\":\"XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U\",\"carrier\":\"did:web:carrier.example\",\"generation\":1,\"principal\":\"did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"rebind\",\"rkid\":\"z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.3\"}"
    },
    {
     "case": "a foreign domain tag",
@@ -258,7 +465,7 @@
    {
     "case": "a challenge replaced",
     "object": {
-     "v": "rltp-carrier-proof/0.2",
+     "v": "rltp-carrier-proof/0.3",
      "type": "carrier-registration-proof",
      "purpose": "register",
      "carrier": "did:web:carrier.example",
@@ -268,12 +475,12 @@
      "principalChallenge": "jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28",
      "addressChallenge": "J6yJnTIIFxAlq-rKmSVZKwvyDSp91zQa5JhzKPyY58k"
     },
-    "jcs": "{\"addressChallenge\":\"J6yJnTIIFxAlq-rKmSVZKwvyDSp91zQa5JhzKPyY58k\",\"carrier\":\"did:web:carrier.example\",\"generation\":1,\"principal\":\"did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"register\",\"rkid\":\"z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.2\"}"
+    "jcs": "{\"addressChallenge\":\"J6yJnTIIFxAlq-rKmSVZKwvyDSp91zQa5JhzKPyY58k\",\"carrier\":\"did:web:carrier.example\",\"generation\":1,\"principal\":\"did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"register\",\"rkid\":\"z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.3\"}"
    },
    {
     "case": "the generation changed",
     "object": {
-     "v": "rltp-carrier-proof/0.2",
+     "v": "rltp-carrier-proof/0.3",
      "type": "carrier-registration-proof",
      "purpose": "register",
      "carrier": "did:web:carrier.example",
@@ -283,341 +490,12 @@
      "principalChallenge": "jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28",
      "addressChallenge": "XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U"
     },
-    "jcs": "{\"addressChallenge\":\"XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U\",\"carrier\":\"did:web:carrier.example\",\"generation\":2,\"principal\":\"did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"register\",\"rkid\":\"z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.2\"}"
+    "jcs": "{\"addressChallenge\":\"XF7-w0PFZgrFSU1QGLWHG9cWVdomXIvn810YXXzey1U\",\"carrier\":\"did:web:carrier.example\",\"generation\":2,\"principal\":\"did:key:z6MksbsC5mWfC3yPwQCayCqtQFGFkxge8FBqdXYgbxxWMqPF\",\"principalChallenge\":\"jbPj_T4vJVsd8KXrdQuPRp6Q0VSkX2D_Nh4h4kRwx28\",\"purpose\":\"register\",\"rkid\":\"z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU\",\"type\":\"carrier-registration-proof\",\"v\":\"rltp-carrier-proof/0.3\"}"
    }
   ]
  },
- "rateStateMachine": {
-  "note": "Delivery §4.4 `rate` — a token bucket counted in integer MICRO-tokens, so no rounding remainder can be lost. State is one integer `micro`; a millisecond is worth exactly `admission-rate-max` micro-tokens; one deposit costs `windowMs`. The verdict reads only state; a refusal changes nothing.",
-  "configurationNote": "window=1000 ms and max=3 is deliberately NOT evenly divisible — the previous vector used PT1M/3 and could not have caught the whole-token rounding fault (round-4 B-4).",
-  "declaration": {
-   "admission-resource": "rate",
-   "admission-rate-window": "PT1S",
-   "admission-rate-max": 3
-  },
-  "windowMs": 1000,
-  "capacityMicro": 3000,
-  "refill": "micro := min(max*windowMs, micro + elapsedMs*max); an admitted deposit subtracts windowMs; a refusal subtracts nothing",
-  "restartRule": "only `micro` is persisted; on restart lastRefill := the first observed monotonic instant and NO elapsed credit crosses the restart. A carrier that cannot recover `micro` starts the queue empty (micro = 0).",
-  "initialMicro": 3000,
-  "counterExampleNote": "The whole-token casting granted one token at 334 ms and refused at 667 ms, while two requests arriving together at 667 ms both succeeded. In micro-tokens both sequences admit exactly two deposits after the bucket is empty: capacity is a function of elapsed time alone.",
-  "sequences": {
-   "polledAt334And667": [
-    {
-     "step": "empty the fresh bucket (three deposits, no time)",
-     "elapsedMs": 0,
-     "verdict": "admitted",
-     "microAfter": 2000
-    },
-    {
-     "step": "second",
-     "elapsedMs": 0,
-     "verdict": "admitted",
-     "microAfter": 1000
-    },
-    {
-     "step": "third — the bucket is now empty",
-     "elapsedMs": 0,
-     "verdict": "admitted",
-     "microAfter": 0
-    },
-    {
-     "step": "the round-4 case: a request at 334 ms",
-     "elapsedMs": 334,
-     "verdict": "admitted",
-     "microAfter": 2
-    },
-    {
-     "step": "and a second at 667 ms — under whole tokens this was refused",
-     "elapsedMs": 333,
-     "verdict": "admitted",
-     "microAfter": 1
-    },
-    {
-     "step": "a refusal changes nothing (no time passed)",
-     "elapsedMs": 0,
-     "verdict": "refused(admission-resource)",
-     "microAfter": 1
-    },
-    {
-     "step": "still nothing",
-     "elapsedMs": 0,
-     "verdict": "refused(admission-resource)",
-     "microAfter": 1
-    }
-   ],
-   "bothAt667": [
-    {
-     "step": "empty the fresh bucket",
-     "elapsedMs": 0,
-     "verdict": "admitted",
-     "microAfter": 2000
-    },
-    {
-     "step": "second",
-     "elapsedMs": 0,
-     "verdict": "admitted",
-     "microAfter": 1000
-    },
-    {
-     "step": "third — empty",
-     "elapsedMs": 0,
-     "verdict": "admitted",
-     "microAfter": 0
-    },
-    {
-     "step": "both requests arrive only at 667 ms: first",
-     "elapsedMs": 667,
-     "verdict": "admitted",
-     "microAfter": 1001
-    },
-    {
-     "step": "second, same instant",
-     "elapsedMs": 0,
-     "verdict": "admitted",
-     "microAfter": 1
-    },
-    {
-     "step": "third, same instant — refused",
-     "elapsedMs": 0,
-     "verdict": "refused(admission-resource)",
-     "microAfter": 1
-    }
-   ],
-   "acrossRestart": [
-    {
-     "step": "empty the fresh bucket",
-     "elapsedMs": 0,
-     "verdict": "admitted",
-     "microAfter": 2000
-    },
-    {
-     "step": "second",
-     "elapsedMs": 0,
-     "verdict": "admitted",
-     "microAfter": 1000
-    },
-    {
-     "step": "third — empty",
-     "elapsedMs": 0,
-     "verdict": "admitted",
-     "microAfter": 0
-    },
-    {
-     "step": "earn a little",
-     "elapsedMs": 500,
-     "verdict": "admitted",
-     "microAfter": 500
-    },
-    {
-     "step": "process restarts here — only micro persists, no elapsed credit crosses",
-     "restart": true,
-     "microAfter": 500,
-     "verdict": null
-    },
-    {
-     "step": "first request after restart, at the first observed instant",
-     "elapsedMs": 0,
-     "verdict": "refused(admission-resource)",
-     "microAfter": 500
-    },
-    {
-     "step": "after a further 500 ms",
-     "elapsedMs": 500,
-     "verdict": "admitted",
-     "microAfter": 1000
-    }
-   ]
-  }
- },
- "challengeChargeMachine": {
-  "note": "Delivery §4.4 — a challenge slot is a CHARGE, not a lock. It is taken at the budget check (step (b) of the ordering), before any randomness, sealing or asymmetric operation, and lapses only on challenge-lifetime — never by completion, abandonment, a closed connection, or a restart.",
-  "declaration": {
-   "max-open-challenges": 3,
-   "challenge-lifetime": "PT1M"
-  },
-  "lifetimeMs": 60000,
-  "issuanceBound": "max-open-challenges / challenge-lifetime, carrier-wide",
-  "restartRule": "On restart the full budget counts as held with a single deadline of restart + challenge-lifetime; no per-request state is persisted, and the carrier resumes with strictly less capacity than it had.",
-  "sequences": {
-   "serialCompletions": [
-    {
-     "step": "issue 1 (charge taken at the budget check, before any key operation)",
-     "elapsedMs": 0,
-     "outcome": "issued",
-     "verdict": "issued",
-     "heldAfter": 1
-    },
-    {
-     "step": "complete it immediately — the exchange ends, the charge does not",
-     "elapsedMs": 0,
-     "outcome": "issued",
-     "verdict": "issued",
-     "heldAfter": 2
-    },
-    {
-     "step": "issue 3 — budget now full",
-     "elapsedMs": 0,
-     "outcome": "issued",
-     "verdict": "issued",
-     "heldAfter": 3
-    },
-    {
-     "step": "a fourth request, though every earlier exchange COMPLETED",
-     "elapsedMs": 0,
-     "verdict": "registration-refused(capacity)",
-     "heldAfter": 3
-    },
-    {
-     "step": "and a fifth — completion never refunds",
-     "elapsedMs": 0,
-     "verdict": "registration-refused(capacity)",
-     "heldAfter": 3
-    },
-    {
-     "step": "after most of the lifetime, still full",
-     "elapsedMs": 59000,
-     "verdict": "registration-refused(capacity)",
-     "heldAfter": 3
-    },
-    {
-     "step": "once the first charge lapses, one slot returns",
-     "elapsedMs": 1000,
-     "outcome": "issued",
-     "verdict": "issued",
-     "heldAfter": 1
-    }
-   ],
-   "acrossRestart": [
-    {
-     "step": "issue 1",
-     "elapsedMs": 0,
-     "outcome": "issued",
-     "verdict": "issued",
-     "heldAfter": 1
-    },
-    {
-     "step": "issue 2",
-     "elapsedMs": 0,
-     "outcome": "issued",
-     "verdict": "issued",
-     "heldAfter": 2
-    },
-    {
-     "step": "carrier restarts here — full budget held, deadline = restart + challenge-lifetime",
-     "restart": true,
-     "verdict": null,
-     "heldAfter": 3
-    },
-    {
-     "step": "a request right after the restart",
-     "elapsedMs": 0,
-     "verdict": "registration-refused(capacity)",
-     "heldAfter": 3
-    },
-    {
-     "step": "and one just before the deadline",
-     "elapsedMs": 59000,
-     "verdict": "registration-refused(capacity)",
-     "heldAfter": 3
-    },
-    {
-     "step": "after the deadline the budget is free again",
-     "elapsedMs": 1000,
-     "outcome": "issued",
-     "verdict": "issued",
-     "heldAfter": 1
-    }
-   ]
-  },
-  "reserveAndStarvation": {
-   "note": "Delivery §4.4/§5a.5 — the reserve is PER BOUND ADDRESS, not a pool: every bound rkid has its own single reserved charge, reachable only by naming that rkid. Unknown-rkid requests share the unreserved pool (max-open-challenges). Repeated starvation of the UNRESERVED pool is real and remains a named residual; it cannot reach any bound address's reserved charge.",
-   "declaration": {
-    "max-open-challenges": 3,
-    "challenge-lifetime": "PT1M",
-    "reserve": "one per bound rkid, not drawn from max-open-challenges"
-   },
-   "boundAddresses": [
-    "rkid-A",
-    "rkid-B"
-   ],
-   "sequence": [
-    {
-     "step": "attacker fills the unreserved pool with unknown rkids",
-     "rkid": "unknown-1",
-     "bound": false,
-     "verdict": "issued",
-     "unreservedHeld": 1
-    },
-    {
-     "step": "and again",
-     "rkid": "unknown-2",
-     "bound": false,
-     "verdict": "issued",
-     "unreservedHeld": 2
-    },
-    {
-     "step": "and again — the unreserved pool is full",
-     "rkid": "unknown-3",
-     "bound": false,
-     "verdict": "issued",
-     "unreservedHeld": 3
-    },
-    {
-     "step": "a further unknown rkid is refused: the pool is the residual",
-     "rkid": "unknown-4",
-     "bound": false,
-     "verdict": "registration-refused(capacity)",
-     "unreservedHeld": 3
-    },
-    {
-     "step": "rkid-A's own reserved charge is untouched by all of that",
-     "rkid": "rkid-A",
-     "bound": true,
-     "verdict": "issued",
-     "unreservedHeld": 3
-    },
-    {
-     "step": "rkid-B's too — reserves do not compete with each other",
-     "rkid": "rkid-B",
-     "bound": true,
-     "verdict": "issued",
-     "unreservedHeld": 3
-    },
-    {
-     "step": "a second request for rkid-A while its charge is live",
-     "rkid": "rkid-A",
-     "bound": true,
-     "verdict": "registration-refused(capacity)",
-     "unreservedHeld": 3
-    },
-    {
-     "step": "the counterpart of rkid-A holds A's charge — and reaches no other address",
-     "rkid": "rkid-A",
-     "bound": true,
-     "verdict": "registration-refused(capacity)",
-     "unreservedHeld": 3
-    },
-    {
-     "step": "after the lapse the attacker re-takes the unreserved pool: NOT self-healing",
-     "elapsedMs": 60000,
-     "rkid": "unknown-5",
-     "bound": false,
-     "verdict": "issued",
-     "unreservedHeld": 1
-    },
-    {
-     "step": "and rkid-B is still free to return",
-     "rkid": "rkid-B",
-     "bound": true,
-     "verdict": "issued",
-     "unreservedHeld": 1
-    }
-   ]
-  }
- },
  "duplicateRule": {
-  "note": "Delivery §5a.5 — two submissions to one queue are duplicates IFF their sealed envelopes are byte-identical (rkid, epk, nonce, ciphertext). A key-blind carrier can compare nothing else. Re-sealing one document yields a fresh epk/nonce/ciphertext and is therefore NOT a duplicate at the carrier; §6.2 absorbs that at the receiver, after decryption, on the document digest.",
+  "note": "Delivery \u00a75a.5 \u2014 two submissions to one queue are duplicates IFF their sealed envelopes are byte-identical (rkid, epk, nonce, ciphertext). A key-blind carrier can compare nothing else. Re-sealing one document yields a fresh epk/nonce/ciphertext and is therefore NOT a duplicate at the carrier; \u00a76.2 absorbs that at the receiver, after decryption, on the document digest.",
   "metering": "A duplicate consumes the admission resource exactly like an admitted submission and consumes NO storage; the check sits after the resource charge and before storage admission, so it can neither bypass the charge nor reach the store.",
   "retention": "The comparison value is held exactly as long as the deposit is held; after conclusion or give-up a byte-identical re-presentation is a NEW submission and is admitted.",
   "cases": [
@@ -640,7 +518,7 @@
     "resourceCharged": 2
    },
    {
-    "case": "the SAME document re-sealed — fresh epk, nonce and ciphertext",
+    "case": "the SAME document re-sealed \u2014 fresh epk, nonce and ciphertext",
     "first": {
      "rkid": "z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU",
      "epk": "uEPK-sample-A",
@@ -658,7 +536,7 @@
     "resourceCharged": 2
    },
    {
-    "case": "identical bytes but a different rkid — a different queue entirely",
+    "case": "identical bytes but a different rkid \u2014 a different queue entirely",
     "first": {
      "rkid": "z6LSqY3EWDm5RNaC14mGJSHYcQNXGSNymfTom7wSaGzKdWWU",
      "epk": "uEPK-sample-A",
@@ -697,14 +575,11 @@
   ]
  },
  "queueFloorAccounting": {
-  "note": "Delivery §4.4 — committed = sum over LIVE queues of max(used, queue-floor) + sum over CLOSING queues of used, evaluated on the occupancy AFTER admission. A queue below its floor can always grow to its floor, because that admission does not move committed at all.",
+  "note": "Delivery \u00a74.4 guarantee 5 \u2014 a queue below its declared queue-floor is never refused for global occupancy, and admission is decided on the occupancy AFTER the deposit. The the occupancy-formula these cases were first written against left the protocol in the 0.65 scope re-cast; what the cases execute now is the guarantee itself: growth within the floor cannot be refused for anything global, growth above it can.",
   "declaration": {
-   "max-queues": 2,
    "queue-floor": 65536,
-   "max-queue-bytes": 131072,
-   "max-total-bytes": 131072
+   "max-queue-bytes": 131072
   },
-  "inequality": "max-total-bytes >= max-queues * queue-floor",
   "cases": [
    {
     "case": "the round-11 counter-example: A at its floor, B one byte below, a 1-byte deposit to B",
@@ -712,13 +587,10 @@
      65536,
      65535
     ],
-    "closing": [],
     "queue": 1,
     "size": 1,
-    "committedBefore": 131072,
-    "committedAfter": 131072,
     "outcome": "admitted",
-    "why": "B stays within its floor, so max(used,floor) does not change — the floor guarantee is arithmetic, not a promise"
+    "why": "within the floor, admission depends on nothing global \u2014 the guarantee is the promise, and whatever bookkeeping meets it is the carrier's own"
    },
    {
     "case": "the same queue one byte above its floor",
@@ -726,29 +598,964 @@
      65536,
      65536
     ],
-    "closing": [],
     "queue": 1,
     "size": 1,
-    "committedBefore": 131072,
-    "committedAfter": 131073,
     "outcome": "refused(capacity)",
-    "why": "above the floor every byte raises committed, and the bound is reached"
+    "why": "above the floor the room is elastic and globally shared \u2014 a refusal there is honest"
    },
    {
     "case": "a closing queue holds bytes: it contributes used, not a floor",
     "live": [
      65536
     ],
-    "closing": [
-     65536
-    ],
     "queue": 0,
     "size": 1,
-    "committedBefore": 131072,
-    "committedAfter": 131073,
     "outcome": "refused(capacity)",
-    "why": "closing bytes stay visible in committed and cannot be handed out twice; the closing queue needs no floor, having nothing left to guarantee"
+    "why": "a closing queue admits and counts like a live one (5a.9) \u2014 its bytes cannot be handed out twice"
    }
-  ]
+  ],
+  "crossTrafficMeter": {
+   "note": "round-45 B-1 \u2014 guarantee 5 binds s4 in the cross-queue direction: a below-floor submission is refused neither for global occupancy (s6) nor because OTHER queues' traffic drained a meter (s4). The queue's own metering may refuse it, retriably (DO-6: whoever spends a queue's own budget holds its address).",
+   "cases": [
+    {
+     "case": "below-floor submission while other queues' flood drained the meter",
+     "withinFloor": true,
+     "meterDrainedBy": "other",
+     "outcome": "admitted"
+    },
+    {
+     "case": "below-floor submission while the queue's OWN traffic drained its meter",
+     "withinFloor": true,
+     "meterDrainedBy": "own",
+     "outcome": "refused(admission-resource)",
+     "retriable": true
+    },
+    {
+     "case": "above-floor submission while other queues' flood drained the meter",
+     "withinFloor": false,
+     "meterDrainedBy": "other",
+     "outcome": "refused(admission-resource)",
+     "retriable": true,
+     "why": "above the floor the room and the metering are honestly shared \u2014 guarantee 5 draws its line AT the floor"
+    }
+   ]
+  }
+ },
+ "encodingAcceptanceSurface": {
+  "note": "Round-18 B-1. base58btc is not a positional encoding, so \u2014 unlike the base64url challenges, where six bits per character let a pattern forbid a non-canonical alias outright \u2014 no pattern in the shipped JSON-Schema dialect can require a DECODED multicodec prefix or a DECODED byte length. These six values ALL satisfy carrier-proof.schema.json and are ALL invalid per Delivery \u00a75a.3. They are shipped so that an implementation which stops at schema validation is detected rather than assumed absent.",
+  "rule": "A carrier MUST decode before any other check: principal = did:key: + z over 0xed 0x01 || 32 bytes; rkid = z over 0xec 0x01 || 32 bytes; sig = z over exactly 64 bytes. Anything else is refused(malformed).",
+  "whyLengthCannotDecide": "A leading zero byte encodes as '1', so the achievable base58btc length envelope of a 64-byte value runs from 64 (all zero) to 88, and it OVERLAPS those of 63- and 65-byte values. The previous pattern {86,88} was therefore wrong in both directions: it accepted 63 and 65 bytes and rejected a legitimate 64-byte signature with three leading zero bytes.",
+  "cases": [
+   {
+    "field": "principal",
+    "value": "did:key:z6Mk11111111111111111111111111111111111111111111",
+    "schemaValid": true,
+    "decodedByteLength": 34,
+    "decodedPrefixHex": "ecfe",
+    "verdict": "refused(malformed)",
+    "why": "the z6Mk text lead does not prove the decoded multicodec: this decodes to 0xec 0xfe, not Ed25519 0xed 0x01"
+   },
+   {
+    "field": "principal",
+    "value": "did:key:z6Mkzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+    "schemaValid": true,
+    "decodedByteLength": 34,
+    "decodedPrefixHex": "ed02",
+    "verdict": "refused(malformed)",
+    "why": "decodes to 0xed 0x02 \u2014 the second prefix byte is not 0x01"
+   },
+   {
+    "field": "rkid",
+    "value": "z6LS11111111111111111111111111111111111111111111",
+    "schemaValid": true,
+    "decodedByteLength": 34,
+    "decodedPrefixHex": "ebfe",
+    "verdict": "refused(malformed)",
+    "why": "decodes to 0xeb 0xfe, not X25519 0xec 0x01"
+   },
+   {
+    "field": "rkid",
+    "value": "z6LSzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+    "schemaValid": true,
+    "decodedByteLength": 34,
+    "decodedPrefixHex": "ec02",
+    "verdict": "refused(malformed)",
+    "why": "decodes to 0xec 0x02 \u2014 the second prefix byte is not 0x01"
+   },
+   {
+    "field": "sig",
+    "value": "z22222222222222222222222222222222222222222222222222222222222222222222222222222222222222",
+    "schemaValid": true,
+    "decodedByteLength": 63,
+    "decodedPrefixHex": "03df",
+    "verdict": "refused(malformed)",
+    "why": "86 base58btc characters decode to 63 bytes; \u00a75a.3 requires exactly 64"
+   },
+   {
+    "field": "sig",
+    "value": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+    "schemaValid": true,
+    "decodedByteLength": 65,
+    "decodedPrefixHex": "0b54",
+    "verdict": "refused(malformed)",
+    "why": "88 base58btc characters decode to 65 bytes; \u00a75a.3 requires exactly 64"
+   }
+  ],
+  "positiveControl": "The shipped registration proof decodes correctly on all three fields; the runner checks that too, so the negative check cannot pass by rejecting everything."
+ },
+ "bindingLifecycle": {
+  "note": "Delivery \u00a75a.3 \u2014 the queue-binding lifecycle as ONE total machine, cast in round 22 after three rounds found corners of it by composition. This block is the executable form of the normative table: the runner enumerates the whole (state x input x guard) domain and requires exactly one cell per point. 0.67: the two-step wind-up (give-up-sweep, then release) is merged into the single deadline transition of Delivery 0.66 (round-43 B-1 / round-44 M-1) \u2014 the vector executes the table the spec actually casts.",
+  "states": [
+   "unbound",
+   "live",
+   "closing",
+   "released"
+  ],
+  "inputs": [
+   "register-rebind",
+   "collect-conclude",
+   "orphan-expiry",
+   "deadline",
+   "eviction"
+  ],
+  "guards": {
+   "gt": "g' > the recorded generation (g in live/closing, t in released)",
+   "eq-same": "g' equal and P' = P",
+   "eq-diff": "g' equal and P' != P",
+   "lt": "g' lower",
+   "any": "no guard"
+  },
+  "invariant": "an rkid is in exactly one state, and the tombstone store holds exactly the rkids in `released` \u2014 which is what makes the k-counting of the release step right",
+  "entryCondition": "the table is entered only by a request that passed \u00a74.4 step (b) and both possession proofs; malformed, possession-failed, capacity and admission-resource are decided before the state is consulted. A submission is not an input here \u2014 it runs \u00a75a.5's outcome set.",
+  "purposeRule": "`purpose` does not select a cell: register and rebind are distinct in the signed bytes and equivalent in effect. A carrier MUST NOT refuse a proof because its purpose disagrees with the state it finds.",
+  "cells": [
+   {
+    "state": "unbound",
+    "input": "register-rebind",
+    "guard": "gt",
+    "outcome": "registered",
+    "next": "live"
+   },
+   {
+    "state": "unbound",
+    "input": "register-rebind",
+    "guard": "eq-same",
+    "outcome": "registered",
+    "next": "live"
+   },
+   {
+    "state": "unbound",
+    "input": "register-rebind",
+    "guard": "eq-diff",
+    "outcome": "registered",
+    "next": "live"
+   },
+   {
+    "state": "unbound",
+    "input": "register-rebind",
+    "guard": "lt",
+    "outcome": "registered",
+    "next": "live",
+    "note": "no recorded generation exists, so no comparison applies: a first registration is accepted at any generation in the domain"
+   },
+   {
+    "state": "unbound",
+    "input": "collect-conclude",
+    "guard": "any",
+    "outcome": "refused(no-such-queue)",
+    "next": "unbound"
+   },
+   {
+    "state": "unbound",
+    "input": "orphan-expiry",
+    "guard": "any",
+    "outcome": "cannot arise",
+    "next": "unbound"
+   },
+   {
+    "state": "unbound",
+    "input": "deadline",
+    "guard": "any",
+    "outcome": "cannot arise",
+    "next": "unbound"
+   },
+   {
+    "state": "unbound",
+    "input": "eviction",
+    "guard": "any",
+    "outcome": "cannot arise",
+    "next": "unbound"
+   },
+   {
+    "state": "live",
+    "input": "register-rebind",
+    "guard": "gt",
+    "outcome": "rebound",
+    "next": "live",
+    "note": "round-22 B-2: this holds whether or not P' = P; the recorded generation advances to g'"
+   },
+   {
+    "state": "live",
+    "input": "register-rebind",
+    "guard": "eq-same",
+    "outcome": "registered(idempotent)",
+    "next": "live"
+   },
+   {
+    "state": "live",
+    "input": "register-rebind",
+    "guard": "eq-diff",
+    "outcome": "refused(stale-generation)",
+    "next": "live"
+   },
+   {
+    "state": "live",
+    "input": "register-rebind",
+    "guard": "lt",
+    "outcome": "refused(stale-generation)",
+    "next": "live"
+   },
+   {
+    "state": "live",
+    "input": "collect-conclude",
+    "guard": "any",
+    "outcome": "served",
+    "next": "live"
+   },
+   {
+    "state": "live",
+    "input": "orphan-expiry",
+    "guard": "any",
+    "outcome": "wind-up begins",
+    "next": "closing"
+   },
+   {
+    "state": "live",
+    "input": "deadline",
+    "guard": "any",
+    "outcome": "cannot arise",
+    "next": "live"
+   },
+   {
+    "state": "live",
+    "input": "eviction",
+    "guard": "any",
+    "outcome": "cannot arise",
+    "next": "live"
+   },
+   {
+    "state": "closing",
+    "input": "register-rebind",
+    "guard": "gt",
+    "outcome": "rebound",
+    "next": "live",
+    "note": "the binding returns to live and admission reopens (\u00a75a.9)"
+   },
+   {
+    "state": "closing",
+    "input": "register-rebind",
+    "guard": "eq-same",
+    "outcome": "registered(idempotent)",
+    "next": "live"
+   },
+   {
+    "state": "closing",
+    "input": "register-rebind",
+    "guard": "eq-diff",
+    "outcome": "refused(stale-generation)",
+    "next": "closing"
+   },
+   {
+    "state": "closing",
+    "input": "register-rebind",
+    "guard": "lt",
+    "outcome": "refused(stale-generation)",
+    "next": "closing"
+   },
+   {
+    "state": "closing",
+    "input": "collect-conclude",
+    "guard": "any",
+    "outcome": "served",
+    "next": "closing"
+   },
+   {
+    "state": "closing",
+    "input": "orphan-expiry",
+    "guard": "any",
+    "outcome": "cannot arise",
+    "next": "closing",
+    "note": "the wind-up has already begun"
+   },
+   {
+    "state": "closing",
+    "input": "deadline",
+    "guard": "any",
+    "outcome": "obligations discharged + released",
+    "next": "released",
+    "why": "one linearized transition (round-43 B-1): every inherited life has ended at or before the deadline, so everything is given up and the binding releases in the same step; a tombstone (rkid, g) is created"
+   },
+   {
+    "state": "closing",
+    "input": "eviction",
+    "guard": "any",
+    "outcome": "cannot arise",
+    "next": "closing"
+   },
+   {
+    "state": "released",
+    "input": "register-rebind",
+    "guard": "gt",
+    "outcome": "registered",
+    "next": "live",
+    "note": "round-22 B-1: the tombstone is CONSUMED \u2014 its store entry goes with it; it is not kept beside the new binding"
+   },
+   {
+    "state": "released",
+    "input": "register-rebind",
+    "guard": "eq-same",
+    "outcome": "refused(stale-generation)",
+    "next": "released"
+   },
+   {
+    "state": "released",
+    "input": "register-rebind",
+    "guard": "eq-diff",
+    "outcome": "refused(stale-generation)",
+    "next": "released"
+   },
+   {
+    "state": "released",
+    "input": "register-rebind",
+    "guard": "lt",
+    "outcome": "refused(stale-generation)",
+    "next": "released"
+   },
+   {
+    "state": "released",
+    "input": "collect-conclude",
+    "guard": "any",
+    "outcome": "refused(no-such-queue)",
+    "next": "released"
+   },
+   {
+    "state": "released",
+    "input": "orphan-expiry",
+    "guard": "any",
+    "outcome": "cannot arise",
+    "next": "released"
+   },
+   {
+    "state": "released",
+    "input": "deadline",
+    "guard": "any",
+    "outcome": "cannot arise",
+    "next": "released"
+   },
+   {
+    "state": "released",
+    "input": "eviction",
+    "guard": "any",
+    "outcome": "evicted",
+    "next": "unbound",
+    "note": "the anti-resurrection guarantee for this rkid ends"
+   }
+  ],
+  "findingCases": [
+   {
+    "case": "round-22 B-1 tombstone -> live -> release",
+    "state": "released",
+    "input": "register-rebind",
+    "guard": "gt",
+    "expectedOutcome": "registered",
+    "expectedNext": "live",
+    "tombstoneAfter": "consumed",
+    "why": "neither kept beside the binding nor evicted; the only proof that consumes it is one the tombstone already permits"
+   },
+   {
+    "case": "round-22 B-2 higher generation, same principal",
+    "state": "live",
+    "input": "register-rebind",
+    "guard": "gt",
+    "expectedOutcome": "rebound",
+    "expectedNext": "live",
+    "samePrincipal": true,
+    "why": "the outcome names the succession, not a change of person; the recorded generation MUST advance"
+   },
+   {
+    "case": "round-22 B-3 purpose does not select a cell",
+    "state": "any",
+    "input": "register-rebind",
+    "guard": "any",
+    "expectedOutcome": "decided by state alone",
+    "expectedNext": "decided by state alone",
+    "why": "a holder recovering from a partial loss cannot know the carrier's state; \u00a75a.9's return path depends on its guess not mattering"
+   }
+  ],
+  "verdicts": [
+   "registered",
+   "registered(idempotent)",
+   "rebound",
+   "served",
+   "refused(no-such-queue)",
+   "refused(possession-failed)",
+   "refused(malformed)",
+   "refused(stale-generation)",
+   "registration-refused(capacity)",
+   "refused(admission-resource)"
+  ],
+  "internalTransitions": [
+   "wind-up begins",
+   "obligations discharged + released",
+   "evicted",
+   "cannot arise"
+  ],
+  "algebraNote": "Round-23 B-2: every cell of this table draws its outcome from ONE closed set \u2014 the verdicts a presenter is told, plus the internal transitions that have no presenter. A cell naming anything else is nonconformant, and so is a verdict outside the list.",
+  "capacityRule": {
+   "note": "0.65: registration-refused(capacity) is a carrier resource answer (4.4 guarantee 2) \u2014 retriable, deterministic in the carrier's own state, never about the presenter. Two port-observable rules bound it: a request for a binding the carrier holds is never refused because traffic for unknown addresses exhausted something (guarantee 4), and a return outranks an arrival (5a.9).",
+   "counterExample": {
+    "state": "live",
+    "recordedGeneration": 2,
+    "proofGeneration": 3,
+    "wrongOutcome": "registration-refused(capacity)",
+    "outcome": "rebound",
+    "why": "a rebind of a held binding is the honest return path; refusing it for a limit that new bindings exhausted would breach guarantee 4"
+   }
+  }
+ },
+ "generationSpelling": {
+  "note": "Round-28 M-1, corrected in round 29: the canonical decimal form of `generation` (Identity \u00a77a.3) must be checked on the RECEIVED BYTES. Two of these lexemes are not valid JSON numbers at all and die in the parser; the other two parse, satisfy the schema, canonicalize to the SAME JCS bytes and let the shipped signature verify \u2014 those two are the reason the check must exist and must be lexical. The runner now executes all four as raw proof bytes rather than reading these fields as claims (round-29 M-1).",
+  "canonical": "1",
+  "rejects": [
+   {
+    "lexeme": "1.0",
+    "reason": "fractional part",
+    "rejectedBy": "the lexical check at acceptance",
+    "validJson": true,
+    "parsesTo": 1,
+    "schemaValid": true,
+    "jcsIdentical": true,
+    "signatureVerifies": true
+   },
+   {
+    "lexeme": "1e0",
+    "reason": "exponent",
+    "rejectedBy": "the lexical check at acceptance",
+    "validJson": true,
+    "parsesTo": 1,
+    "schemaValid": true,
+    "jcsIdentical": true,
+    "signatureVerifies": true
+   },
+   {
+    "lexeme": "01",
+    "reason": "leading zero",
+    "rejectedBy": "the JSON parser \u2014 it is not a valid JSON number",
+    "validJson": false
+   },
+   {
+    "lexeme": "+1",
+    "reason": "sign",
+    "rejectedBy": "the JSON parser \u2014 it is not a valid JSON number",
+    "validJson": false
+   }
+  ],
+  "accepts": [
+   "1",
+   "2",
+   "9007199254740991"
+  ],
+  "verdict": "refused(malformed)",
+  "whereChecked": "Delivery \u00a75a.3, at proof acceptance, before the state is consulted",
+  "whyBothClassesShip": "the two that die in the parser show that a conforming reader rejects them anyway; the two that survive to a verifying signature show that nothing downstream can, which is the whole argument for a lexical check at acceptance. Round 28 claimed all four reached JCS and the signature \u2014 that was false for 01 and +1 and is corrected here."
+ },
+ "stateAtomicity": {
+  "note": "Delivery 4.4/5a.3 \u2014 atomicity, executed only where the contract still promises it (round-46 M-1): the one-binding-per-rkid commit of 5a.3 (observable), the queue's declared max-queue-bytes (published constant), and the declared max-binding-tombstones store. Private bounds left the protocol with the 0.65 re-cast and are no longer a conformance subject.",
+  "cases": [
+   {
+    "case": "two concurrent valid registrations for ONE rkid",
+    "state": "bindings for one rkid",
+    "bound": "one binding per rkid (5a.3, observable)",
+    "boundValue": 1,
+    "tornOrder": [
+     "A reads: no binding for rkid",
+     "B reads: no binding for rkid",
+     "A commits its binding",
+     "B commits its binding"
+    ],
+    "tornResult": 2,
+    "linearizedResult": 1,
+    "why": "the rebind commit is a linearizable compare-and-swap: two concurrent valid registrations yield one binding, never two, and never a queue with no authorized collector"
+   },
+   {
+    "case": "two concurrent deposits at the queue's declared max-queue-bytes",
+    "state": "queue occupancy",
+    "bound": "max-queue-bytes (declared)",
+    "boundValue": 1,
+    "tornOrder": [
+     "deposit 1 reads the occupancy",
+     "deposit 2 reads the occupancy",
+     "both admit"
+    ],
+    "tornResult": 2,
+    "linearizedResult": 1,
+    "why": "the queue bound is a published constant, so its enforcement is atomic \u2014 a counterpart sees the occupancy before or after, never both deposits admitted past it"
+   },
+   {
+    "case": "concurrent deadline transitions against one tombstone store",
+    "state": "tombstone store",
+    "bound": "max-binding-tombstones (declared)",
+    "boundValue": 2,
+    "storeBefore": [
+     "tomb-old"
+    ],
+    "tornOrder": [
+     "deadline A reads the store (1 of 2 slots free)",
+     "deadline B reads the store (sees the same free slot)",
+     "both evict nothing",
+     "both install their tombstone"
+    ],
+    "tornResult": 3,
+    "linearizedResult": 2,
+    "why": "two deadline transitions racing one store can overfill it or, linearized wrongly, evict the wrong victim \u2014 the transition is a check-and-commit like every other bound decision (4.4), and independent deadlines either join one linearized step or serialize"
+   }
+  ],
+  "rule": "every decision against a bound is one linearized check-and-commit: concurrent transitions are joined into one sweep or serialized as separate ones \u2014 the interleaving (both read, then both commit) is the torn order every case exhibits and forbids"
+ },
+ "durationGrammar": {
+  "note": "Round-32 B-2: the six declared durations had no executable grammar \u2014 'RFC 3339 / ISO 8601' names a standard that excludes durations, and windowMs needs whole milliseconds. The grammar is Access \u00a77.3's day/time subset, with no fractional component, so every value maps to an exact integer of milliseconds. Round-34 M-1: the shipped grammar string had kept the older shape (a mandatory day component) while its own accept list contains PT1S \u2014 under that reading challenge-lifetime and status-horizon would have had no satisfiable value.",
+  "grammar": "P, then an optional <d>D, then an optional T part with <h>H <m>M <s>S in descending order and AT LEAST ONE of the three; at least one component present overall; each value 1-3 digits; no years/months/weeks; no fraction; 1D = 86400 s",
+  "accept": [
+   {
+    "lexeme": "PT1S",
+    "ms": 1000
+   },
+   {
+    "lexeme": "PT5M",
+    "ms": 300000
+   },
+   {
+    "lexeme": "P1D",
+    "ms": 86400000
+   },
+   {
+    "lexeme": "P7D",
+    "ms": 604800000
+   },
+   {
+    "lexeme": "PT1H30M",
+    "ms": 5400000
+   },
+   {
+    "lexeme": "P1DT2H3M4S",
+    "ms": 93784000
+   }
+  ],
+  "reject": [
+   {
+    "lexeme": "PT1.0005S",
+    "why": "fractional component \u2014 no integer millisecond value, and rounding or truncating would give two conformant readings"
+   },
+   {
+    "lexeme": "P1M",
+    "why": "months are not in the subset (not fixed-length)"
+   },
+   {
+    "lexeme": "P1Y",
+    "why": "years are not in the subset"
+   },
+   {
+    "lexeme": "P1W",
+    "why": "weeks are not in the subset"
+   },
+   {
+    "lexeme": "PT3M2H",
+    "why": "components out of descending order"
+   },
+   {
+    "lexeme": "P",
+    "why": "no component at all"
+   },
+   {
+    "lexeme": "PT1234S",
+    "why": "value longer than 3 digits"
+   },
+   {
+    "lexeme": "P1DT",
+    "why": "a T that is present carries no component \u2014 a bare T is not a value of this grammar (round-35 B-3)"
+   },
+   {
+    "lexeme": "PT",
+    "why": "neither part carries a component"
+   }
+  ],
+  "rejectionRule": "a declaration carrying a rejected lexeme is rejected, not rounded and not truncated (4.4, as for every out-of-domain constant)"
+ },
+ "challengeConsumption": {
+  "note": "Delivery \u00a75a.3 \u2014 a challenge is single-use and is consumed by the FIRST response attempt, before that response is verified. A failed verification does not restore it: one issued challenge buys at most one verification, and a fresh attempt begins with a fresh challenge. This is the port-observable half of what used to be the charge machine; the machine itself left the protocol in the 0.65 scope re-cast (a carrier's budgets are its own).",
+  "sequence": [
+   {
+    "step": "challenge issued for the attacker's own rkid (past the carrier\u2019s own admission decision)",
+    "challengeLive": true,
+    "verificationsSoFar": 0
+   },
+   {
+    "step": "first response arrives: the challenge is consumed, THEN verified \u2014 the signature is junk",
+    "consumesChallenge": true,
+    "verified": true,
+    "outcome": "refused(possession-failed)",
+    "challengeLive": false,
+    "verificationsSoFar": 1
+   },
+   {
+    "step": "second response naming the same challenge",
+    "consumesChallenge": false,
+    "verified": false,
+    "outcome": "discarded",
+    "challengeLive": false,
+    "verificationsSoFar": 1,
+    "why": "nothing live to verify against; discarded at the syntactic step, at the cost of a lookup"
+   },
+   {
+    "step": "third response, replayed byte-identically",
+    "consumesChallenge": false,
+    "verified": false,
+    "outcome": "discarded",
+    "challengeLive": false,
+    "verificationsSoFar": 1
+   },
+   {
+    "step": "a fresh attempt needs a fresh challenge \u2014 and a fresh challenge",
+    "newChallenge": true,
+    "challengeLive": true,
+    "verificationsSoFar": 1
+   },
+   {
+    "step": "its first response is verified once",
+    "consumesChallenge": true,
+    "verified": true,
+    "outcome": "registered",
+    "challengeLive": false,
+    "verificationsSoFar": 2
+   }
+  ],
+  "invariant": "verificationsSoFar never exceeds the number of challenges issued"
+ },
+ "carrierGuarantees": {
+  "note": "Delivery 4.4 \u2014 the five observable guarantees of the 0.65 scope re-cast, each executable. What used to be executed here was the machinery that implemented them; these vectors execute the promises.",
+  "g1_declaration": {
+   "required": [
+    "orphan-horizon",
+    "give-up-horizon",
+    "challenge-lifetime",
+    "queue-floor",
+    "max-queue-bytes",
+    "max-binding-tombstones",
+    "status-horizon"
+   ],
+   "declaration": {
+    "orphan-horizon": "P90D",
+    "give-up-horizon": "P30D",
+    "challenge-lifetime": "PT1M",
+    "queue-floor": "65536",
+    "max-queue-bytes": "1048576",
+    "max-binding-tombstones": "1000",
+    "status-horizon": "PT30S"
+   },
+   "rejects": [
+    {
+     "missing": "max-binding-tombstones",
+     "why": "a carrier acting on an unpublished bound made identical histories answer differently (round-43 B-2)"
+    },
+    {
+     "missing": "status-horizon",
+     "why": "an adapter without a declared status horizon can hold a submission silently forever (wot#355)"
+    },
+    {
+     "wrongRole": "https://real-life.org/trust-tasks/registry-declaration/0.1",
+     "why": "round-44 B-1 / round-45 M-1: constants for the carrier role declared under any other role URI are not a carrier declaration \u2014 without one fixed key, two counterparts could hold different entries as authoritative"
+    }
+   ],
+   "roleURI": "https://real-life.org/trust-tasks/delivery-carrier/0.1",
+   "behaviour": {
+    "note": "round-48 M-2 \u2014 the declaration BINDS: enforcing stricter or looser than published is nonconformant, and status-horizon is executable in time.",
+    "statusHorizon": {
+     "declaredMs": 30000,
+     "sequence": [
+      {
+       "t": 0,
+       "event": "submission handed to the adapter"
+      },
+      {
+       "t": 25000,
+       "event": "honest pre-transport report awaiting-transport(offline)",
+       "conformant": true,
+       "why": "a state, not a success \u2014 the horizon asks for honesty, not delivery"
+      },
+      {
+       "t": 31000,
+       "event": "still no report of any kind",
+       "conformant": false,
+       "why": "the forty silent minutes of wot#355, caught at the declared horizon"
+      }
+     ]
+    },
+    "enforcementDrift": [
+     {
+      "constant": "give-up-horizon",
+      "declared": "P30D",
+      "enforced": "P7D",
+      "conformant": false,
+      "why": "stricter than published \u2014 deposits die 23 days before the declaration says"
+     },
+     {
+      "constant": "orphan-horizon",
+      "declared": "P90D",
+      "enforced": "P365D",
+      "conformant": false,
+      "why": "looser than published \u2014 a counterpart planning a return against P90D holds a wrong promise either way: the declaration binds in both directions"
+     },
+     {
+      "constant": "queue-floor",
+      "declared": "65536",
+      "enforced": "65536",
+      "conformant": true
+     }
+    ]
+   }
+  },
+  "g2_precedence_submission": {
+   "note": "round-43 B-3 \u2014 overlapping true conditions name ONE verdict: s1 no-such-queue, s2 bounds, s3 duplicate, s4 admission-resource, s5 queue-saturated, s6 capacity. Most specific first.",
+   "cases": [
+    {
+     "holds": [
+      "queue-saturated",
+      "capacity"
+     ],
+     "verdict": "refused(queue-saturated)",
+     "why": "the queue's own bound is more actionable than the carrier's global fill"
+    },
+    {
+     "holds": [
+      "no-such-queue",
+      "capacity"
+     ],
+     "verdict": "refused(no-such-queue)",
+     "why": "a wrong address outranks every resource statement"
+    },
+    {
+     "holds": [
+      "bounds",
+      "queue-saturated"
+     ],
+     "verdict": "refused(bounds)",
+     "why": "an oversize envelope is judged before any occupancy is consulted"
+    },
+    {
+     "holds": [
+      "admission-resource",
+      "queue-saturated"
+     ],
+     "verdict": "refused(admission-resource)",
+     "why": "the metering gate is s4, before either occupancy check"
+    },
+    {
+     "holds": [
+      "capacity"
+     ],
+     "verdict": "refused(capacity)",
+     "why": "the global answer is reachable only when nothing more specific holds"
+    }
+   ]
+  },
+  "g2_precedence_registration": {
+   "note": "r1 malformed, r2 admission-resource, r3 possession-failed, r4 capacity (under guarantee 4 and the return priority), r5 the state table.",
+   "cases": [
+    {
+     "holds": [
+      "malformed",
+      "possession-failed"
+     ],
+     "verdict": "refused(malformed)"
+    },
+    {
+     "holds": [
+      "admission-resource",
+      "possession-failed"
+     ],
+     "verdict": "refused(admission-resource)",
+     "why": "r2 runs before any asymmetric verification \u2014 guarantee 3 is an ordering rule"
+    },
+    {
+     "holds": [
+      "possession-failed",
+      "capacity"
+     ],
+     "verdict": "refused(possession-failed)"
+    },
+    {
+     "holds": [
+      "capacity",
+      "stale-generation"
+     ],
+     "verdict": "registration-refused(capacity)",
+     "why": "r4 before r5: the state table is only consulted for a request the carrier will serve"
+    },
+    {
+     "holds": [
+      "admission-resource",
+      "stale-generation"
+     ],
+     "heldBinding": true,
+     "verdict": "refused(stale-generation)",
+     "why": "for a request naming a HELD binding, guarantee 4 removes the r2 refusal when the drain came from unknown-address traffic, so the first condition left standing is the state table's",
+     "exhaustedBy": "unknown-address traffic"
+    },
+    {
+     "holds": [
+      "admission-resource",
+      "stale-generation"
+     ],
+     "heldBinding": true,
+     "exhaustedBy": "own traffic",
+     "verdict": "refused(admission-resource)",
+     "why": "round-47 M-2: guarantee 4 strikes r2/r4 only when UNKNOWN-address traffic drained the resource \u2014 a binding whose own traffic exhausted its budget is DO-6, not starvation, and r2 stands"
+    }
+   ]
+  },
+  "g3_order": {
+   "note": "guarantee 3 \u2014 no randomness, sealing, or asymmetric operation before the decision to serve. The observable half: a refused request has cost the carrier no key operation, so refusals are cheap and unmeterable work cannot be forced by an unauthenticated party.",
+   "sequence": [
+    {
+     "step": 1,
+     "request": "register, admission gate refuses",
+     "asymmetricOpsPerformed": 0,
+     "verdict": "refused(admission-resource)"
+    },
+    {
+     "step": 2,
+     "request": "register, admission gate passes",
+     "asymmetricOpsPerformed": 2,
+     "verdict": "registered",
+     "why": "sealing the address challenge and verifying the signature happen only past the decision"
+    }
+   ]
+  },
+  "g4_starvation": {
+   "note": "guarantee 4 \u2014 traffic for unknown addresses cannot starve a binding the carrier holds, and a return outranks an arrival (5a.9).",
+   "sequence": [
+    {
+     "step": 1,
+     "event": "flood: requests for unknown rkids exhaust the carrier's own admission budget",
+     "verdict": "refused(admission-resource)",
+     "retriable": true
+    },
+    {
+     "step": 2,
+     "event": "collect(held-rkid) during the flood",
+     "verdict": "served",
+     "why": "a request naming a binding the carrier holds is beyond what unknown-address traffic can exhaust"
+    },
+    {
+     "step": 3,
+     "event": "rebind(held-rkid, g+1) during the flood",
+     "verdict": "rebound",
+     "why": "the return path of a held binding is part of the same guarantee"
+    },
+    {
+     "step": 4,
+     "event": "carrier at its limits: register(new) and register(closing-rkid, g+1) compete",
+     "newcomer": "registration-refused(capacity)",
+     "returner": "rebound",
+     "why": "a return outranks an arrival \u2014 the refused newcomer lost nothing, the refused returner would have lost a channel"
+    },
+    {
+     "step": 5,
+     "event": "admission meter drained by unknown-address traffic; a valid rebind(held-rkid, g+1) arrives",
+     "verdict": "rebound",
+     "why": "round-44 B-2/M-2: r2 is subject to guarantee 4 \u2014 the meter that unknown-address traffic drained cannot refuse a held binding's return at r2 any more than capacity may at r4. The COMPOSITION is the case: order alone would have said refused(admission-resource)."
+    }
+   ]
+  },
+  "windUpDeadline": {
+   "note": "5a.9, recast in 0.66 after round-43 B-1 \u2014 the deadline IS the release, one linearized transition. closingBegins fixes the deadline; deposits admitted during closing inherit the remaining time; the deadline transition gives up everything and releases in one step; a return before it ends the wind-up and voids the deadline; a fresh wind-up later gets a FRESH deadline.",
+   "giveUpHorizonMs": 1000,
+   "sequence": [
+    {
+     "t": 0,
+     "event": "orphan-horizon passes with no collection",
+     "state": "closing",
+     "deadline": 1000
+    },
+    {
+     "t": 400,
+     "event": "submission admitted",
+     "state": "closing",
+     "depositLifeEndsAt": 1000,
+     "why": "admission stays open; the deposit inherits the remaining 600, not a fresh 1000"
+    },
+    {
+     "t": 999,
+     "event": "submission admitted",
+     "state": "closing",
+     "depositLifeEndsAt": 1000,
+     "why": "even one tick before the deadline the queue admits \u2014 and the deposit's life ends with the wind-up"
+    },
+    {
+     "t": 1000,
+     "event": "deadline",
+     "state": "released",
+     "tombstone": true,
+     "undisposedAtRelease": 0,
+     "why": "give-up of everything held and the release are ONE transition \u2014 nothing can slip between them (round-43 B-1)"
+    }
+   ],
+   "returnEndsIt": {
+    "sequence": [
+     {
+      "t": 0,
+      "event": "orphan-horizon passes",
+      "state": "closing",
+      "deadline": 1000
+     },
+     {
+      "t": 300,
+      "event": "submission admitted",
+      "state": "closing",
+      "depositLifeEndsAt": 1000
+     },
+     {
+      "t": 700,
+      "event": "rebind(g+1) \u2014 the holder returns",
+      "state": "live",
+      "deadlineVoided": true,
+      "depositLifeEndsAt": "admission + give-up-horizon = 1300",
+      "why": "the return ends the wind-up; held deposits revert to their admission-dated horizons"
+     },
+     {
+      "t": 1600,
+      "event": "no collection since the return? then a FRESH orphan-horizon must first pass",
+      "state": "live",
+      "why": "closing\u2192live\u2192closing composes only through a full new orphan-horizon and a FRESH deadline \u2014 the old instant is void, not paused"
+     }
+    ]
+   },
+   "postDeadlineReturn": {
+    "why": "a return linearized after the deadline transition meets released(t) and takes the tombstone path \u2014 two exchanges, executed in carrierEntryLossRecovery.perHeldState",
+    "state": "released"
+   }
+  },
+  "g2_family": {
+   "note": "round-45 B-2 \u2014 the retriable family is closed and split across the two closed sets; WHICH member answers is named by the evaluation orders, never chosen.",
+   "registration": [
+    "registration-refused(capacity)",
+    "refused(admission-resource)"
+   ],
+   "submission": [
+    "refused(admission-resource)",
+    "refused(queue-saturated)",
+    "refused(capacity)"
+   ]
+  }
  }
 }

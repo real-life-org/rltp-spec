@@ -11,7 +11,7 @@
 - **Target Trust Tasks framework version:** 0.4
 - **Conformance profile:** `rltp-membership@0.16` (draft)
 - **Position:** a task-type registration on top of the **RLTP Delivery
-  Contract 0.37** (normative reference; its §4.4 registry carries
+  Contract 0.69** (normative reference; its §4.4 registry carries
   these types), carrying operations of the
   **RLTP Access Layer 0.53** (normative reference; its wire forms
   remain `0.24`, so the transcribed schemas of this document stand
@@ -96,7 +96,8 @@ surfaced into the group space as Layer-4 content (3.4 — Access
 travel and the surfacing duty). The transcribed Access schemas
 stand byte-identically (wire `0.24` unchanged — the coupling of
 Section 10 holds without a break); the Access section references
-of this document now cite Access 0.26. This casting begins a
+of this document cite Access 0.26 **as of that casting** — this is
+genealogy, not the current companion pin; §10 carries that. This casting begins a
 fresh convergence loop; the eleventh casting's seam-closure
 applies to it, not to this draft.
 
@@ -1023,7 +1024,7 @@ surfaced, attributable lie with no mechanical effect.
 ## 10. Conformance
 
 - **Profile** `rltp-membership@0.16`; normatively references
-  `rltp-delivery@0.37` and `rltp-access@0.53` — whose wire forms
+  `rltp-delivery@0.69` and `rltp-access@0.53` — whose wire forms
   remain `0.24` — (envelope §3.3, member identity §5.1, admission
   and candidacy §5.3, material §9.5, key-delivery §10.1,
   removal-notice §10.2, views §7.3).
@@ -1043,7 +1044,7 @@ surfaced, attributable lie with no mechanical effect.
   under the same `$id` with a later-versioned `v` constant makes
   that constant reject 0.24 envelopes — a **hard, visible**
   failure against this profile's fixtures, never a quiet
-  acceptance of later semantics (Access 0.26 kept the wire at
+  acceptance of later semantics (as of Access 0.26 the wire was
   0.24, so this casting carries the transcriptions
   byte-identically). An Access wire-version bump therefore **requires
   a Membership recast** (this document re-cast against the new
@@ -1263,7 +1264,7 @@ surfaced, attributable lie with no mechanical effect.
 ## References
 
 [RFC2119] · [RFC8174] BCP 14 · [RFC8785] JCS · [TT] ToIP DTGWG Trust
-Tasks framework 0.4 · **RLTP Delivery Contract 0.37** (normative; §4.4 registry) ·
+Tasks framework 0.4 · **RLTP Delivery Contract 0.69** (normative; §4.4 registry) ·
 **RLTP Encounter Layer 0.29**, wire 0.25 (securing profile 2.3,
 principles 1.3, contact card §6) · **RLTP Access Layer 0.53**, wire
 0.24 (normative: operation envelope §3.3, group identity §3.2,
