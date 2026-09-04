@@ -1,0 +1,16 @@
+{
+  "name": "@real-life/rltp-binding-vti",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Wire binding: MediatorWire over vti-didcomm-js/vti-tsp-js against the pinned Dogwood clones. Dev-only \u2014 never a dependency of the zero-dependency lib.",
+  "type": "module",
+  "scripts": {
+    "probe": "node live-probe.mjs"
+  },
+  "dependencies": {
+    "@noble/curves": "^2.0.1",
+    "@openvtc/vti-didcomm-js": "^0.7.0",
+    "@openvtc/vti-tsp-js": "0.2.0",
+    "ws": "^8.18.0"
+  }
+}

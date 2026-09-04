@@ -489,5 +489,19 @@
  "badMnemonic": {
   "mnemonic": "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon",
   "reason": "invalid BIP-39 checksum — MUST be rejected at input"
+ },
+ "adapterScopedIdentities": {
+  "note": "VTI-mediator adapter profile + Identity 13 — the two wire-facing identities beside the control principal, same rootIkm, same carrier digest Dc and nonce digest Dn as carrierRelationship case 1, distinct literal prefixes. Each is derivable from the root; none from any other.",
+  "carrier": "did:web:carrier.example",
+  "connection": {
+   "prefix": "rltp/v1/carrier-connection/ed25519/v1/",
+   "info": "rltp/v1/carrier-connection/ed25519/v1/uEiDwOiw5YandA7UFq9dODMZVHNBFSnXHRJ6BEkFuBXJ1eQuEiARyBeBGoLeFlKIajBVjNixpsQkyp4HupNXzStv37vlvw",
+   "did": "did:key:z6Mko7UvFiBGm1UP6eTRFm3TecrAwaj1ckLm3YmQC7x4ZXsk"
+  },
+  "egress": {
+   "prefix": "rltp/v1/carrier-egress/ed25519/v1/",
+   "info": "rltp/v1/carrier-egress/ed25519/v1/uEiDwOiw5YandA7UFq9dODMZVHNBFSnXHRJ6BEkFuBXJ1eQuEiARyBeBGoLeFlKIajBVjNixpsQkyp4HupNXzStv37vlvw",
+   "did": "did:key:z6MkrF5SPHys4HDfskQ8zC1aSjFxTmrAX5JavJ5ELV3GwDw8"
+  }
  }
 }

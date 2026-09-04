@@ -24,6 +24,16 @@ const te = new TextEncoder()
 
 export const CARRIER_INFO_PREFIX = 'rltp/v1/carrier-relationship/ed25519/v1/'
 
+// Adapter-scoped identities (profile spec/adapter-vti-mediator.md,
+// Delivery §5a.10): the mediation connection DID and the sender-side
+// egress identity. Both derive from the same root as the control
+// principal but under distinct info prefixes — each is derivable from
+// the root, none from any other. That is exactly the §5a.10 sentence
+// "never a control principal or derivable from one", satisfied by
+// construction: without rootIkm no party can compute one from another.
+export const CONNECTION_INFO_PREFIX = 'rltp/v1/carrier-connection/ed25519/v1/'
+export const EGRESS_INFO_PREFIX = 'rltp/v1/carrier-egress/ed25519/v1/'
+
 // multihash(sha2-256) in base64url — the digest form Identity §7a.4 fixes
 const mh = async (bytes: Uint8Array): Promise<string> =>
   'u' + b64uOf(cat(Uint8Array.from([0x12, 0x20]), await sha(bytes)))
@@ -86,8 +96,38 @@ export async function carrierPrincipal (
 ): Promise<CarrierPrincipal> {
   if (!validCarrierIdentifier(carrier)) throw new Error('invalid carrier identifier (7a.2)')
   if (nonce.length !== 32) throw new Error('carrier nonce must be 32 bytes (7a.3)')
-  const info = CARRIER_INFO_PREFIX + await mh(te.encode(carrier)) + await mh(nonce)
-  const seed = await hkdf(rootIkm, info)
+  // M-3: the derivation reads its inputs at entry, once. Caller-held
+  // buffers can be mutated while the HKDF awaits; copies make the
+  // derived principal a function of the arguments as passed.
+  const ikm = rootIkm.slice()
+  const n = nonce.slice()
+  const info = CARRIER_INFO_PREFIX + await mh(te.encode(carrier)) + await mh(n)
+  const seed = await hkdf(ikm, info)
   const key = await edFromSeed(seed)
   return { principal: anchorOfEd(key.pubRaw), key, info, keyAgreement: null }
+}
+
+export interface CarrierScopedIdentity {
+  did: string                // did:key:z6Mk…
+  key: KeyPair
+  info: string
+  scope: 'connection' | 'egress'
+}
+
+// One connection DID / one egress identity per (relationship × carrier),
+// same derivation discipline and same input rules as the principal
+// (§7a.4), distinct prefix. Retired with the principal, never reused.
+export async function carrierScopedIdentity (
+  rootIkm: Uint8Array, carrier: string, nonce: Uint8Array,
+  scope: 'connection' | 'egress',
+): Promise<CarrierScopedIdentity> {
+  if (!validCarrierIdentifier(carrier)) throw new Error('invalid carrier identifier (7a.2)')
+  if (nonce.length !== 32) throw new Error('carrier nonce must be 32 bytes (7a.3)')
+  const ikm = rootIkm.slice()
+  const n = nonce.slice()
+  const prefix = scope === 'connection' ? CONNECTION_INFO_PREFIX : EGRESS_INFO_PREFIX
+  const info = prefix + await mh(te.encode(carrier)) + await mh(n)
+  const seed = await hkdf(ikm, info)
+  const key = await edFromSeed(seed)
+  return { did: anchorOfEd(key.pubRaw), key, info, scope }
 }

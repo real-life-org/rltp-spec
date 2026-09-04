@@ -34,7 +34,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node --test test/vectors.test.mjs test/vectors2.test.mjs test/vectors3.test.mjs test/probe.test.mjs test/carrier.test.mjs test/loopback.test.mjs",
+    "test": "node --test test/vectors.test.mjs test/vectors2.test.mjs test/vectors3.test.mjs test/vectors4.test.mjs test/probe.test.mjs test/carrier.test.mjs test/loopback.test.mjs test/adapter-mediator.test.mjs",
     "prepack": "npm run build && npm test"
   },
   "keywords": [

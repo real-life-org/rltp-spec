@@ -4,7 +4,7 @@
 
 - **Status:** Editor's Draft
 - **Version:** 0.51.0-draft (fifty-first casting — the companion
-  to Delivery 0.69's scope re-cast. §9.3's recovery statements no
+  to Delivery 0.79's scope re-cast. §9.3's recovery statements no
   longer lean on Delivery's withdrawn resource machinery: the
   per-state exchange counts stand on the state machine alone, a
   return during a wind-up meets an admitting queue, and a return
@@ -213,7 +213,7 @@ hop moved would be tracking the network rather than the holder's
 configuration, and that is exactly the property 7a.2 exists to
 have. What was missing was the sentence saying so, and saying
 whose problem the consequence is. 7a.2 now carries it; the
-lifecycle it implies is Delivery 0.69 §5a.10.
+lifecycle it implies is Delivery 0.79 §5a.10.
 
 Beside them, the Unicode 15.0 pin of 7a.2 is **shipped as data**
 rather than delegated to the runtime's property tables (a pin
@@ -224,7 +224,7 @@ axis** — same carrier, two nonces, two principals.
 
 The companions above this layer: the **RLTP Encounter Layer 0.29**
 (fresh always; 0.22 was the last converged Encounter), the
-**RLTP Delivery Contract 0.69** (jointly cast),
+**RLTP Delivery Contract 0.79** (jointly cast),
 **RLTP Membership Tasks 0.16**, **RLTP Access Layer 0.53**, and
 **RLTP Network Visibility 0.16**; two
 cross-document debts against Delivery and Access are recorded in
@@ -825,10 +825,10 @@ converged; debts are discharged at their next castings, never by
 patching):
 
 - *Against the Delivery Contract:* **discharged (Delivery 0.22,
-  26.08.2026; carried unchanged into Delivery 0.23–0.69)** — its §5
+  26.08.2026; carried unchanged into Delivery 0.23–0.79)** — its §5
   expressly excludes the derived
   service identity as an `rkid` source (Ed25519-only, no
-  sealing-to-service in the 0.x stack). Delivery 0.23–0.69 add the
+  sealing-to-service in the 0.x stack). Delivery 0.23–0.79 add the
   consuming contract of Section 7a and, with it, the second
   Delivery-side seam this layer now owns.
 - *Against the Access Layer:* **discharged (Access 0.45+,
@@ -842,7 +842,7 @@ patching):
 ### 7a.1 What it is, and the problem it answers
 
 A **carrier** holds delivery queues for other people (Delivery
-0.69 §5a). It is key-blind — it never reads a document — but it
+0.79 §5a). It is key-blind — it never reads a document — but it
 sees who registers which addresses, and it sees who comes to
 collect them. Section 7's service identity does not help here: it
 is scoped to a **group**, and a delivery relationship is not a
@@ -916,7 +916,7 @@ reason: two strings that differ in any byte name two carriers.
   did not configure moves underneath it. The consequence for the
   adapter — a fresh hop identifier succeeding a retired one, with
   the principal and its registration unchanged — is **Delivery
-  0.69 §5a.10**, and it belongs there because it is a fact about a
+  0.79 §5a.10**, and it belongs there because it is a fact about a
   neighbouring protocol's relationship, never about this
   derivation.
 - **A move is a new registration, not a migration.** Changing the
@@ -1060,7 +1060,7 @@ both devices can evaluate alone.
 > zero, no fractional part and no exponent — a **lexical** rule,
 > and one whose consumer must check it **on the bytes it
 > received**, because `1.0` and `1e0` parse to the same number
-> and canonicalize to the same signed form; Delivery 0.69 §5a.3
+> and canonicalize to the same signed form; Delivery 0.79 §5a.3
 > now does exactly that at carrier-proof acceptance.
 > Where a register holds more than one entry for one relationship,
 > exactly one is **canonical**: the entry with the **highest
@@ -1120,7 +1120,7 @@ uses for exactly the same purpose.
      continue unaffected. Canonicality decides which entry is
      authoritative for **new** derivations; it never meant that a
      superseded principal stops working where it is already bound.
-     Delivery 0.69 §5a.3 carries the same sentence from the
+     Delivery 0.79 §5a.3 carries the same sentence from the
      carrier's side — **now in its general form, and it was worth
      checking**: that section stated the carrier-side rule as
      "possession of a superseded generation is possession of
@@ -1203,13 +1203,13 @@ called that decision *impossible* to reproduce outside this
 register and gave an argument that does not hold — a
 carrier-scoped order-preserving map exists trivially — so the
 categorical claim is **withdrawn** here as it is in Delivery
-0.69 §5a.3. What stands is the rule and its reason: **no value
+0.79 §5a.3. What stands is the rule and its reason: **no value
 derived from the nonce ordering travels in any artifact of this
 stack**, because such a value would have to be authentically
 bound to the derivation and analysed for what it discloses to a
 party that already sees the principal and the address, and no such
 construction is designed. A holder therefore MUST NOT place one in
-a carrier proof, and a carrier cannot decide the tie. What happens instead is Delivery 0.69 §5a.3's: the
+a carrier proof, and a carrier cannot decide the tie. What happens instead is Delivery 0.79 §5a.3's: the
 carrier refuses the equal-generation rebind, that refusal is a
 **wait state**, and the canonical device resolves it with an
 ordinary rotation to `generation + 1`, which both this register
@@ -1226,7 +1226,7 @@ of it. Local ordering alone would let such a device roll a
 carrier's binding **back**, and the newer device roll it forward
 again, indefinitely. Therefore the generation does not stay
 inside: **a holder MUST carry the canonical entry's `generation`
-in the carrier registration proof** (Delivery 0.69 §5a.3), and a
+in the carrier registration proof** (Delivery 0.79 §5a.3), and a
 carrier binds only on a strictly higher generation than the one it
 last accepted — its answer is that section's **outcome table**,
 which advances the recorded generation on **any** strictly greater
@@ -1240,7 +1240,7 @@ that decides it is the one that travels.
 deliberately different: a carrier releases a binding at the end of
 its wind-up and keeps only a tiny **binding tombstone**
 (`rkid` and the highest generation it ever accepted, Delivery
-0.69 §5a.3) — which does not expire in time and is bounded only by
+0.79 §5a.3) — which does not expire in time and is bounded only by
 that contract's declared tombstone capacity — and which is what
 stops a superseded generation from being re-installed after the
 binding is gone. Here nothing is
@@ -1333,11 +1333,14 @@ Section 5.1 makes for labels, made here for two inputs):
 
 1. The prefix `rltp/v1/carrier-relationship/ed25519/v1/` is a
    literal ASCII constant with no variable part, and it differs
-   from every other derivation family of this document —
-   `rltp/anchor/ed/`, `rltp/anchor/x/`, `rltp/v1/service-identity/`,
-   and the four fixed recovery strings of 5.3 — **before any
-   variable part begins** (Section 13 keeps the full list). No
-   choice of `C` or `N` can reach another family.
+   from every other derivation family — `rltp/anchor/ed/`,
+   `rltp/anchor/x/`, `rltp/v1/service-identity/`, the four fixed
+   recovery strings of 5.3, and the two adapter-scoped siblings
+   `rltp/v1/carrier-connection/ed25519/v1/` and
+   `rltp/v1/carrier-egress/ed25519/v1/`, which share this family's
+   two-variable-part form — **before any variable part begins**
+   (Section 13 keeps the full list). No choice of `C` or `N` can
+   reach another family.
 2. Both variable parts are **length-fixed**: 47 characters each,
    from base64url's fixed alphabet, by construction of the
    encoding. The split point is therefore determined by position
@@ -1408,7 +1411,7 @@ construction is defeated from the side.
    (Section 7) as a principal. What a carrier may and may not ask
    of a principal, and the role separation that keeps storage
    entry and delivery pickup apart in a process that is both, is
-   Delivery 0.69 §5a.6.
+   Delivery 0.79 §5a.6.
 
 ## 8. Anchors (normative)
 
@@ -1629,7 +1632,7 @@ synchronized by the layers above:
   have nothing to exceed. Because that surface would otherwise
   grow monotonically, a carrier MUST publish an aging rule for
   uncollected principals as a declared constant; that duty and its
-  constant live in Delivery 0.69 §5a.9, not here. **What that rule
+  constant live in Delivery 0.79 §5a.9, not here. **What that rule
   is worth knowing here:** ageing is a wind-up to a fixed
   deadline, not a deletion — the queue keeps admitting,
   everything admitted is concluded or given up by the deadline,
@@ -1866,15 +1869,21 @@ that:
   `rltp/anchor/ed/` and `rltp/anchor/x/` (labeled contexts, 5.1),
   the fixed recovery strings (both generations, 5.3) such as `wot/identity/ed25519/v1` and
   `wot/encryption/x25519/v1` (5.3),
-  `rltp/v1/service-identity/` (7), and
-  `rltp/v1/carrier-relationship/ed25519/v1/` (7a). Their literal prefixes are
+  `rltp/v1/service-identity/` (7),
+  `rltp/v1/carrier-relationship/ed25519/v1/` (7a), and the two
+  adapter-scoped wire identities
+  `rltp/v1/carrier-connection/ed25519/v1/` and
+  `rltp/v1/carrier-egress/ed25519/v1/` (the VTI-mediator adapter
+  profile; same two length-fixed variable parts as the carrier
+  family). Their literal prefixes are
   pairwise distinct before any variable part begins (the fixed
   recovery strings contain no variable part at all), so no label or
   digest choice can collide two families; Section 5.1's argument
   records why no input can collide two labels within a family
   either, and 7a.4's why no pair of inputs can collide two
-  principals within the carrier family — the one family with **two**
-  variable parts, both length-fixed for exactly that reason.
+  principals within the carrier family; the same argument covers the
+  two adapter-scoped families, which share its two-variable-part
+  form — every variable part length-fixed for exactly that reason.
 - **Label collision as attack surface.** If an attacker can
   influence a label (a group's genesis digest is
   adversary-influenced input), they still cannot influence the
@@ -1932,7 +1941,7 @@ that:
   which Delivery keeps in separate authorization sessions, so what
   correlates them is their closeness in time and their shared
   transport, never a shared session (Delivery §5a.7) — the network layer, or two carriers comparing notes.
-  Delivery 0.69 §10 states those residuals where they are paid; the
+  Delivery 0.79 §10 states those residuals where they are paid; the
   derivation closes the **list join**, not traffic analysis.
 - **The register is where the carrier picture reassembles.** The
   carrier-relationship entries (6.3) hold, in one place, every
@@ -2219,7 +2228,7 @@ derivation.
 | Multibase / Multikey | W3C Controlled Identifiers v1.0 Multikey + IETF draft-multiformats-multibase: `u` (base64url unpadded), `z` (base58btc); multicodec registry entries `0xed01` (Ed25519 pub), `0xec01` (X25519 pub); multihash `0x12 0x20` (sha2-256) |
 | Data Integrity | W3C Data Integrity EdDSA Cryptosuites v1.0 (vc-di-eddsa), cryptosuite `eddsa-jcs-2022` (via the consuming layers' securing decision) |
 | Unicode | Unicode 15.0 data for assignment, `General_Category`, `White_Space`; NFC per UAX #15. For 7a.2 the pinned `Cf` and `White_Space` sets are **shipped as enumerated ranges** in `vectors/identity-derivation.json` and govern over any runtime's property tables |
-| RLTP Delivery Contract | **0.69** (normative for the carrier-side consumption of 7a: §5a.3 registration proofs, §5a.8 conclusion, §5a.9 loss and orphans, §4.4 the carrier constants) |
+| RLTP Delivery Contract | **0.79** (normative for the carrier-side consumption of 7a: §5a.3 registration proofs, §5a.8 conclusion, §5a.9 loss and orphans, §4.4 the carrier constants) |
 
 ## Appendix A. Relation to prior wot-spec documents (informative)
 
@@ -2247,7 +2256,7 @@ Revision 3:
 | A4 recovery without custodians | 9.1 |
 | A5 honesty about the second loss case | 9.2 |
 | A6 separated key purposes | 5.1/5.3 (ed/x domain separation) |
-| A7 derived service identities | 7 (Ed25519-only, canonical digest, Access seam vector, Delivery/Access debts) · **7a** (the carrier-relationship class: the second scope A7 needs, Delivery 0.69 §5a its consumer) |
+| A7 derived service identities | 7 (Ed25519-only, canonical digest, Access seam vector, Delivery/Access debts) · **7a** (the carrier-relationship class: the second scope A7 needs, Delivery 0.79 §5a its consumer) |
 | A8 operability without cryptography knowledge | 3.3 (normative table) |
 | A9 anchor stability as chosen position | 8.5 |
 | B1–B4 graded properties | 11 (native profile row) |
