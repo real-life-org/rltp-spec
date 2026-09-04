@@ -10,5 +10,5 @@
       "$ref": "visibility-introduction-voucher.schema.json"
     }
   },
-  "title": "RLTP payload introduction-voucher (rltp-visibility@0.16)"
+  "title": "RLTP payload introduction-voucher (rltp-visibility@0.29)"
 }

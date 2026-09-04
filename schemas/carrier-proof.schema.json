@@ -1,7 +1,7 @@
 {
  "$schema": "https://json-schema.org/draft/2020-12/schema",
  "$id": "https://real-life.org/rltp/v1/carrier-proof/0.3",
- "title": "RLTP Carrier Registration Proof (rltp-carrier-proof/0.3, rltp-delivery@0.69)",
+ "title": "RLTP Carrier Registration Proof (rltp-carrier-proof/0.3, rltp-delivery@0.79)",
  "description": "Delivery Contract \u00a75a.3: the object a recipient signs to register, rebind, collect or conclude at a carrier. The signature input is the JCS serialization (RFC 8785) of this object with 'sig' omitted; the signature is Ed25519 under 'principal', carried as canonical base58btc with the 'z' prefix (Encounter \u00a72.3). The 'v' constant is the domain tag and is inside the signed bytes. This artifact travels below the port line \u2014 how it is carried is unspecified \u2014 but its bytes are fixed here, which is what makes the shipped transplant counter-vectors possible. WHAT THIS SCHEMA DOES NOT CHECK, stated here rather than left to be discovered: base58btc is not a positional encoding, so no pattern in this dialect can constrain a DECODED multicodec prefix or a DECODED byte length. The 'principal', 'rkid' and 'sig' patterns are therefore necessary conditions only \u2014 they fix the alphabet and the exact achievable length envelope, and nothing beyond it. Passing this schema is not acceptance; Delivery \u00a75a.3 and \u00a711 place the decoding obligation on the verifier, and vectors/carrier-proof.json ships the schema-valid, normatively invalid aliases that make the gap testable.",
  "type": "object",
  "required": [

@@ -14,11 +14,11 @@
 // The modules map onto two specifications:
 //
 //   Network Visibility   introduce (mediated introductions over a
-//                        rendezvous drop) · trust (the explicit trust
-//                        act: anchor-mapping@2, the blinded star,
-//                        pause) · continuity (§6a: probe + mapping —
-//                        re-recognizing a relationship after a fresh
-//                        enactment, chains instead of duplicates)
+//                        rendezvous drop) — the trust act, the blinded
+//                        star, §6a continuity and the deniable ack
+//                        GRADUATED to the root entry point on
+//                        04.09.2026 (`visibility.trust/.continuity/
+//                        .acks`, design/probe-nachzug-konvergenz-2026-09.md)
 //   Membership + Access  membership (founding, prelude, VIC invite,
 //                        consent, admission, welcome, vouch@2)
 //
@@ -42,6 +42,4 @@ export { COMMUNITY_GENESIS } from './probe/deps.js'
 // live here for the same reason SCHEMAS does: they track the castings.
 export type * as wire from './wire.js'
 export * as introduce from './probe/introduce.js'
-export * as trust from './probe/trust.js'
-export * as continuity from './probe/continuity.js'
 export * as membership from './probe/membership.js'

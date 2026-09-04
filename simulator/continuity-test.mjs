@@ -17,8 +17,8 @@ const active = (p) => [...p.contacts.values()].filter((c) => !c.deactivated)
 // Probe-/Mapping-Verkehr zwischen zwei Personen komplett ausspielen
 async function runContinuity (a, b, keyAtA, keyAtB, when) {
   const q = []
-  for (const out of (await CN.buildProbe(a, keyAtA)) ?? []) q.push([b, out.env])
-  for (const out of (await CN.buildProbe(b, keyAtB)) ?? []) q.push([a, out.env])
+  for (const out of (await CN.buildProbe(a, keyAtA, T0 + 61_000)) ?? []) q.push([b, out.env])
+  for (const out of (await CN.buildProbe(b, keyAtB, T0 + 61_000)) ?? []) q.push([a, out.env])
   while (q.length) {
     const [to, env] = q.shift()
     const r = await CN.receiveContinuity(to, env, when)
@@ -96,13 +96,15 @@ async function runContinuity (a, b, keyAtA, keyAtB, when) {
   const msg = jcs(body)
   const k1 = await C.hkdf(await C.ecdh(t.channel.own.x.priv, C.xRawOfMk(t.channel.counterpartKa)), 'rltp/visibility/mac/cont1')
   const k2 = await C.hkdf(await C.ecdh(t.channel.own.x.priv, C.xRawOfMk(t.channel.counterpartKa)), 'rltp/visibility/mac/cont2')
-  const evil = { ...body, mac1: await hmac(k1, msg), mac2: await hmac(k2, msg) }
+  const hull = (artifact, id) => ({ id, type: 'https://real-life.org/trust-tasks/continuity-mapping/0.1', issuer: t.channel.own.anchor, recipient: c2.ctxA.anchor, threadId: '7b1c9c1e-4d5a-4a4a-9d5e-0000000000d1', issuedAt: C.iso(T0 + 61_000), payload: artifact })
+  const hmacU = async (k, m2) => 'u' + await hmac(k, m2)
+  const evil = hull({ body, proof: { mac1: await hmacU(k1, msg), mac2: await hmacU(k2, msg) } }, '7b1c9c1e-4d5a-4a4a-9d5e-0000000000d2')
   const rSelf = await CN.receiveContinuity(a, await C.seal(evil, t.channel.counterpartKa), T0 + 62_000)
-  check(rSelf.error === 'prior nicht im Prior-Candidate-Set', 'Selbst-Referenz als prior: stirbt am Schnappschuss (nie das frische Tupel)')
+  check(rSelf.error === 'prior = frisches Tupel (§6a)', 'Selbst-Referenz als prior: stirbt am expliziten Selbst-Ketten-Schutz (nie das frische Tupel)')
   // mac1 unter dem falschen Schlüssel (neuer statt alter Beziehung): stirbt an mac1
   const body2 = { ...body, prior: c1.ctxB.anchor }
   const msg2 = jcs(body2)
-  const evil2 = { ...body2, mac1: await hmac(k1, msg2), mac2: await hmac(k2, msg2) }
+  const evil2 = hull({ body: body2, proof: { mac1: await hmacU(k1, msg2), mac2: await hmacU(k2, msg2) } }, '7b1c9c1e-4d5a-4a4a-9d5e-0000000000d3')
   const rMac = await CN.receiveContinuity(a, await C.seal(evil2, t.channel.counterpartKa), T0 + 63_000)
   check(rMac.error === 'mac1 (alter Beziehungs-Schlüssel)', 'mac1 unter falschem Schlüssel: nur der Inhaber BEIDER Beziehungen kann beide MACs')
 }

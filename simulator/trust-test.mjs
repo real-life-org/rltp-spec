@@ -14,8 +14,16 @@ const T0 = Date.parse('2026-08-27T10:00:00Z')
 
 // Kanal-Zustellung: env → receiveTrustDoc, outbound rekursiv weiter
 const byName = (world, name) => Object.values(world).find((p) => p?.name === name)
+async function deliverAct (world, to, pkt, when) {
+  let best
+  for (const o of pkt.outbound) { const r = await deliverTrust(world, to, o.env, when); if (r?.disclosed || !best) best = r }
+  return best
+}
 async function deliverTrust (world, to, env, when) {
   const r = await T.receiveTrustDoc(to, env, when)
+  // Delivery 4.2: der deniable Ack reist zurück — erst er komplettiert
+  // die Zustellung und rückt die Sender-Baseline vor (5.4-Automat)
+  if (r.ack) await deliverTrust(world, byName(world, r.ack.to.name), r.ack.env, when)
   for (const out of r.outbound ?? []) await deliverTrust(world, byName(world, out.to.name), out.env, when)
   return r
 }
@@ -31,8 +39,8 @@ const keyOf = (p, name) => [...p.contacts.entries()].find(([, c]) => c.name === 
 // ── 1. der Vertrauensakt: einseitig, verifiziert, Einweg-Tür ────────────
 {
   const pkt = await T.setTrust(anton, keyOf(anton, 'Berta'), T0 + 10_000)
-  check(!pkt.error && pkt.env, 'Vertrauensakt Anton→Berta: Disclosure versiegelt auf dem Kanal')
-  const r = await deliverTrust(world, berta, pkt.env, T0 + 11_000)
+  check(!pkt.error && pkt.outbound?.length === 2, 'Vertrauensakt Anton→Berta: anchor-mapping/0.1 + grade-declaration/0.1 versiegelt auf dem Kanal')
+  const r = await deliverAct(world, berta, pkt, T0 + 11_000)
   const bA = berta.contacts.get(keyOf(berta, 'Anton'))
   check(r.disclosed && bA.selfAnchor === (await T.communityContext(anton)).anchor, 'Berta hält Antons stabilen Anker — Mapping VERIFIZIERT übernommen')
   check(bA.trustReceived && !bA.trustGiven, 'Richtung stimmt: ← vertraut dir, nichts zurückgegeben')
@@ -57,8 +65,8 @@ const keyOf = (p, name) => [...p.contacts.entries()].find(([, c]) => c.name === 
   await I.consent(berta, rB.entry, drop, T0 + 23_000)   // jetzt freigeben → ⇄
   await I.checkDrop(carla, rC.entry, drop)
   const pkt = await T.setTrust(berta, oneKey, T0 + 24_000)
-  check(!pkt.error && pkt.env, 'vorgestellt + beidseitig (⇄): Vertrauensakt ERLAUBT (Offenlegung ist meine Entscheidung)')
-  const r = await deliverTrust(world, carla, pkt.env, T0 + 25_000)
+  check(!pkt.error && pkt.outbound?.length === 2, 'vorgestellt + beidseitig (⇄): Vertrauensakt ERLAUBT (Offenlegung ist meine Entscheidung)')
+  const r = await deliverAct(world, carla, pkt, T0 + 25_000)
   const cIntro = [...carla.contacts.values()].find((c) => c.provenance !== 'ceremony' && c.name === 'Berta')
   check(r.disclosed && cIntro.selfAnchor === (await T.communityContext(berta)).anchor, 'Mapping verifiziert auch über den VORGESTELLTEN Kanal — kein Zeremonie-Credential nötig')
 }
@@ -69,13 +77,16 @@ const keyOf = (p, name) => [...p.contacts.entries()].find(([, c]) => c.name === 
   // und Carla hält B.self (nur dadurch kann sie den Match rechnen)
   for (const [from, toName, t] of [[berta, 'Anton', 30], [carla, 'Anton', 31], [carla, 'Berta', 32], [berta, 'Carla', 33]]) {
     const pkt = await T.setTrust(from, keyOf(from, toName), T0 + t * 1000)
-    await deliverTrust(world, byName(world, toName), pkt.env, T0 + t * 1000 + 500)
+    await deliverAct(world, byName(world, toName), pkt, T0 + t * 1000 + 500)
   }
   // A→C: Antons Stern an Carla enthält (geblendet) B.self und C.self
   const pkt = await T.setTrust(anton, keyOf(anton, 'Carla'), T0 + 40_000)
-  await deliverTrust(world, carla, pkt.env, T0 + 41_000)
+  await deliverAct(world, carla, pkt, T0 + 41_000)
+  // der Stern folgt über den Producer (5.4-Rekonziliation, nicht mehr
+  // im Disclosure-Paket) — liefern, Acks fahren in deliverTrust mit
+  for (const o of await T.starRefreshAll(anton, T0 + 42_000)) await deliverTrust(world, byName(world, o.to.name), o.env, T0 + 42_000)
   const cA = carla.contacts.get(keyOf(carla, 'Anton'))
-  check(cA.starReceived?.count === 2, 'Carla sieht: Anton hält 2 offengelegte Kontakte (Zählung ehrlich)')
+  check(Number(cA.starReceived?.count) === 2, 'Carla sieht: Anton hält 2 offengelegte Kontakte (Zählung ehrlich)')
   check(cA.starInfo?.knownNames?.length === 1 && cA.starInfo.knownNames[0] === 'Berta', 'gemeinsamer Kontakt erkannt: Berta (nur weil Carla B.self LEGITIM hält)')
   check(!cA.starReceived.blinded.includes((await T.communityContext(berta)).anchor), 'kein roher Dritt-Anker im Schnappschuss — alles geblendet')
   // Stern-Refresh beim Bestandswachstum: Bertas Stern an Anton wuchs, als
@@ -91,7 +102,7 @@ const keyOf = (p, name) => [...p.contacts.entries()].find(([, c]) => c.name === 
   const victimCard = carla.contacts.get(keyOf(carla, 'Anton')) && await T.selfCard(carla, C.iso(T0 + 50_000))
   // Berta hält Carlas Self-Card via Disclosure C→B
   const bC = berta.contacts.get(keyOf(berta, 'Carla'))
-  const forged = await T.forgeMapping(berta, bC.mapping.card, keyOf(berta, 'Anton'), T0 + 51_000)
+  const forged = await T.forgeMapping(berta, bC.mapping.body.card, keyOf(berta, 'Anton'), T0 + 51_000)
   check(await T.verifyMapping(berta, forged), 'FORGE verifiziert identisch — ein geleaktes Mapping beweist Dritten nichts')
   // aber Manipulation am echten stirbt
   const real = berta.contacts.get(keyOf(berta, 'Anton')).mapping
@@ -102,13 +113,21 @@ const keyOf = (p, name) => [...p.contacts.entries()].find(([, c]) => c.name === 
 // ── 5. Pause: Abo stoppt, Geliefertes bleibt ────────────────────────────
 {
   T.setTrustPaused(anton, keyOf(anton, 'Berta'), true)
-  const before = anton.contacts.get(keyOf(anton, 'Berta')).sentStar.salt
+  const subB = anton.contacts.get(keyOf(anton, 'Berta')).sub
+  const before = String(subB.highWater)
+  // während der Pause entsteht Divergenz (neues admittiertes Mitglied)
+  T.promotionCommit(anton, 'fake-rel-pausentest', 'uFAKE-divergenz-anker-fuer-den-pausentest', keyOf(anton, 'Carla'), T0 - 86_400_001)
   const out = await T.starRefreshAll(anton, T0 + 60_000)
-  check(out.every((o) => o.to.name !== 'Berta'), 'pausiert: kein neuer Stern an Berta im Refresh')
-  check(anton.contacts.get(keyOf(anton, 'Berta')).sentStar.salt === before, 'Sender-Journal unverändert — Geliefertes bleibt, Neues stoppt')
+  check(out.every((o) => o.to.name !== 'Berta'), 'pausiert: kein neuer Stern an Berta — die Pflicht ist SUPPRIMIERT, nicht verletzt (5.4)')
+  check(String(subB.highWater) === before, 'Sender-Baseline unverändert — Geliefertes bleibt, Neues stoppt')
   T.setTrustPaused(anton, keyOf(anton, 'Berta'), false)
   const out2 = await T.starRefreshAll(anton, T0 + 61_000)
-  check(out2.some((o) => o.to.name === 'Berta'), 'reaktiviert: Stern fließt wieder')
+  check(out2.some((o) => o.to.name === 'Berta'), 'Unpause re-evaluiert die Divergenz: der Stern fließt wieder (5.4)')
+  // und wo nichts divergiert, ist Schweigen Konformität: der nächste
+  // Producer-Lauf liefert NICHTS mehr an Berta (delivery forbidden)
+  for (const o of out2) if (o.to.name === 'Berta') { /* Zustellung + Ack */ await deliverTrust(world, byName(world, o.to.name), o.env, T0 + 62_000) }
+  const out3 = await T.starRefreshAll(anton, T0 + 63_000)
+  check(out3.every((o) => o.to.name !== 'Berta'), 'konvergiert: keine Divergenz, keine Lieferung — Rekonziliation statt Ereignis-Liste')
 }
 
 // ── 6. vouch@2: die Bürgschaft, accept-gebunden, über den Kanal ─────────

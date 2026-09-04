@@ -15,5 +15,5 @@
       "description": "Encounter contact card (wire rltp-card/0.25); JCS digest MUST equal introduction.body.cardDigest"
     }
   },
-  "title": "RLTP payload introduction-forward (rltp-visibility@0.16) — byte-identical to the request payload"
+  "title": "RLTP payload introduction-forward (rltp-visibility@0.29) — byte-identical to the request payload"
 }

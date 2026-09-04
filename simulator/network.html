@@ -183,6 +183,8 @@ async function dispatchDoc (toPerson, env) {
   if (!r.handled) r = await T.receiveTrustDoc(toPerson, env, now)
   if (!r.handled) r = await CN.receiveContinuity(toPerson, env, now)
   if (!r.handled) r = await receiveEncounter(toPerson, env)
+  // Delivery 4.2: der deniable Ack reist zurueck ueber den Kanal
+  if (r.ack) { packet(r.ack.kind, toPerson.name, r.ack.to.name, r.ack.env); await deliver(byName(r.ack.to.name), r.ack.env) }
   if (!r.handled) { const o = await I.receiveOffer(toPerson, env); return { handled: !o.error, error: o.error } }
   logPkt(toPerson, r)
   const tid = idOf(toPerson)
@@ -339,12 +341,39 @@ setInterval(async () => {
       }
     }
     for (const [k, c] of p.contacts) {
-      if (!c.channel?.own || c.probeSent || c.deactivated) continue
-      c.probeSent = true
-      for (const out of (await CN.buildProbe(p, k)) ?? []) {
-        packet('continuity-probe@1 (geblendet, gepolstert, versiegelt)', p.name, out.to.name, out.env)
-        await deliver(byName(out.to.name), out.env)
+      if (!c.channel?.own || c.deactivated) continue
+      // 6a.3 stehende Pflichten: pending Probe senden; unbeantwortete
+      // Situation (weder gekettet noch als neu erkannt) mit FRISCHER
+      // Sequenz wiederholen; Mapping-Pflichten/Retries via flush
+      const unanswered = c.probeSent && !c.chainedInto && !c.chain?.length && !c.contChosen && !c.contReported && c.probeSeqIn === undefined
+      if (!c.probeSent || (unanswered && (c.probeRetryTick = (c.probeRetryTick ?? 0) + 1) % 8 === 0)) {
+        // probeSent erst NACH erfolgreichem Bau (Review 24, B-1): ein
+        // Bau-Fehler lässt die Pflicht stehen (nächster Tick versucht
+        // erneut); NUR Erschöpfung suspendiert den Scope endgültig
+        // (2.1) — und nie den Sweep der übrigen Kontakte (Review 19)
+        try {
+          const outs = await CN.buildProbe(p, k, now)
+          if (outs) {
+            c.probeSent = true
+            for (const out of outs) {
+              packet(out.kind ?? 'continuity-probe/0.1 (geblendet, gepolstert, versiegelt)', p.name, out.to.name, out.env)
+              await deliver(byName(out.to.name), out.env)
+            }
+          }
+        } catch (err) {
+          if (String(err?.message ?? err).includes('scope exhausted')) c.probeSent = true   // endgültig suspendiert
+          p.log.push(`Probe an ${c.name} suspendiert: ${err?.message ?? err}`)
+        }
+        changed = true
       }
+      const fl = await CN.flushContinuity(p, k, now)
+      for (const out of fl.outbound ?? []) { packet(out.kind, p.name, out.to.name, out.env); await deliver(byName(out.to.name), out.env); changed = true }
+    }
+    // 5.4 Producer-Sweep: stehende Divergenzen + V2-Pflichten jedes
+    // verfügbaren Delivery-Kontakts (Rekonziliation ist idempotent)
+    for (const out of await T.starRefreshAll(p, now)) {
+      packet(out.kind + ' (versiegelt)', p.name, out.to.name, out.env)
+      await deliver(byName(out.to.name), out.env)
       changed = true
     }
     if (p.log.length + p.contacts.size !== before) changed = true
@@ -599,14 +628,26 @@ async function receiveEncounter (toPerson, env) {
   const bind = await C.binding(C.CEREMONY, card.challenge.value, myCh)
   if (credential.credentialSubject.enactmentBinding !== bind) return { handled: true, error: 'enactmentBinding' }
   const existing = toPerson.contacts.get(card.anchor)
-  if (existing && (existing.state === '→' || existing.state === '←')) {
-    // die Gegenrichtung DERSELBEN Begegnung: beidseitig
-    existing.state = '✓'; existing.credentialIn = credential; existing.card = card
-    delete existing.credentialPending
-    existing.probeSent = false // Tupel lebt beidseitig → §6a-Probe im Tick
-    toPerson.log.push(`${existing.name} — Credential angekommen, ihr seid beidseitig verifiziert ✓`)
-    world.ui[id].sheet = { type: 'verified', of: card.anchor }
-    if (['waiting', 'delivered', 'fallback'].includes(world.ui[id].view)) { world.ui[id].view = 'list'; delete world.shows[id] }
+  if (existing) {
+    // DERSELBE Anker = DIESELBE Begegnung: NIE ersetzen — ein Replace
+    // verlöre Kette und priorCands und vergiftete den Neu-Schnappschuss
+    // mit dem eigenen Anker (Selbst-Match-Falle, §6a)
+    existing.credentialIn = credential; existing.card = card
+    if (existing.state === '→' || existing.state === '←') {
+      // die Gegenrichtung DERSELBEN Begegnung: beidseitig
+      existing.state = '✓'
+      delete existing.credentialPending
+      existing.probeSent = false // Tupel lebt beidseitig → §6a-Probe im Tick
+      toPerson.log.push(`${existing.name} — Credential angekommen, ihr seid beidseitig verifiziert ✓`)
+      world.ui[id].sheet = { type: 'verified', of: card.anchor }
+      if (['waiting', 'delivered', 'fallback'].includes(world.ui[id].view)) { world.ui[id].view = 'list'; delete world.shows[id] }
+    } else {
+      // Kette war schneller als das Credential: die Begegnung ist
+      // TROTZDEM jetzt beidseitig belegt — derselbe Feier-Moment
+      toPerson.log.push(`${existing.name} — Credential angekommen (Begegnung war schon beidseitig ✓)`)
+      world.ui[id].sheet = { type: 'verified', of: card.anchor }
+      if (['waiting', 'delivered', 'fallback'].includes(world.ui[id].view)) { world.ui[id].view = 'list'; delete world.shows[id] }
+    }
     return { handled: true }
   }
   const priors = CN.snapshotPriors(toPerson)
@@ -654,9 +695,14 @@ window.__trustGive = async (id, anchor) => {
   world.ui[id].sheet = null
   K.jump(clock, 5 * K.SECOND)
   const pkt = await T.setTrust(p, anchor, now)
-  if (pkt.env) {
-    packet('trust-disclosure@probe (DV-Mapping + Stern, versiegelt)', p.name, pkt.to.name, pkt.env)
-    await deliver(byName(pkt.to.name), pkt.env)
+  for (const o of pkt.outbound ?? []) {
+    packet(o.kind + ' (versiegelt)', p.name, pkt.to.name, o.env)
+    await deliver(byName(pkt.to.name), o.env)
+  }
+  // der Stern folgt ueber die 5.4-Rekonziliation (Producer-Sweep)
+  for (const o of await T.starRefreshAll(p, now)) {
+    packet(o.kind + ' (versiegelt)', p.name, o.to.name, o.env)
+    await deliver(byName(o.to.name), o.env)
   }
   render()
 }
@@ -729,7 +775,7 @@ function metaLine (p, c, ctx = 'contacts') {
   const known = c.starInfo?.knownNames ?? []
   if (known.length) return `You both know ${known[0]}` + (known.length > 1 ? ` and ${known.length - 1} more` : '')
   // rank 6: the honest count from the contact update
-  if (c.starInfo) return `${c.starInfo.count} contact${c.starInfo.count === 1 ? '' : 's'}`
+  if (c.starInfo) return `${c.starInfo.count} contact${c.starInfo.count === '1' ? '' : 's'}`
   // rank 7: fallback
   return c.since ? `Verified ${rel(c.since)}` : 'verified (ceremony)'
 }
@@ -944,7 +990,7 @@ function screenProfile (id, p, anchor) {
       <span class="plabel"><span class="pnamerow"><span class="pname2">${n}</span></span>
       <span class="pmeta">you both hold the disclosed anchor</span></span></div>`).join('')
   const starSect = known.length
-    ? `<div class="sect">Mutual contacts · ${c.starInfo.count} contact${c.starInfo.count === 1 ? '' : 's'}, you know ${known.length}</div>
+    ? `<div class="sect">Mutual contacts · ${c.starInfo.count} contact${c.starInfo.count === '1' ? '' : 's'}, you know ${known.length}</div>
        <div class="plist">${knownRows}</div>`
     : ''
   const trustAct = c.channel?.own && !c.trustGiven

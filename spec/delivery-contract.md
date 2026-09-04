@@ -3,24 +3,22 @@
 **Real Life Trust Protocol — service contract: Delivery**
 
 - **Status:** Editor's Draft
-- **Version:** 0.69.0-draft (sixty-ninth casting — the answer to
-  round 46, the fourth review of the scope re-cast, and the
-  smallest round of the stage: only the carrier's
-  `status-horizon` travels in the registry (a non-carrier adapter
-  declares to its own principal, so nothing but a complete
-  seven-constant declaration ever stands under the carrier role
-  URI), and Identity §9.3 no longer claims the return priority
-  *bounds* a capacity wait — it orders it, and the bound is the
-  plural carrier world. Triage:
-  `design/traeger-review46-2026-08.md`.)
+- **Version:** 0.79.0-draft (seventy-ninth casting — the
+  post-convergence sweep after rounds 16 and 17 ran blocker-free
+  in sequence (the loop's convergence criterion): both proof
+  branches of the document schema are closed
+  (additionalProperties false), so a hybrid proof carrying a
+  signature AND a mac — transferable and deniable at once — is
+  schema-invalid, with its executable negative in
+  `vectors/delivery-ack.json`. Nothing else changes.)
 - **Editors:** Anton Tranelis
-- **Date:** 2026-08-27
+- **Date:** 2026-08-31
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
 - **Task-type namespace:** `https://real-life.org/trust-tasks/`
 - **Target Trust Tasks framework version:** 0.4
-- **Conformance profile:** `rltp-delivery@0.69` (draft)
-- **Supersedes:** version 0.68 (archived as
-  `archive/delivery-contract-0.68.md`) and versions 0.67–0.1,
+- **Conformance profile:** `rltp-delivery@0.79` (draft)
+- **Supersedes:** version 0.78 (archived as
+  `archive/delivery-contract-0.78.md`) and versions 0.77–0.1,
   archived alongside it.
 - **Supersedes on adoption:** `04-transport/001-sync-protokoll.md`
   (wot-spec v0.1, German) in its delivery aspects.
@@ -28,7 +26,7 @@
 ## Abstract
 
 This document specifies how RLTP documents travel between people. The
-delivery service moves **signed, anchor-encrypted, typed documents**
+delivery service moves **proof-carrying, anchor-encrypted, typed documents**
 from one person to another — eventually, at least once, never silently
 lost — and tells both sides honestly what it knows: the sender its
 transport state, the receiver nothing the content does not prove
@@ -60,22 +58,22 @@ converge into a person at whoever carries them.
 ## Status of This Document
 
 This is an **Editor's Draft** with no standing. It is the
-sixty-ninth casting of the Delivery Contract, the fifth after
-the **scope re-cast** of 2026-08-27: forty-two adversarial review
-rounds had grown the document from a delivery contract into a
-specification of a carrier's internal resource management, and
-this casting reverses that. The rule of the cut is: **the promise
-is protocol; the mechanism is carrier policy.** What a
-counterpart can observe at the port line is specified and
-vector-tested; how a carrier meets it internally is its own
-affair. The carrier sections (4.4's role, 5a) are the youngest
-part of the document and the most likely to change; the sealed
-envelope, the delivery promises and the disposition machinery
-(5, 6) have been stable across many castings. Review happens
-against the converged companion documents; the convergence
-criterion is a review round with no blocker-level findings.
-Feedback belongs in the design journal of the private workshop
-repository; the public mirror is
+seventy-ninth casting of the Delivery Contract — the
+post-convergence sweep after the loop's criterion was met,
+finishing the registration addendum to the converged sixty-ninth: the trust-act task
+types of Network Visibility join the §4.4 registry, and nothing
+else changes. The document remains as the scope re-cast of
+2026-08-27 shaped it: **the promise is protocol; the mechanism
+is carrier policy.** What a counterpart can observe at the port
+line is specified and vector-tested; how a carrier meets it
+internally is its own affair. The carrier sections (4.4's role,
+5a) are the youngest part of the document and the most likely to
+change; the sealed envelope, the delivery promises and the
+disposition machinery (5, 6) have been stable across many
+castings. Review happens against the converged companion
+documents; the convergence criterion is a review round with no
+blocker-level findings. Feedback belongs in the design journal
+of the private workshop repository; the public mirror is
 [`real-life-org/rltp-spec`](https://github.com/real-life-org/rltp-spec).
 
 
@@ -197,8 +195,9 @@ profile — normative wire form
 - `proof` — REQUIRED on `delivery-ack` and on
   `registry-declaration` (4.4) — the two types whose authenticity
   has no other carrier (1.1); MUST be absent on the other types of
-  this casting, whose authenticity is carried by the signed
-  payloads inside. Where `proof` is present, TT §4.8.2 audience binding is
+  this casting, whose authenticity is carried by the payloads'
+  own proofs inside — signatures or designated-verifier MACs
+  (the trust-act family of 4.4 is deliberately unsigned). Where `proof` is present, TT §4.8.2 audience binding is
   satisfied by the in-band `recipient`.
 - `payload` — REQUIRED; governed by the type's **payload schema**.
   For the types this document registers itself, the schema's `$id`
@@ -351,9 +350,30 @@ The arrival acknowledgement (DO-1).
 - **Declarations (TT §7.3):** side effects: sender status update only;
   exposure: retained only by the acknowledged document's sender.
 - `threadId`: = the acknowledged document's `threadId`.
-- `proof`: **REQUIRED** — `eddsa-jcs-2022` under the ack's `issuer`
-  anchor. An unsigned or foreign-signed acknowledgement is invalid.
-- **Consistency (MUST, on receipt):** proof verifies under `issuer`;
+- `proof`: **REQUIRED**, in the form the acknowledgement class rule
+  (4.4) selects by the acknowledged payload's audience class:
+  - for a payload whose authenticity is a **transferable
+    signature**: `eddsa-jcs-2022` under the ack's `issuer` anchor —
+    an unsigned or foreign-signed acknowledgement is invalid;
+  - for a **designated-verifier** payload: `{ "mac": … }` —
+    HMAC-SHA-256 over **JCS of the ack document without `proof`**
+    (binding `id`, `type`, `issuer`, `recipient`, `threadId`,
+    `issuedAt`, and the payload with its `ref`), encoded `u` + 43
+    base64url characters, under the **ack key of the arrival
+    tuple**: `k = HKDF-SHA-256(ikm = X25519(pairX_issuer,
+    pairX_recipient), salt = empty, info =
+    "rltp/v1/delivery/mac/ack/" || issuerPairAnchor || "/" ||
+    recipientPairAnchor, output 32 bytes)` with both anchors as
+    anchor bytes; an all-zero shared secret MUST be rejected
+    before derivation (as in Section 5) — **one regime for every
+    DV-type ack**, keyed by the channel, never by the payload's
+    internal MAC structure (a multi-MAC payload like
+    `anchor-mapping@2` changes nothing here). A wrong proof form for the payload's class is
+    invalid. The MAC form is receiver-forgeable by construction —
+    that is its purpose (deniability): for DV payloads the ack is
+    **evidence to the sender alone**, not an attestation.
+- **Consistency (MUST, on receipt):** proof verifies under `issuer`
+  (signature form) or under the arrival tuple's ack key (MAC form);
   `issuer` = the acknowledged document's `recipient`; `recipient` =
   the acknowledged document's `issuer`; `threadId` matches; `ref`
   matches a document this sender actually sent on that thread. Any
@@ -386,12 +406,16 @@ The arrival acknowledgement (DO-1).
   is ever reached or needed. Its sender has long reported
   `failed` either way, and a late acknowledgement only transitions
   that status honestly (6.1).
-- Meaning, normatively and honestly bounded: *the recipient's anchor
-  **attests** that the document reached its authenticated device and
-  that its defined effect is durably recorded.* It is an attestation,
-  not a proof of causal receipt — a recipient who signs falsely harms
-  only their own state, and the sender's `delivered` is exactly as
-  strong as that attestation. Implementations MUST NOT present it as
+- Meaning, normatively and honestly bounded — **by class**: for
+  signature-class payloads, *the recipient's anchor **attests** that
+  the document reached its authenticated device and that its defined
+  effect is durably recorded* — an attestation, not a proof of
+  causal receipt; a recipient who signs falsely harms only their own
+  state, and the sender's `delivered` is exactly as strong as that
+  attestation. For DV-class payloads the MAC-proved ack carries the
+  **same meaning to the sender** but is no attestation toward
+  anyone else: either party can compute it, which is exactly the
+  deniability the class rule requires. Implementations MUST NOT present it as
   acceptance, verification beyond the recording gate, or any human
   act (Encounter 7.4). `meaning` is a closed one-value set in this
   version.
@@ -459,7 +483,65 @@ schema, proof declaration, and consistency rules:
 - `member-mapping/0.1` — Access §5.5; payload
   `schemas/member-mapping.schema.json`, travelling on the existing
   relationship channel between discloser and addressee, never a
-  group space.
+  group space;
+- `star/0.1` · `grade-declaration/0.1` · `anchor-mapping/0.1` —
+  the trust-act family, Network Visibility §5.2/§5.5/§6.1; the
+  payload is the artifact itself
+  (`schemas/visibility-star.schema.json`,
+  `schemas/visibility-grade-declaration.schema.json`,
+  `schemas/visibility-anchor-mapping.schema.json`), travelling on
+  the relationship channel of its tuple; the artifacts carry
+  their own MACs, the documents carry none — one carrier.
+  **Defined effect, per document:** durable buffering toward the
+  recipient's receive chain — for a star chunk, into the single
+  open assembly of Visibility §5.2a; the acknowledgement fires at
+  that effect like every type's (4.2), under the class rule
+  below — **with one sharpening for the completing chunk**: the
+  chunk that closes an assembly has as its defined effect the
+  **validated, committed assembly** — assembly validation
+  (Visibility §5.2a), the accepted snapshot, and the receiver's
+  completed-salt advance commit in the same transaction as the
+  effect cache entry and the acknowledgement (6.2) — and for star
+  chunks the stage-9 lock set extends by the **assembly key
+  (tuple, salt)**, so concurrent chunks of one assembly
+  serialize and the completing commit sees them all. A crash
+  before that commit leaves the completing chunk unacknowledged,
+  so a sender's completion (Visibility §5.4) always attests the
+  receiver's committed state, never a buffered fragment. **Closed acceptance bindings:** the outer document's
+  `issuer` MUST equal the sender's pair anchor of the tuple and
+  its `recipient` the addressee's; the tuple is selected by the
+  arrival channel's `rkid`, and the artifact's MAC MUST verify
+  under exactly that tuple's relationship key — an outer/inner
+  mismatch rejects. For the star, **one `salt` is one thread**: the
+  sender mints one fresh `threadId` per delivery and stamps it on
+  **every** chunk of that salt — arrival order is irrelevant, and
+  the receiver rejects a delivery whose chunks disagree on
+  `threadId` (Visibility §5.2a); each chunk is its own **document** under
+  this contract's dispositions and earns its own acknowledgement —
+  "delivery" in this entry always means the salt-level unit.
+  A retried chunk is re-sent **byte-identical as a document**
+  (threadId included), per 4.2's redelivery rule — re-packaging a
+  chunk under a new threadId is nonconformant. A chunked star
+  delivery (Visibility §5.2a) is one document per chunk under one
+  `salt`; each chunk is its own **document** under this
+  contract's dispositions, and what "the delivery completed"
+  means for the sender's reconciliation state is Visibility
+  §5.4's definition over the acknowledgements.
+
+**The acknowledgement class rule (normative, for every registered
+type):** an acknowledgement MUST NOT be more provable than the
+payload it acknowledges. For a type whose payload authenticity is
+a transferable signature, the `delivery-ack` carries its standard
+proof. For a type whose payload authenticity is
+designated-verifier — the trust-act family above,
+`continuity-probe/0.1` and `continuity-mapping/0.1`, and every
+future MAC-authenticated type — the `delivery-ack`'s `proof` is
+the **MAC form of 4.2**, under the arrival tuple's ack key: one
+channel-keyed regime for every DV-type ack, independent of the
+payload's internal MAC structure. Deniable, receiver-forgeable
+exactly as the payload is, verifiable by the sender alone. The ack
+still fires at the defined effect (4.2, §11) — only its proof form
+follows the payload's audience class.
 
 **The registry-entry form (normative):** a registry is a set of
 entries, one per type, each carrying exactly: the **type URI**
@@ -769,8 +851,9 @@ section's construction, not the document profile, and MUST NOT be
 processed as a delivery document.
 
 No channel authentication is required or assumed **of a sender**:
-confidentiality comes from the seal, authenticity from proofs and
-signed payloads bound to anchors by the Layer-1 binding rule. This
+confidentiality comes from the seal, authenticity from the
+payloads' own proofs — signatures or designated-verifier MACs —
+bound to anchors by the Layer-1 binding rule. This
 is a decision, not an omission, and 5a.4 states it as one. The
 **recipient** side is the exact opposite and always has been:
 registering, collecting from, and concluding a queue are
@@ -1123,9 +1206,15 @@ before the deadline" is enforced by the domain rather than by a
 row (round-43 B-1, round-45 M-2 — a pseudo-row for a
 non-existent input made the totality proof lie about its
 domain). The table is entered only by a request that has already
-passed both possession proofs; `refused(malformed)`,
-`refused(possession-failed)` and `refused(admission-resource)` are
-decided **before** the state is consulted and are therefore not
+passed **the possession proofs its operation requires** — both
+halves for `register`/`rebind`, the principal proof alone for
+`collect`/`conclude` (5a.3's collection rule: the same proof,
+without the sealed half); `refused(malformed)`,
+`refused(admission-resource)` and `refused(possession-failed)` are
+decided **before** the state is consulted, **in the r1–r5 order —
+syntax, then admission, then possession — for every operation**
+(collect and conclude run the same order over the proofs they
+carry), and are therefore not
 cells; a **submission** is not an input here either — it runs
 5a.5's own outcome set. `g′`/`P′` are the generation and principal
 the proof carries. `registration-refused(capacity)` is a carrier
@@ -1163,10 +1252,12 @@ this order removes the choice.
 | `live(g, P)` | register / rebind | `g′ = g`, `P′ ≠ P` | `refused(stale-generation)` | `live(g, P)` |
 | `live(g, P)` | register / rebind | `g′ < g` | `refused(stale-generation)` | `live(g, P)` |
 | `live(g, P)` | collect / conclude | proof under `P` | `served` (5a.7, 5a.8) | `live(g, P)` |
+| `live(g, P)` | collect / conclude | valid, fresh proof under `P′ ≠ P` | `refused(no-such-queue)` (5a.5 — no queue exists **under that principal**; the answer reveals nothing about other principals' queues) | `live(g, P)` |
 | `live(g, P)` | orphan-expiry | no collection within `orphan-horizon` | `wind-up begins` (5a.9) | `closing(g, P)` |
 | `live(g, P)` | deadline · eviction | — | `cannot arise` (the wind-up has not begun) | `live(g, P)` |
 | `closing(g, P)` | register / rebind | as the four `live` rows above, verbatim | same outcome | on `rebound` / `registered(idempotent)`: **`live`**, the wind-up ends (5a.9); on a refusal: `closing(g, P)` |
 | `closing(g, P)` | collect / conclude | proof under the bound principal | `served` — concluding is what `closing` is for | `closing(g, P)` |
+| `closing(g, P)` | collect / conclude | valid, fresh proof under `P′ ≠ P` | `refused(no-such-queue)` (as in `live`) | `closing(g, P)` |
 | `closing(g, P)` | orphan-expiry · eviction | — | `cannot arise` (the wind-up has begun; only `released` is evictable) | `closing(g, P)` |
 | `closing(g, P)` | **deadline** | the wind-up deadline arrives (5a.9) | `obligations discharged` **and** `released` — **one linearized transition**: every held deposit's inherited life has ended at or before this instant, so all are given up, and queue and binding release in the same step; **one** tombstone created, `t := g`. A submission or return linearized before this transition is served by the `closing` rows; one linearized after it meets `released(t)` | `released(g)` |
 | `released(t)` | register / rebind | `g′ > t` | `registered` | `live(g′, P′)`, and the tombstone is **consumed** |
@@ -2267,8 +2358,10 @@ failing stage names the disposition:
    still `unknown` → dispose; any other state → release and
    re-enter at stage 4 (4.1 check 5);
 9. **gates and effect, serialized per lock set:** stage 9 is a
-   critical section whose **lock set** is the document digest and,
-   for bundles, additionally the credential's bound challenge (the
+   critical section whose **lock set** is the document digest; for
+   bundles, additionally the credential's bound challenge; for
+   chunked star documents, additionally the assembly key
+   (tuple, salt) (4.4) (the
    **record key**). The lock protocol, normatively:
    the full lock set is acquired **atomically, as one acquisition**
    — never one key after the other; an evaluation whose set overlaps
@@ -2357,7 +2450,10 @@ no ack and consumes nothing; B's prompt is C4, never automated.
   (Encounter §13). The seal provides confidentiality, never sender
   authenticity.
 - **The acknowledgement is now a proof-carrying document.** Forging
-  one requires the acknowledging anchor's key; replaying one is
+  a signature-class ack requires the acknowledging anchor's key; a
+  DV-class ack is forgeable by exactly the two relationship parties
+  — deniability by design, and toward third parties it proves
+  nothing (the class rule of 4.2/4.4). Replaying either is
   idempotent (same digest, same thread); redirecting one fails the
   4.2 consistency rules. Suppressing acknowledgements causes fallback,
   not loss, and the late-ack transition plus the Encounter merge rule
@@ -2539,10 +2635,10 @@ no ack and consumes nothing; B's prompt is C4, never automated.
 
 ## 11. Conformance
 
-- **Profile** `rltp-delivery@0.69`; the Identity pin is
+- **Profile** `rltp-delivery@0.79`; the Identity pin is
   **Identity 0.51** (§7a, the control principal); the Encounter
   pin is `rltp-encounter@0.29` (wire 0.25); companion
-  registrations per 4.4 (Network Visibility 0.16, Access 0.53,
+  registrations per 4.4 (Network Visibility 0.29, Access 0.53,
   Membership Tasks 0.16, Replication 0.26).
 - **Classes:** *sender* (sealing, status trias, ack-wait switch
   trigger; principal-free submission, 5a.4) · *receiver*
@@ -2626,7 +2722,12 @@ no ack and consumes nothing; B's prompt is C4, never automated.
   forgery matrix:** unsigned ack rejected, foreign-signed
   rejected, wrong-thread rejected, wrong-direction rejected,
   valid ack accepted, late valid ack transitions
-  `failed → delivered` · ack generation at each type's defined
+  `failed → delivered` · **ack class matrix** (shipped: `vectors/delivery-ack.json` —
+  derivation, preimage, MAC, tampered/wrong-direction/wrong-key/
+  missing-proof negatives): signature-form ack
+  for a DV payload rejected, MAC-form ack for a signature payload
+  rejected, MAC under a wrong key rejected, valid MAC-form ack
+  accepted · ack generation at each type's defined
   effect, none on rejection, no dependency on the confirmation
   step · outer/inner consistency vectors per type
   (Mallory-wrapped credential produces no ack to Mallory) ·
@@ -2951,7 +3052,7 @@ key material, §5.3 the recovery context, §7 service identities,
 (§4.8.2, §4.11.1, §6.1, §6.3, §6.5, §7.2–7.3) · RLTP Encounter Layer
 0.29, wire 0.25 (delivery port, binding 5.4, ceremony 5.8,
 fresh-always §4.4, state model 5.3, merge rule 4.2) · RLTP Network
-Visibility 0.16 (§2.1, §6a, §8) · RLTP Access Layer 0.53, wire
+Visibility 0.29 (§2.1, §6a, §8) · RLTP Access Layer 0.53, wire
 0.24 · RLTP Replication Contract 0.26 (§7/I14, the
 direct-effect seam of 4.4) · RLTP Membership Tasks 0.16 (§3) · Sync
 001/003 (superseded transport specs, Appendix A).

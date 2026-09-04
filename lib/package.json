@@ -1,7 +1,7 @@
 {
   "name": "@real-life/trust-protocol",
   "version": "0.1.1",
-  "description": "The Real Life Trust Protocol (RLTP) — the executable form of the specification: encounters, introductions, trust disclosure, groups, continuity, and the delivery channel. Zero dependencies, WebCrypto only.",
+  "description": "The Real Life Trust Protocol (RLTP) \u2014 the executable form of the specification: encounters, introductions, trust disclosure, groups, continuity, and the delivery channel. Zero dependencies, WebCrypto only.",
   "license": "CC-BY-4.0",
   "type": "module",
   "sideEffects": false,
@@ -9,6 +9,7 @@
     "dist/index.*",
     "dist/probe.*",
     "dist/probe/",
+    "dist/visibility.*",
     "dist/core.*",
     "dist/crypto.*",
     "dist/identity.*",

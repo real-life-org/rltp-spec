@@ -206,7 +206,7 @@ check((await page.locator('#dev-A .pbadge.trustb', { hasText: '⇆ trust' }).cou
 check((await page.locator('#dev-A .sect', { hasText: 'Mutual contacts' }).count()) === 0, 'keine gemeinsamen prüfbar → Sektion ausgeblendet, nichts gefakt');
 check(await page.evaluate(() => {
   const j = [...window.__probe.A.contacts.values()].find(c => c.name === 'Jonathan');
-  return j.starInfo && j.starInfo.count === 1 && j.starInfo.knownNames.length === 0;
+  return j.starInfo && Number(j.starInfo.count) === 1 && j.starInfo.knownNames.length === 0;
 }), 'Stern-Daten ehrlich: 1 Kontakt geblendet erhalten, 0 legitim prüfbar');
 
 // Einstellungen: Updates pausieren
@@ -267,8 +267,8 @@ check((await page.locator('#dev-A .prow .pname2', { hasText: 'Emil' }).count()) 
 await page.locator('#dev-A .prow', { hasText: 'Emil' }).click();
 await page.locator('#dev-A .profmeta', { hasText: 'continuity: 2 enactments' }).waitFor();
 check(true, 'Kontakt-Detail: die Kette ist Beziehungsgeschichte');
-check(await page.evaluate(() => window.__probe.wire.some(w => w.kind.startsWith('continuity-probe@1'))
-  && window.__probe.wire.some(w => w.kind.startsWith('continuity-mapping@1'))), 'auf dem Draht: geblendete Probe + Doppel-MAC-Mapping, versiegelt');
+check(await page.evaluate(() => window.__probe.wire.some(w => w.kind.startsWith('continuity-probe/0.1'))
+  && window.__probe.wire.some(w => w.kind.startsWith('continuity-mapping/0.1'))), 'auf dem Draht: geblendete Probe + Doppel-MAC-Mapping, versiegelt');
 
 // ── Der WoT-App-Flow: FAB → Connect-Screen → Scan-Flug → Vollbild-Prompt ─
 // Negativ zuerst: scannen, wenn niemand einen Code zeigt

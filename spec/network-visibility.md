@@ -3,17 +3,16 @@
 **Real Life Trust Protocol — cross-cutting: Network Visibility**
 
 - **Status:** Editor's Draft
-- **Version:** 0.16.0-draft (sixteenth casting — the **S-DID
-  cut**, jointly with Identity 0.13: the withdrawn "self anchor"
-  role moves to the **community anchor**, an ordinary M-DID of the
-  personal community; every disclosure, mapping, and convergence
-  mechanism keeps its shape — wire type names and field spellings
-  (`self-card@1`, `anchor-mapping@2`, the `self` field) are frozen
-  wire bytes and stay)
+- **Version:** 0.29.0-draft (twenty-ninth casting — answer to
+  review round 12, jointly with Delivery 0.79: chunk gaps buffer
+  and starve instead of rejecting (arrival order is truly
+  irrelevant), chunk-repeat identity is the document including
+  its thread, and the deniable acknowledgement now has its
+  executable vector, `vectors/delivery-ack.json`)
 - **Editors:** Anton Tranelis
-- **Date:** 2026-08-24
+- **Date:** 2026-08-31
 - **Vocabulary namespace:** `https://real-life.org/rltp/v1`
-- **Conformance profile:** `rltp-visibility@0.16` (draft). Wire
+- **Conformance profile:** `rltp-visibility@0.29` (draft). Wire
   artifacts: `star@1` · `grade-declaration@1` · `anchor-mapping@2` ·
   `self-card@1` · `continuity-probe@1` · `continuity-mapping@1` ·
   `introduction-request@1` · `introduction-reply@1` ·
@@ -22,14 +21,17 @@
   §6.1 — REQUIRED; 0.13 is the S-DID cut, jointly cast with this
   document) · **Encounter 0.29** (fresh-always
   enactment, wire 0.25 — §6a here is the other half of its §4.4) ·
-  Access 0.53, Membership 0.16, Delivery 0.69 (the M-DID loop and
+  Access 0.53, Membership 0.16, Delivery 0.79 (the M-DID loop and
   the later cuts have landed), and Delivery's §4.4
   registry discharged the registration debt of 8.1, including the
   `ack-delay` publication path (`registry-declaration/0.1`).
-- **Supersedes:** version 0.15 (archived as
-  `archive/network-visibility-0.15.md`) and castings 0.14–0.1,
+- **Supersedes:** version 0.28 (archived as
+  `archive/network-visibility-0.28.md`) and castings 0.27–0.1,
   archived alongside it.
-- **Source material:** `design/visibility-publikumsprinzip-2026-08.md`
+- **Source material:**
+  `design/ernte-visibility-aus-lib-reviews-2026-08.md` ·
+  `design/visibility-guss-entscheide-2026-08.md` ·
+  `design/visibility-publikumsprinzip-2026-08.md`
   · `design/mdid-bindung-2026-08.md` ·
   `design/visibility-review1/2-2026-08.md` ·
   `design/joint-pair-seam-review1…12-2026-08.md` (the round-12
@@ -52,24 +54,21 @@ Everything else convinces exactly its addressee and no one further.
 
 ## Status of This Document
 
-Sixteenth casting — the S-DID cut's visibility seam (the
-community anchor takes the withdrawn self anchor's disclosure
-role; wire spellings frozen). The fifteenth casting answered
-joint round 12 — **the block's first
-blocker-free round**: round 12 confirmed the act machine total
-against every arrival permutation and returned a single major.
-This casting is surgical (the precedent is Encounter 0.28): the
-retention set now names the **accompanying card documents** of
-the produced and accepted payloads — at least their verified card
-anchors — because the `requesterPair`/`targetPair` comparisons of
-8.2 and 8.5 consume them after acceptance, and the artifact list
-is stated payload-honestly (a forward is a payload of
-`introduction` and `card`, not a body of its own). Everything
-else stands as cast in 0.14.
-
-The key words MUST, MUST NOT, SHOULD, and MAY are to be interpreted
-as described in BCP 14 (RFC 2119, RFC 8174) when, and only when,
-they appear in all capitals.
+This is an **Editor's Draft** with no standing, in an active
+convergence loop. The twenty-ninth casting answers review round 12,
+jointly with Delivery Contract 0.79; the acknowledgement class
+rule now carries an executable vector. The
+loop's arc since the library harvest of 0.17: castings 0.17–0.21
+answered rounds 1–4; after two consecutive blocker rises the author
+ordered the **reconciliation cut** (0.22 — the star subscription is
+one divergence rule, not an event list), and 0.23–0.29 have been
+completing that cut's definitions against rounds 6–12. Round-by-round
+findings and triages live in the design journal
+(`design/visibility*-review*-2026-08.md`); the convergence criterion
+is a review round with no blocker-level findings. Review happens
+against the converged companion documents. Feedback belongs in the
+design journal of the private workshop repository; the public mirror
+is [`real-life-org/rltp-spec`](https://github.com/real-life-org/rltp-spec).
 
 ## 1. Introduction (informative)
 
@@ -115,13 +114,112 @@ relationship are the rule working, not an exception to it.
   5).
 - **Deliverable set** — for one recipient: the contacts who have
   promoted the sender, each under its effective grade (5.5).
+  **Admission is total:** the set admits at most 10¹⁸−1 members
+  (the wire-integer domain, 2.1), ordered by the sender's local
+  **promotion commit**, oldest first. The promotion commit is a
+  defined event with an **idempotence key — the relationship**
+  (the chain): **the first** successful 6.3 verification of the
+  contact's `anchor-mapping@2` on an active head of a
+  relationship commits, exactly one entry per relationship, ever
+  — the enabling artifact, since without the disclosed anchor
+  there is nothing to blind (5.1). Every later successful
+  verification on that relationship — a repeat, a higher
+  revision, a `self` correction — updates the held mapping **in
+  place**: position and admission status unchanged, no
+  re-promotion (a changed `self` changes the blinded content and
+  reconciles as ordinary divergence, 5.4). One commit
+  writes the entry whole — relationship identity, order position,
+  admitted/pending status — as one step (6.4's allocation
+  atomicity in kind), and the sender's persistence totally orders
+  commits. The set, its order, and pending entries are
+  **chain-level sender state** (they attach to relationships, not
+  tuples — like contact memory) and survive chaining. **Merge —
+  one rule for every merge path of 6a.1** (chaining, a later
+  mapping whose `self` equals another relationship's, the manual
+  act): the merged relationships' entries become **one entry at
+  the earliest position** among them, and the merged
+  relationship's **identity is the surviving entry's** — the
+  other identities become aliases of it, so a recovered mapping
+  of any merged source finds "its entry" in the survivor, and
+  every holder-local key of the admission layer resolves through
+  that identity (per-tuple keys — baselines, grades, salts — stay
+  with their tuples, which a non-chaining merge never touches).
+  The status is admitted
+  if any merged entry was admitted, else pending; merging `k`
+  admitted entries into one frees `k−1` slots and admits the
+  next `k−1` pending entries in promotion-commit order — one
+  atomic merge evaluation, never pairwise, each admission a set
+  change (5.4). Pause is and stays **per relationship** — a merge
+  changes no pause anywhere ("admission-layer and nothing else"
+  includes this); surfacing to the user that a paused and an
+  unpaused channel now belong to one person is a UI concern, and
+  the deliberate local act of 5.4 remains the only transition. **A non-chaining merge
+  (6a.1 paths 2 and 3) is an admission-layer event and nothing
+  else.** The relationships themselves remain **fully active** —
+  each keeps its head, its per-tuple grades, its subscription and
+  baseline; the counterpart, who may not know of the holder-local
+  merge, is never affected, and 6.4 needs no new tuple state.
+  What merges is the **entry** (aliases, earliest position, the
+  k−1 slot rule, all as above). **Where no
+  merged source holds an entry**, the merged identity is the
+  relationship whose head was most recently created in the
+  holder's local order (total, no tie-break), and the first later
+  promotion commits its one entry under it. **A member's effective grade — one definition for every member,
+  merged or not:** the grade of the **most recently locally
+  verified** declaration across the member's live relationships'
+  **active heads** (a deactivated head's declarations are dead
+  with their tuple, 6.4), ordered by the holder's
+  verification-commit order — **the** total local order of this
+  document: the holder's persistence serializes **every**
+  verification commit, promotions and declarations alike, into
+  one sequence (6.4's allocation atomicity in kind; a
+  multi-device holder's store must merge to one order, the same
+  assumption every local order here makes). Never compare
+  revisions across tuple scopes. For a single-relationship member
+  this reduces to 5.5's rule: nothing verified on the live head,
+  nothing on any other live head → the fail-closed `count` — the
+  post-chaining window 5.5 names. An explicit `count`
+  declaration, including a 5.5 re-issue of one, is the subject's
+  own latest decision and wins as the freshest — honoring it is
+  obedience, not a downgrade.
+  The price of the admission-layer merge, stated honestly: the
+  holder serves the subscription of **every** live relationship of
+  the merged member — redundant toward one person, correct and
+  convergent. **Chaining does not unify strands**: an append
+  replaces a head within one strand (6.4), and the frozen mapping
+  wire names a single `prior` — two strands of one person never
+  become one on the wire (an Open Point, 9.6). The admission layer
+  is what makes parallel strands harmless — one entry, one star
+  content — and the named tool against the redundancy's cost is
+  the **pause**, per strand, a deliberate local act (5.4).
+  Verification — including its
+  promotion effect — commits before the merge applies, and the
+  merge is one atomic step. **State loss:**
+  an entry present in the recovered state is a survivor and keeps
+  its position; where the recovered state holds a **verified
+  mapping without its entry**, the entry re-commits immediately
+  from the held mapping — the verification already happened, no
+  re-delivery is needed, and a re-delivered identical revision
+  stays the repeat 6.4 says it is; where neither survived, a
+  promotion re-commits on re-verification and appends. A promotion arriving
+  while the set is full is **deliverable-pending**: it is not a
+  member, triggers nothing, and joins the set the moment a
+  departure frees room — that admission, not the earlier
+  promotion, is the set change of 5.4; grade declarations
+  verified while pending simply stand and take effect at
+  admission (5.4). A pending entry dies with its relationship's
+  departure. `count` counts admitted members. The bound is
+  physically unreachable (more members than humans have ever
+  lived); the rule exists for totality, not for practice.
 - **Tuple** — the pair `(own pair anchor, counterpart pair anchor)`
   of one enactment or introduction. Fresh-always enactment creates
   a fresh tuple every time.
 - **Relationship** — a holder-local chain of tuples with exactly
   one **active head** (6.4). Per-tuple state: star salts, probe
   sequences, grade revisions, mapping state. Chain-level facts:
-  provenance, evidence accumulation, contact memory.
+  provenance, evidence accumulation, contact memory, the
+  admission state of the deliverable set (this section), and the
+  pause of 5.4.
 - **Record side** — of one fresh tuple: the party whose new pair
   anchor is lexicographically smaller (byte order of the `did:key`
   strings); deterministic, known to both the moment the tuple
@@ -202,6 +300,37 @@ Every artifact is a JSON document `{ "body": { … }, "proof":
   no exponent, **at most 18 digits** (domain 0 … 10¹⁸−1; `salt`,
   `seq`, `probe`, `revision` ≥ 1; `count` ≥ 0). The schema pattern
   enforces the full domain — schema and prose admit the same set.
+  **Comparisons over these values** — the orderings of `salt`,
+  `seq`, `probe`, and `revision`, and the `|union| ≤ count` rule —
+  MUST be exact over the full 18-digit domain: arbitrary-precision
+  integers, or length-then-lexicographic comparison of the
+  canonical strings. The domain exceeds 2⁵³; a consumer that
+  compares through a binary floating-point type is nonconformant.
+  **Exhaustion is terminal per scope:** a counter that has issued
+  its maximum value issues nothing further in that scope — no
+  rollover, no reset; monotonicity is never violated. Every duty
+  of this document whose discharge would require issuing in an
+  exhausted scope is **suspended, not violated**: nothing issues,
+  and the duty **dies with its tuple like every duty** (5.4,
+  6.4) — nothing migrates, nothing transfers to a later tuple.
+  It is the relationship that waits, not the duty: continuity of
+  service is restored by the next tuple's own formation rules,
+  which need no **duty, counter, or revision state** from the old
+  one (the 6a construction of course consumes the prior-candidate
+  set and the prior relationship key — those are its inputs, not
+  migrated duties) — the subscription re-forms under the new-head
+  corollary of 5.4, probes and mappings are per fresh tuple (6a), and
+  5.5's re-issue fires on the next chaining. Until then the
+  scope's last issued state stands, honestly stale — for a
+  suspended alignment this leaves only the outbound claim stale,
+  never the local graph, which follows the record side's mapping
+  (6a.4). Chaining's single trigger stays 6a.4; an exhausted
+  scope deactivates nothing. `count` is not a counter and cannot
+  exhaust: it counts the admitted deliverable set, whose bound
+  and admission rule Section 2 states. At one issuance per second
+  the domain lasts over 31 billion years; this rule exists
+  because totality is this document's standard, not because the
+  state is reachable.
 - **Multibase canonicality:** every `u…`/`z…` value MUST re-encode
   byte-identically; a value whose canonical re-encoding differs is
   malformed. Equality of MACs, act ids, and digests is byte
@@ -292,9 +421,10 @@ standing "show" grade: disclosure of an anchor to a stranger
 happens only as the introduction act (Section 8). An implementation
 that emits raw third-party anchors in a star is nonconformant.
 `count` is the number of **all** deliverable contacts (count-graded
-and blinded-graded together); the assembled union of `blinded[]` is
-the blinded-graded subset, so `|union| ≤ count` is the consistency
-rule (5.2a). Duplicate entries MUST NOT be emitted; the union is
+and blinded-graded together) **in the reconciliation view of 5.4 at
+production** — admitted, unmasked; the assembled union of
+`blinded[]` is the blinded-graded subset of the same projection, so
+`|union| ≤ count` is the consistency rule (5.2a). Duplicate entries MUST NOT be emitted; the union is
 globally sorted (5.2a).
 
 ### 5.2 star@1 — directional epochal blinding
@@ -310,7 +440,16 @@ construction.
   **atomically before** send. After state loss, a sender without a
   recovered high-water mark from its synchronized state MUST NOT
   resume delivery under the old tuple — the subscription re-forms
-  on the relationship's next tuple (6.4), never by guessing.
+  on the relationship's next tuple (the new-head corollary of 5.4),
+  never by guessing.
+  **Production is serialized per direction:** taking the set
+  snapshot, assigning the salt, and committing are one step — the
+  salt order MUST equal the snapshot order, so a star under a
+  higher salt never carries an older set state than any lower
+  salt's (the receiver keeps the highest completed salt as truth;
+  an inversion here would make it discard the newer state
+  forever). Salts consumed by productions that never complete
+  stay consumed — strictly increasing, never dense.
 - The recipient MUST persist, atomically and per tuple, the highest
   **completed** salt, and MUST reject any delivery whose `salt` is
   not strictly greater.
@@ -349,23 +488,43 @@ One delivery MAY span several chunks under one `salt`: `seq` runs
 - A chunk MUST stay within the Delivery Contract's 65 536-byte
   plaintext limit; `blinded[]` per chunk is capped at 1024 entries
   (measured: a maximal 1024-entry chunk serializes to 48 328 bytes
-  JCS). There is **no bound on total contacts**.
+  JCS). There is **no bound on total contacts short of the
+  wire-integer domain** (2.1): the deliverable set admits at most
+  10¹⁸−1 members under Section 2's total admission rule
+  (promotion-commit order, oldest first, overflow
+  deliverable-pending),
+  so `count` is exact over the whole admissible range and
+  `|union| ≤ count` holds by construction — a stated admission
+  bound, never a saturation.
 - **Global order:** the sender sorts the full entry union once,
   lexicographically, and slices it into chunks in order.
 - `count` MUST be identical in every chunk of one delivery.
-- The recipient assembles per (tuple, salt). A repeated `seq` that
-  is **byte-identical** to the held chunk is ignored (delivery
-  retries are normal); a repeated `seq` with different bytes
+- The recipient assembles per (tuple, salt), and **arrival order
+  is irrelevant**: chunks buffer as they arrive, a gap is not an
+  error — the delivery simply cannot complete until every `seq`
+  from 1 to the `last` chunk's is held (an unfilled gap starves
+  the delivery under the withholding rule below, nothing more).
+  A repeated `seq` that
+  is **byte-identical as a document** — `threadId` included; a
+  retry re-sends the same document bytes (Delivery §4.2) — is
+  ignored; a repeated `seq` with different bytes
   rejects the delivery. More than one `last`, differing `count`
-  values, missing `seq` after `last`, entries out of order across
+  values, chunks disagreeing on `threadId` (the sender stamps one
+  fresh thread per delivery on every chunk, Delivery §4.4),
+  a `seq` greater than the held `last` chunk's, entries out of
+  order across
   the union, duplicates across chunks, or `|union| > count` reject
   the delivery.
 - **One open assembly per tuple:** a chunk with a higher `salt`
-  discards any incomplete older assembly. Only a **completed**
-  delivery advances the accepted salt; assembly retention follows
-  the Delivery Contract's retention rules. Withholding `last`
-  starves that delivery and occupies the single assembly slot until
-  a newer salt arrives — nothing else.
+  discards any incomplete older assembly; a chunk whose salt lies
+  **below the open assembly's** (but above the completed
+  high-water) is **rejected** — the open assembly stands, only a
+  strictly higher salt displaces it. Only a **completed**
+  delivery advances the accepted salt. The assembly is tuple
+  state: it dies, atomically, with its tuple's deactivation
+  (6.4). Withholding `last` starves
+  that delivery and occupies the single assembly slot until a
+  newer salt arrives — nothing else.
 
 ### 5.3 The star MUST NOT be signed
 
@@ -375,22 +534,132 @@ Forgeability is a requirement, not a defect. Credibility beyond the
 addressee, if ever needed, is a DV-ZK predicate (9.3), never a
 signature.
 
-### 5.4 Subscription — delivery on set change only
+### 5.4 Subscription — reconciliation, not an event log
 
-A sender MUST deliver a new star when and only when the deliverable
-set for that recipient changes: a new promotion of the sender, an
-effective-grade change, a departure. A new encounter that does not
-change the deliverable set MUST NOT trigger delivery — the event
-itself is metadata the subscription must not broadcast. Pausing
-stops future deliveries; delivered snapshots remain (revocation of
-distribution, not of possession).
+**The one rule.** Per recipient, the sender holds two views, both
+over one domain — the abstract, unordered set of pairs *(member
+relationship, effective grade)*, never wire bytes and never
+salts:
 
-**Transition atomicity:** when a promotion creates a new
-deliverable contact, the sender MUST deliver exactly one star for
-that change: after the contact's grade declaration is verified, or
-after the declaration window `grade-wait = PT24H` elapses (then
-under the fail-closed grade). No interim delivery under a
-provisional grade.
+- the **reconciliation view** of the current deliverable set: its
+  admitted members under their effective grades (Section 2, 5.5),
+  with one mask — a member whose admission is still
+  **provisional** (no verified declaration, `grade-wait` open,
+  see transition atomicity below) is not in the view until the
+  mask lifts;
+- the **baseline**: a retained **high-water mark** H (the highest
+  completed salt, initially 0) and either **absent** (⊥) or the
+  pair (H, S) — the snapshot completed at H. The star travels as
+  the registered task `star/0.1` (Delivery §4.4), one document
+  per chunk, and every document of the family is acknowledged
+  **deniably** — a MAC-proved `delivery-ack` under the
+  channel-keyed ack regime of Delivery §4.2 (the acknowledgement
+  class rule), so the acknowledgement is never more provable than
+  the artifact it acknowledges. A delivery is
+  **completed** when the sender holds the verified deniable
+  acknowledgement of **every** chunk of its salt — one event per
+  salt; the completing chunk's acknowledgement is transactionally
+  bound to the receiver's validated, committed assembly (Delivery
+  §4.4), so a completion always attests the receiver's committed
+  state, and nothing reorders it after the fact. **The automaton, total**
+  (any event not listed changes nothing; every transition
+  persists H and snapshot atomically):
+
+  | State | Event | Next state |
+  |---|---|---|
+  | H, any | completion(s, S′), s > H | H = s, baseline (s, S′) |
+  | H, any | completion(s, S′), s ≤ H | unchanged |
+  | any | state loss without recovery | 5.2 applies: no resumption under this tuple — the relationship continues on its next head |
+
+  There is no failure event: a delivery whose chunks are never
+  all acknowledged — a channel loss, a receiver reject (5.2a's
+  below-assembly rule included) — simply never completes, the
+  divergence stands, and the next available delivery contact
+  ships the current view under a fresh, higher salt. The baseline
+  never rolls back, a stale seed cannot occur (H survives ⊥), and
+  an absent baseline diverges by definition.
+
+Whenever the two views differ, the sender owes a delivery: **the
+reconciliation view itself** — the mask is the production
+projection exactly as it is the comparison projection, `count`
+and `blinded[]` arise from the same projection, and 5.1's "all
+deliverable contacts" is read through it — under a fresh `salt`
+(the scope's next unissued value), on the next available
+delivery contact of the active head — unless the subscription is
+paused or the scope cannot issue. **"The scope cannot issue" is a closed predicate:**
+issuance is forbidden by 2.1 (exhaustion) or by 5.2 (state loss
+without a recovered high-water mark) — nothing else qualifies.
+Leaving a divergence standing while contact exists, the
+subscription is unpaused, and the scope can issue is
+nonconformant; where nothing diverges, delivery is forbidden — a
+delivery event is itself metadata, and the subscription MUST NOT
+broadcast events that changed nothing.
+
+**Normative is convergence, not the path.** At **every**
+available delivery contact, the divergence standing at that
+moment is delivered — the non-normativity below never touches
+the *whether*. What is not normative is only how many
+intermediate states collapse **between** two delivery contacts:
+the star is state, not an event log, and two conformant
+implementations may produce different numbers of stars for one
+burst of changes. Normative are **safety** — every delivery
+carries the set current at its production commit, serialized per
+5.2 (salt order equals snapshot order) — and **liveness** — the
+per-contact rule above. Salts consumed by productions that never
+complete stay consumed (5.2: strictly increasing, never dense).
+
+**Corollaries, stated so nobody derives them differently:**
+
+- A new encounter that changes the set of no recipient diverges
+  nothing and MUST NOT trigger delivery — the event itself is
+  metadata the subscription must not broadcast.
+- A relationship's **new head** (chaining, 6a.4) typically has no
+  completed delivery — its baseline is absent and it diverges by
+  definition, and the resulting **initial star** is the
+  re-formation 5.2 names: it replaces whatever the old head's
+  death (deactivation, exhaustion, state loss) left undelivered,
+  under the scope's next unissued salt like every delivery.
+  Where the fresh tuple delivered before chaining, that baseline
+  stands (it is this very tuple's per-tuple state) and **the
+  general equality predicate alone decides** — a chaining or
+  merge that changes nothing delivers nothing. The recipient of
+  an initial star is the party of the chaining itself, so it
+  broadcasts nothing that recipient does not already hold. A new
+  head whose scope cannot issue falls under the suspension like
+  every duty.
+- **Pausing** is chain-level, per recipient, and survives
+  chaining: while paused, the delivery duty is suppressed, not
+  violated — the new-head corollary included. A subscription is
+  **initially unpaused**, and the only pause/unpause transition
+  is the deliberate local act of the sender (a user or policy
+  decision) — a merge changes no pause (Section 2). No other
+  event sets or clears the pause; an implementation that treats
+  subscriptions as paused by default or without such an act is
+  nonconformant.
+  Delivered snapshots remain (revocation of distribution, not of
+  possession). Unpausing re-evaluates divergence, and the rule
+  resumes.
+- Grade changes of a deliverable-pending contact touch neither
+  view and trigger nothing; the most recently verified
+  declaration stands and takes effect at admission (Section 2).
+  A departure that admits a pending contact in the same step
+  changes the set once.
+
+**Transition atomicity (admission):** when an admission creates a
+new deliverable contact, the admission is **provisional** and the
+member is masked from the reconciliation view (above) until the
+contact's grade declaration verifies, or until the declaration
+window `grade-wait = PT24H` from the admission elapses (then the
+mask lifts under the fail-closed grade). The window never starts
+at a pending promotion, and it does not open where a verified
+declaration already stands on the current head (a pending
+contact's stored declaration taking effect at admission, or a 5.5
+re-issue already verified): then the member enters the view at
+once, under the declared grade. "No delivery under a provisional
+grade" is a consequence of the mask, not a second rule. **The
+boundary is ordered as in 8.1: arrivals before transitions** — a
+declaration verified at the instant the window elapses counts as
+verified; the window elapses only strictly afterwards.
 
 ### 5.5 grade-declaration@1 — DV, fail-closed, threat model stated
 
@@ -406,9 +675,13 @@ the subject>, "grade": "count" | "blinded", "revision":
 holderPairAnchor)`.
 
 - Revision scope and rules per 6.4 (generic rule).
-- **Effective grade:** the grade of the highest verified revision;
-  absent any verified declaration — none received, MAC failure,
-  unknown version — **count**.
+- **Effective grade:** within one tuple, the grade of the highest
+  verified revision; absent any verified declaration — none
+  received, MAC failure, unknown version — **count**. **A
+  member's effective grade in the star is Section 2's one
+  definition** (most recently locally verified across the
+  member's live relationships' active heads) — for a
+  single-relationship member the two coincide.
 - **Threat model, stated honestly (this is DV):** the holder is the
   designated verifier and can compute every MAC — the declaration
   does not and cannot constrain a malicious holder. What it
@@ -419,6 +692,21 @@ holderPairAnchor)`.
   structural: the star travels only to the holder's own recipients
   and carries no veracity (5.2). Suppression: withholding a newer
   revision keeps the older verified state active (initially count).
+
+**The declaration survives chaining (register no. 5).** When the
+relationship chains (the 6a.4 trigger), a subject holding an
+issued declaration on the deactivated head MUST re-issue its most
+recently issued grade on the new tuple, without a fresh user
+decision, on the next available delivery contact of that tuple:
+the choice belongs to the relationship, the tuple is key
+material, and the holder already holds the choice — re-delivery
+to the same holder. Scope and revision restart with the new tuple
+(6.4). Until the re-issued declaration verifies — and absent any
+other **live** head's verified declaration for the same member
+(Section 2's one definition) — the effective grade is this
+section's fail-closed `count`: a delivery-latency window, not a
+standing downgrade. A subject that never declared
+has nothing to re-issue.
 
 The default experience remains one human question: the **Trust**
 act issues `grade: "blinded"` — the spec offers the granularity,
@@ -500,9 +788,13 @@ append is atomic with the deactivation of the prior head and MUST
 be persisted before acted upon; **processing the same chaining
 event more than once MUST be idempotent — a double append of the
 same tuple onto the same chain is one append.** Deactivated tuples
-accept no new artifacts (exceptions above). Per-tuple state does
-not migrate: grade and star begin fail-closed on the new tuple;
-provenance and evidence are chain facts and carry over (8.6).
+accept no new artifacts (exceptions above). A non-chaining merge
+(Section 2) deactivates nothing — it is an admission-layer event,
+and every merged relationship's head stays active. Per-tuple state
+does not migrate: grade and star begin fail-closed on the new tuple —
+5.5's re-issue duty and 5.4's new-head corollary are what close that
+window without a fresh user decision; provenance and evidence are
+chain facts and carry over (8.6).
 
 **Reset.** A party that cannot answer the continuity probe is,
 protocol-wise, a new relationship (Identity §9.3: re-created, not
@@ -525,6 +817,17 @@ differs from that side's first verified mapping for the same
 (6a.4); the non-record side may re-issue with a higher revision to
 align.
 
+**Allocation is atomic and monotone.** Assigning a revision and
+persisting the issued body are one step per scope, and an
+issuance whose body differs from the scope's last issued body
+MUST carry a revision strictly greater than **every** revision
+previously issued in that scope — the issuer keeps a counter, not
+a pool. Together the two clauses make the equivocation error
+unmanufacturable by the issuer's own concurrency and a
+dead-on-arrival lower revision unissuable. Send order needs no
+rule: the receiver is total under monotonicity — an overtaken
+older issuance is rejected, the newest state wins.
+
 ## 6a. Continuity (normative — the other half of Encounter §4.4)
 
 Fresh-always enactment means every ceremony creates a fresh tuple.
@@ -540,9 +843,13 @@ pre-selection.
 2. **The community-anchor convergence net:** where continuity did not
    complete, a later verified `anchor-mapping@2` whose `self`
    equals the `self` held on another relationship merges the two
-   chains — a holder-local act of the addressee, no wire artifact.
+   **contact entries** (the admission-layer merge of Section 2 —
+   both relationships stay active; the chains themselves unify at
+   the next chaining, 6a.4) — a holder-local act of the
+   addressee, no wire artifact.
 3. **The manual fallback:** the human merges contact entries
-   locally (the data-loss case; contact memory is local anyway).
+   locally (the same admission-layer merge; the data-loss case —
+   contact memory is local anyway).
 
 An implementation MUST support 1 and 2; 3 is a UI concern, named
 for honesty.
@@ -598,8 +905,9 @@ entries ] }`; proof: `mac` under `k_p`.
 ### 6a.3 Carrier, the offline path, and the resend duties
 
 Probe and mapping travel as sealed deliveries **on the same
-channel as the enactment bundle**; their task registration shares
-the introduction tasks' registration debt (8.1). On the
+channel as the enactment bundle**; both types are registered in
+the Delivery Contract's task registry (Delivery 0.79 §4.4:
+`continuity-probe/0.1` · `continuity-mapping/0.1`). On the
 **optical** enactment path (no delivery service), the probe is
 **pending**: until it runs, the tuple is honestly an unchained
 relationship. The standing duties, all MUST, all "on next
@@ -609,11 +917,23 @@ available delivery contact of that tuple":
 - an unanswered probe situation is retried (fresh sequence);
 - a continuity mapping that has not been answered by the
   counterpart's aligned mapping is resent (same revision —
-  idempotent by 6.4);
+  idempotent by 6.4) — with one discharge: the non-record side's
+  **match-report duty for a fresh tuple dies on verifying the
+  record side's mapping on that tuple** (the tuple is the key:
+  per fresh tuple each sender has exactly one (next, to), and the
+  two senders' scopes mirror each other — the discharge is keyed
+  on the tuple, never on a literal scope comparison). From that
+  moment its outbound duty for that tuple is the alignment duty
+  of 6a.4 — which **arises** at that verification and is
+  **discharged like every duty of this list, by completed
+  delivery**, so a failed alignment production leaves the duty
+  standing. A match report flushed after the choice is a stale
+  counter-claim that MUST NOT be sent;
 - the alignment duty of 6a.4 is discharged.
 
 A one-sided chain is therefore a legal transitional state, never a
-terminal one while contact exists; without further contact, two
+terminal one while contact exists and the issuing scopes can
+issue (exhaustion suspends, 2.1); without further contact, two
 honestly unchained relationships remain — which is the truthful
 description of that situation.
 
@@ -679,11 +999,15 @@ keeps both loss directions terminating):
 
 The addressee can forge the whole artifact (class V, deniable);
 third parties cannot verify. On verification of a **record-side**
-mapping, chain per 6.4 and discharge the alignment duty. After a
+mapping, chain per 6.4; the alignment duty arises at that moment
+and is discharged by the completed delivery of the aligned
+mapping (6a.3) — verification creates the duty, delivery ends it. After a
 verified match, a party MAY re-send its existing
 `anchor-mapping@2` (self disclosure) on the new tuple without a
 fresh user decision: the addressee already holds the community anchor —
-re-delivery to the same holder, register no. 5.
+re-delivery to the same holder, register no. 5. The grade
+declaration is not optional on this trigger: 5.5's re-issue duty
+fires with the chaining itself.
 
 **Termination:** matching requires only that **some** probe
 arrived — the record side can match against the non-record side's
@@ -745,11 +1069,11 @@ the mediator's and the requester's acceptance lists are 8.2) ·
 `introduction-ack` (mediator → requester, 8.4) ·
 `introduction-voucher` (mediator → each side: `{ voucher }` — the
 side's voucher of 8.5, sent before the mediator enters
-`completed`). **Registration debt, stated honestly:** these task
-names — and the continuity tasks of 6a.3 — live in the Delivery
-Contract's registry; registering them is part of the declared
-Delivery re-pin recast (Encounter §12). Until that lands, the
-carrier is specified but unconsumable.
+`completed`). **Registration, discharged:** all five task
+names — and the continuity tasks of 6a.3 — are registered in the
+Delivery Contract's task registry (Delivery 0.79 §4.4), with
+their payload schemas and the one-carrier proof rule stated
+there; the debt this paragraph once named is paid.
 
 **Act identity (normative):** an act is identified by its **act
 id alone** — 32 fresh random bytes, minted by the requester per
@@ -1152,6 +1476,18 @@ to one's own network remains open; until then it is deliberate app
 policy ("unrevocable in possession, revocable in distribution,
 deniable in derivation").
 
+### 9.6 Strand unification (open)
+
+Two chains the holder knows to be one person (a non-chaining
+merge, Section 2) never become one chain on the wire: a chain
+append replaces a head within one strand, and
+`continuity-mapping@1` names a single frozen `prior`. The
+admission layer makes the parallel strands semantically harmless
+(one entry, one star content) and the per-strand pause bounds
+their cost; unifying the strands themselves would need a wire
+change (a multi-prior mapping or a successor artifact) and is
+deliberately left open rather than built badly.
+
 ## 10. Security Considerations
 
 - **Anchor harvesting via stars** — countered structurally: no
@@ -1227,12 +1563,25 @@ deniable in derivation").
   every anchor it legitimately holds — including future ones —
   against retained snapshots: offline, unthrottled, forever.
   Remedies: the count grade (fail-closed initial), pausing
-  (distribution, not possession — register no. 5).
+  (distribution, not possession — register no. 5). **Pausing is
+  per relationship, never per person:** after an admission-layer
+  merge (Section 2), pausing one strand does not stop identical
+  distribution over the member's other unpaused strands — a
+  person-wide stop means pausing every alias strand, and an
+  implementation SHOULD surface that.
 - **Counts and deliveries are metadata.** Cardinality, churn, and
   delivery timing leak; 5.4 restricts delivery events to actual
-  set changes so encounters as such are not broadcast; probe
+  divergence — an encounter that changes nothing is not
+  broadcast, and the delivery a chaining typically adds goes to the
+  chaining party itself; probe
   chunking quantizes contact cardinality to 256er steps toward a
   matched counterpart and hides it entirely from strangers.
+  **Redundant alias strands amplify the pattern:** until strands
+  are individually paused (9.6), one divergence toward a merged
+  member produces synchronized deliveries and counter-direction
+  acknowledgements on several channels of one person — exactly
+  the pairing surface Delivery §10 names for a carrier holding
+  both directions. The remedy is the per-strand pause.
 - **Possession residue of the self card** (6.2): after disclosure,
   the card is transferable addressing material; §1 is issuance
   control, not recall.
@@ -1259,10 +1608,20 @@ A conformant implementation:
 2. produces and verifies `star@1` per 5.2/5.2a (directional keys,
    salt and chunk discipline both sides) and never signs it (5.3)
    — vector-testable (`vectors/visibility.json`);
-3. delivers exactly on deliverable-set change with transition
-   atomicity (5.4) — state-dependent;
+3. maintains 5.4's reconciliation contract — safety (every
+   delivery carries its production-commit snapshot, serialized
+   per 5.2, salt order equals snapshot order) and liveness (no
+   standing divergence while contact exists, the subscription is
+   unpaused, and the scope can issue), including the initial star
+   of a new head, pause suppression, admission-anchored
+   transition atomicity, and the boundary order (arrivals before
+   transitions); the intermediate snapshot sequence is expressly
+   not a conformance surface — state-dependent;
 4. enforces grade declarations per 5.5 and the generic revision
-   rule of 6.4 — vector-testable;
+   rule of 6.4 including **atomic and monotone** allocation, and
+   re-issues its most recently issued grade on chaining without a
+   fresh user decision (5.5) — vector-testable (rule),
+   state-dependent (allocation, re-issue);
 5. verifies `anchor-mapping@2` by the complete 6.3 list —
    vector-testable including the mis-binding negative;
 6. emits sequenced, globally-sorted, padded probes drawn from the
@@ -1289,7 +1648,19 @@ A conformant implementation:
 8. maintains `provenance` per 8.6 — state-dependent;
 9. publishes per Section 4 — state-dependent (snapshot rule);
 10. treats stars, counts, and probes as non-evidence (5.2, 7) —
-    state-dependent consumer rule.
+    state-dependent consumer rule;
+11. compares wire integers exactly over the full 18-digit domain
+    and treats scope exhaustion as terminal-with-suspension — no
+    rollover, no reset, affected duties issue nothing and die
+    with their tuple; service re-forms under the next tuple's own
+    rules (2.1) — vector-testable (comparison), state-dependent
+    (exhaustion);
+12. admits deliverable-set members per Section 2's total
+    admission rule — the promotion commit (a verified
+    `anchor-mapping@2`, written whole) as chain-level state with
+    its merge and state-loss rules, overflow deliverable-pending
+    with its stated lifecycle, grade-wait anchored at admission
+    (Section 2, 5.4) — state-dependent.
 
 ## References
 

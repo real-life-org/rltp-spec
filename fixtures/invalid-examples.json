@@ -87,6 +87,9 @@
         "payload": {
           "ref": "uEiAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
           "meaning": "received"
+        },
+        "proof": {
+          "mac": "uE3Tg3kvpUySllD2WD6VX4MnTtq51BssKudXATdUph90"
         }
       }
     },
