@@ -27,6 +27,13 @@ hier wohnen.
 - `live-probe.mjs` — env-gated (`RLTP_LIVE_MEDIATOR=1`): zwei
   Beziehungen gegen die öffentliche Dev-Instanz, deposit → deliver
   → conclude in beide Richtungen. **PASS am 04.09.2026.**
+- `live-delivery-probe.mjs` — **der volle Delivery-Vertrag live**
+  (env-gated wie oben): lib-`seal()` eines echten Delivery-Dokuments
+  auf Bobs rkid → Träger-Pfad → gestuftes `receive()`-Verdikt
+  (`unique`, Digest) → **signierter `delivery-ack/0.1`**
+  (eddsa-jcs-2022, ref+thread-gebunden) zurück → Alices §6.1-Trias
+  schließt `accepted → delivered` (nicht late). **PASS am
+  04.09.2026, erster Lauf.**
 - `.sender-hypothesis.mjs` — Naht-Messung: Der Mediator leitet
   TSP-Frames **auch mit fremder Sender-VID** weiter (er
   authentifiziert Envelope-Sender nicht — konsistent mit TSPs
