@@ -78,7 +78,7 @@ This package uses its own semver; the specification uses castings. Each
 release states, per module, whose **wire forms** it implements — and what
 it deliberately does not:
 
-| Module (0.1.x) | Casting | Implemented | Not in this package |
+| Module (0.2.x) | Casting | Implemented | Not in this package |
 |---|---|---|---|
 | `identity` | Identity 0.50 | context derivation under the closed label registry (§6.1, unchanged since 0.13) with the ordered persona pipeline (§6.2, Unicode 15.0 pinned) | recovery derivation (§5.3), service identities (§7), the label register and its state |
 | `carrier-identity` | Identity 0.51 (§7a) | the carrier-relationship principal derivation, identifier validation | the register's generation state (held by the holder's store) |
