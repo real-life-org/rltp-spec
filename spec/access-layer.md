@@ -23,7 +23,7 @@
 - **Position:** Layer 3 of RLTP, above the Encounter Layer 0.29
   (wire 0.25) and
   the Identity layer (0.51), carried by the Delivery Contract
-  (0.69) where operations or keys must
+  (0.79) where operations or keys must
   reach parties outside the replica; the Membership Tasks (0.16,
   jointly cast) register the task types that transport this
   layer's admission documents and are a normative companion.
@@ -3110,7 +3110,7 @@ This layer requires, and does not define:
 
 - **Delivery port:** authenticated end-to-end-encrypted delivery
   to derived identities with durable buffering and explicit
-  disposition — satisfied by the Delivery Contract (0.69), whose
+  disposition — satisfied by the Delivery Contract (0.79), whose
   task types for this layer are the Membership Tasks (0.16,
   jointly cast) plus the
   type registered below.
@@ -3819,7 +3819,7 @@ so the type is dispatchable today, not `unknown-type`:
   `0.24` (Section 11 — two new shapes, one renamed policy-body
   value, no changed shape);
   normatively references the **Membership Tasks (0.16) and
-  Delivery Contract (0.69) of the current joint state** (document
+  Delivery Contract (0.79) of the current joint state** (document
   shapes, welcome seal, admission transport; document profile,
   sealed envelope, dispositions — their profile strings are
   pinned on their side, M2-style); where Encounter artifacts are
@@ -4589,7 +4589,7 @@ so the type is dispatchable today, not `unknown-type`:
   acceptance. Until then this layer
   requires of its own implementers: key all group state by
   genesis digest. Resolved elsewhere: delivery envelope by the
-  Delivery Contract (0.69); policy-proof transport and
+  Delivery Contract (0.79); policy-proof transport and
   leave/dissolve notices are Membership MO-2 and MO-3.)*
 
 ## References
@@ -4600,7 +4600,7 @@ profile 2.3, contact card §6, credentials §7, evidence direction
 §4.2) · **RLTP Delivery Contract** and **RLTP Membership Tasks**
 (the companions of this loop's joint casting: document profile,
 sealed envelope, dispositions; document shapes §3, welcome seal
-§4, timing §5) · **RLTP Network Visibility 0.16** (§2.1 wire
+§4, timing §5) · **RLTP Network Visibility 0.29** (§2.1 wire
 conventions, §3 audience classes, §6 mapping construction, §6a
 convergence net, §8 introduction act) · W3C
 Verifiable Credentials Data Model 2.0 · Keyhive / BeeKEM design

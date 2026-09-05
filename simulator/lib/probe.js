@@ -21,6 +21,9 @@
 //                        GRADUATED to the root entry point on
 //                        04.09.2026 (`visibility.trust/.continuity/
 //                        .acks`, design/probe-nachzug-konvergenz-2026-09.md)
+//   Encounter            the ceremony's transmission GRADUATED to the
+//                        root entry point on 05.09.2026 (`ceremony`,
+//                        design/encounter-nachzug-konvergenz-2026-09.md)
 //   Membership + Access  membership (founding, prelude, VIC invite,
 //                        consent, admission, welcome, vouch@2)
 //

@@ -596,6 +596,7 @@ class Component extends DCLogic {
     const hole = holeImg && holeImg.parentElement;         // its dashed frame
     const qr = shellP.querySelector('img');                // the code on the other phone
     if (!hole) return;
+    clearTimeout(this.animT3); // a new flight owns the animation state — the previous return's cleanup must not wipe it
     const rs = shellS.getBoundingClientRect(), rp = shellP.getBoundingClientRect();
     const rh = hole.getBoundingClientRect();
     const rq = qr ? qr.getBoundingClientRect() : rp;
@@ -655,9 +656,10 @@ class Component extends DCLogic {
     this.waAnims = returns;
     const keep = {};
     Object.keys(this.anim.styles).forEach(k => (keep[k] = k === this.anim.scanner ? 'z-index:130;' : 'z-index:120;'));
-    this.anim = { scanner: null, styles: keep };
+    const token = (this.anim = { scanner: null, styles: keep });
     clearTimeout(this.animT3);
-    this.animT3 = setTimeout(() => { this.anim = null; this.animEls = null; this.bump(); }, 850);
+    // clean up ONLY this return's state: a scan started in the meantime owns `anim` again
+    this.animT3 = setTimeout(() => { if (this.anim === token) { this.anim = null; this.animEls = null; this.bump(); } }, 850);
   }
   onDone(dev) { dev.screen = 'ready'; dev.err = null; this.bump(); }
 

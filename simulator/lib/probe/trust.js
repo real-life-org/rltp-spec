@@ -25,7 +25,7 @@
 //   · Byte-identische Redelivery (4.2): jede unquittierte Zustellung
 //     wird als DASSELBE Dokument erneut gesendet (outbox hält die Envs);
 //     der Empfänger re-ackt duplicate-known byte-identisch (ackStore).
-import { jcs, makeValidator } from '../core.js';
+import { jcs, makeValidator, sameDigest } from '../core.js';
 import { SCHEMAS } from '../schemas.js';
 import * as C from './deps.js';
 import { buildAck, verifyAck, ACK_TYPE } from './acks.js';
@@ -836,7 +836,8 @@ export async function receiveTrustDoc(p, env, when, ent = {}) {
         // 4.2: innerhalb der Retention wird EXAKT der gespeicherte Ack
         // byte-identisch erneut gesendet — nie ein neu erzeugter
         const stored = from.ackStore?.get(opened.digest);
-        return { handled: true, duplicate: true, ack: stored ? { to: from, kind: 'delivery-ack/0.1 (Re-Ack, byte-identisch)', env: stored } : undefined };
+        // der Store behält sein Exemplar — der Host bekommt eine Kopie (Encounter-Review 8, B-1)
+        return { handled: true, duplicate: true, ack: stored ? { to: from, kind: 'delivery-ack/0.1 (Re-Ack, byte-identisch)', env: structuredClone(stored) } : undefined };
     }
     // Acks laufen durch dieselbe kritische Sektion (Delivery §6.2:
     // „stage 9 is a critical section whose lock set is the document
@@ -845,18 +846,20 @@ export async function receiveTrustDoc(p, env, when, ent = {}) {
     // completed-effect cache und meldet duplicate-known — nie
     // 'ack unknown ref' (Review 13, B-3)
     if (doc?.type === ACK_TYPE) {
-        // deaktivierte Tupel nehmen auch keine NEUEN Acks an (Review 37,
-        // B-3: „not the active head … MUST be rejected" — die Ausnahmen
-        // betreffen Continuity-prior und gepinnte Introduction, nie Acks)
-        if (from.deactivated)
-            return { handled: true, error: 'tuple deactivated' };
-        // Stufe 5 VOR dem Payload-Gate auch für Acks (Review 33, B-2):
-        // recipient = eigener Anker (Empfänger-Prinzip)
+        // deaktivierte Tupel nehmen keine NEUEN Acks für VISIBILITY-Dokumente
+        // an (Review 37, B-3: „not the active head … MUST be rejected") —
+        // ein Ack auf ein ENCOUNTER-Dokument bleibt gültig (Delivery 6.1:
+        // „a late valid acknowledgement … transitions the status to
+        // delivered"); die Unterscheidung fällt am referenzierten
+        // Outbox-Eintrag in receiveAckInner (Encounter-Review 2, B-5)
+        // Stufe 5 VOR dem Payload-Gate auch für Acks (Review 33, B-2), in
+        // ihrer Ordnung: erst das DOKUMENTPROFIL (malformed), dann recipient =
+        // eigener Anker (Empfänger-Prinzip) — Encounter-Review 8, B-2
+        if (!schemaOk('rltp-delivery-document.schema.json', doc))
+            return { handled: true, error: 'malformed document' };
         if (doc.recipient !== from.channel.own.anchor)
-            return { handled: true, error: 'outer binding (recipient)' };
+            return { handled: true, error: 'wrong-recipient' }; // 6.2 stage 5 disposition
         return withContactLock(from, async () => {
-            if (from.deactivated)
-                return { handled: true, error: 'tuple deactivated' }; // Re-Check nach dem Lock-Erwerb
             if ((p.deliveryCache ?? new Set()).has(opened.digest))
                 return { handled: true, duplicate: true };
             return receiveAckInner(p, fromKey, from, opened);
@@ -876,7 +879,7 @@ export async function receiveTrustDoc(p, env, when, ent = {}) {
     // issuer-Bindung ist eine TYP-Konsistenzregel (Stufe 8) und läuft je
     // Zweig NACH dem Payload-Schema (Review 32)
     if (doc.recipient !== from.channel.own.anchor)
-        return { handled: true, error: 'outer binding (recipient)' };
+        return { handled: true, error: 'wrong-recipient' }; // 6.2 stage 5 disposition
     // Kalender-Validität des DOKUMENTS (Review 12, B-3): „a verifier
     // MUST reject a date its RFC 3339 parser refuses" — das Dokument-
     // Schema lief bereits; die PAYLOAD-Kalenderprüfung sitzt je Typ NACH
@@ -1151,14 +1154,33 @@ export async function receiveTrustDoc(p, env, when, ent = {}) {
 // completion (5.4-Automat): jeder Chunk-Ack streicht seinen Digest;
 // der letzte lässt den Automaten laufen
 async function receiveAckInner(p, fromKey, from, opened) {
-    const v = await verifyAck(p, from, opened.doc);
+    // der referenzierte Outbox-Eintrag zuerst — seine KLASSE wählt die
+    // Proof-Form des Acks (4.2/4.4: Encounter-Payloads tragen übertragbare
+    // Signaturen → signierter Ack; Visibility-Payloads sind DV → MAC).
+    // Digest-Gleichheit über die dekodierten Multihash-Bytes (Encounter
+    // 2.3) — ein `z`-gerenderter ref trifft den `u`-Outbox-Schlüssel
+    // Stufe 7 zuerst: das Payload-Schema (malformed) — VOR jeder Klassen-
+    // oder Konsistenzregel der Stufe 8 (Encounter-Review 16, B-1)
+    if (!schemaOk('payload-delivery-ack.schema.json', opened.doc?.payload))
+        return { handled: true, error: 'malformed' };
+    const ref0 = opened.doc.payload.ref;
+    let refKey, o;
+    for (const [k, e] of outboxOf(from))
+        if (sameDigest(k, ref0)) {
+            refKey = k;
+            o = e;
+            break;
+        }
+    if (!o)
+        return { handled: true, error: 'ack unknown ref' }; // Stufe 8: ref trifft kein gesendetes Dokument — keine Klasse wählbar
+    const ENCOUNTER_KIND = o.kind === 'encounter-bundle' || o.kind === 'encounter-credential-delivery';
+    const v = await verifyAck(p, from, opened.doc, ENCOUNTER_KIND ? 'signature' : 'dv');
     if (!v)
         return { handled: true, error: 'ack invalid' };
-    if (from.deactivated)
-        return { handled: true, error: 'tuple deactivated' }; // Re-Check nach den Awaits (Review 37, B-3), danach kein await
-    const o = outboxOf(from).get(v.ref);
-    if (!o || o.threadId !== v.threadId)
+    if (o.threadId !== v.threadId)
         return { handled: true, error: 'ack unknown ref' };
+    if (from.deactivated && !ENCOUNTER_KIND)
+        return { handled: true, error: 'tuple deactivated' }; // nach den Awaits (Review 37, B-3), danach kein await
     // ZWEI Pflicht-Ebenen (Review 19, B-3): der Delivery-Ack erledigt den
     // TRANSPORT — die Visibility-Pflicht eines choice/report-Mappings
     // („resent … until answered by the counterpart's aligned mapping")
@@ -1168,13 +1190,13 @@ async function receiveAckInner(p, fromKey, from, opened) {
     if (o.kind === 'continuity-mapping' && o.duty !== 'align' && !o.retired)
         o.acked = true;
     else
-        outboxOf(from).delete(v.ref);
+        outboxOf(from).delete(refKey);
     C.effectDone(p, opened.digest);
     if (o.kind === 'star') {
         const s = subOf(from);
         const f = s.inFlight.get(o.salt);
         if (f) {
-            f.pending.delete(v.ref);
+            f.pending.delete(refKey);
             if (f.pending.size === 0) {
                 s.inFlight.delete(o.salt);
                 if (BigInt(o.salt) > s.highWater) {
@@ -1197,7 +1219,15 @@ async function receiveAckInner(p, fromKey, from, opened) {
         delete from.trustReissueDue; // die V2-Pflicht stirbt mit der QUITTIERTEN Zustellung
     if (o.duty === 'align')
         from.contAligned = true; // 6a.3: Alignment-Pflicht stirbt mit der Completion
-    return { handled: true, acked: o.kind };
+    // Encounter (Delivery 6.1): „delivered" ist der Sender-Status NUR auf
+    // den gültigen Ack — der Host liest diese Marken, nie die Ankunft
+    if (o.kind === 'encounter-bundle')
+        from.bundleAcked = true;
+    if (o.kind === 'encounter-credential-delivery')
+        from.counterAcked = true;
+    // the host correlates the ack with ITS active encounter (Encounter-Review 11, B-3):
+    // the acked document's digest, thread and the counterpart anchor travel along
+    return { handled: true, acked: o.kind, ref: refKey, threadId: o.threadId, peerAnchor: fromKey };
 }
 export async function receiveAck(p, env) {
     return receiveTrustDoc(p, env, 0);

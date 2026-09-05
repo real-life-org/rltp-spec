@@ -69,7 +69,7 @@ every casting is reviewed in full by an independent adversarial
 reviewer, findings are triaged, and the document is recast — never
 patched — until a casting is judged blocker-free and compatibly
 implementable. The companion documents have met that criterion — the
-**RLTP Delivery Contract** (0.69), which specifies the transmission
+**RLTP Delivery Contract** (0.79), which specifies the transmission
 leg by normative reference, and above this layer the **RLTP
 Membership Tasks** (0.16) and the **RLTP Access Layer** (0.53).
 
@@ -888,8 +888,14 @@ record, no consumed-challenge conflict.
 
 4. B MAY confirm (C4) and issue the counter-step, binding `c_A`,
    delivered as task `encounter-credential-delivery` (step
-   `counter`), unbounded in time, over any adapter. A accepts under
-   5.6 with `t_ch` = `c_A`'s issuance time.
+   `counter`), unbounded in time, over any adapter. The counter-step
+   continues the bundle's `threadId` (Contract 4.3). Where B's record
+   arose on the optical leg before the bundle arrived, B MAY issue and
+   durably hold its credential at once; the delivery document is
+   produced when the bundle lands and is accepted via the record — the
+   counter-step never opens a thread of its own. Mutuality depends on
+   the bundle either way, so this defers nothing that could otherwise
+   complete. A accepts under 5.6 with `t_ch` = `c_A`'s issuance time.
 5. **Path switching and merge.** The acknowledgement is a delivery
    signal, never acceptance (7.4); receipt of B's counter-credential
    or of the acknowledgement cancels any pending automatic switch.
@@ -1590,5 +1596,5 @@ W3C Data Integrity EdDSA Cryptosuites v1.0 · W3C Verifiable
 Credentials Data Model 2.0 · DTG Credential Specification (ToIP DTGWG,
 draft) · ToIP DTGWG Trust Ceremonies ADR 0001 and design note
 (Proposed) · did:key method draft · Multikey / multicodec registry ·
-**RLTP Delivery Contract 0.69 (normative)** · wot-spec v0.1 (superseded
+**RLTP Delivery Contract 0.79 (normative)** · wot-spec v0.1 (superseded
 parts, Appendix B).

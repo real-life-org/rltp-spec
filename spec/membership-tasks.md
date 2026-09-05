@@ -11,7 +11,7 @@
 - **Target Trust Tasks framework version:** 0.4
 - **Conformance profile:** `rltp-membership@0.16` (draft)
 - **Position:** a task-type registration on top of the **RLTP Delivery
-  Contract 0.69** (normative reference; its §4.4 registry carries
+  Contract 0.79** (normative reference; its §4.4 registry carries
   these types), carrying operations of the
   **RLTP Access Layer 0.53** (normative reference; its wire forms
   remain `0.24`, so the transcribed schemas of this document stand
@@ -1024,7 +1024,7 @@ surfaced, attributable lie with no mechanical effect.
 ## 10. Conformance
 
 - **Profile** `rltp-membership@0.16`; normatively references
-  `rltp-delivery@0.69` and `rltp-access@0.53` — whose wire forms
+  `rltp-delivery@0.79` and `rltp-access@0.53` — whose wire forms
   remain `0.24` — (envelope §3.3, member identity §5.1, admission
   and candidacy §5.3, material §9.5, key-delivery §10.1,
   removal-notice §10.2, views §7.3).
@@ -1264,7 +1264,7 @@ surfaced, attributable lie with no mechanical effect.
 ## References
 
 [RFC2119] · [RFC8174] BCP 14 · [RFC8785] JCS · [TT] ToIP DTGWG Trust
-Tasks framework 0.4 · **RLTP Delivery Contract 0.69** (normative; §4.4 registry) ·
+Tasks framework 0.4 · **RLTP Delivery Contract 0.79** (normative; §4.4 registry) ·
 **RLTP Encounter Layer 0.29**, wire 0.25 (securing profile 2.3,
 principles 1.3, contact card §6) · **RLTP Access Layer 0.53**, wire
 0.24 (normative: operation envelope §3.3, group identity §3.2,

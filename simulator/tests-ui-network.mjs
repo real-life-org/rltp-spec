@@ -289,7 +289,7 @@ check(true, 'Scanner läuft: Durchguck-Sucher, Kamera erkennt automatisch');
 await page.locator('#dev-J .phone-screen', { hasText: 'Are you standing in front of this person?' }).waitFor({ timeout: 10000 });
 check((await page.locator('#dev-J .phone-screen', { hasText: 'Emil' }).count()) >= 1, 'nach dem Rückflug: die gescannte Person wird angezeigt');
 await page.locator('#dev-J .phone-screen button', { hasText: /^Confirm$/ }).click();
-await page.locator('#dev-J .phone-screen', { hasText: 'Arrived on' }).waitFor({ timeout: 8000 });
+await page.locator('#dev-J .phone-screen', { hasText: 'device acknowledged' }).waitFor({ timeout: 8000 });
 check(await page.evaluate(() => {
   const em = [...window.__probe.J.contacts.values()].filter(c => !c.deactivated).find(c => c.name === 'Emil' && c.state === '→');
   return !!em;
@@ -341,8 +341,8 @@ check((await page.locator('#dev-A .phone-screen', { hasText: 'two-way scan' }).c
 await page.locator('#dev-A .phone-screen button', { hasText: /^Confirm$/ }).click();
 await page.waitForFunction(() =>
   [...window.__probe.A.contacts.values()].some(c => !c.deactivated && c.name === 'Jonathan' && c.state === '→')
-  && (window.__probe.A.pendingDocs?.length ?? 0) === 1, { timeout: 8000 });
-check(true, 'offline bestätigt: ehrlich einseitig, Gegen-Credential wartet auf Netz');
+  && [...window.__probe.A.contacts.values()].some(c => c.name === 'Jonathan' && c.credential && c.counterDocPending), { timeout: 8000 });
+check(true, 'offline bestätigt: ehrlich einseitig, Gegen-Credential ausgestellt — das Zustelldokument wartet auf den Bundle-Thread (4.3 step counter)');
 await page.locator('#dev-A .devctls .devbtn').first().click(); // Anton zurück ans Netz
 await page.waitForFunction(() => {
   const act = (p) => [...p.contacts.values()].filter(c => !c.deactivated);
@@ -401,8 +401,8 @@ await page.waitForFunction((a) => window.__probe.shows?.J?.ctx.anchor !== a, sho
 check(await page.evaluate(() => window.__probe.J.log.some(l => l.includes('rotated by itself'))),
   'laufende Zeit: der gezeigte Code erreicht PT5M und prägt sich neu — Anzeige rotiert, Retention bleibt');
 await page.locator('.rbtn', { hasText: 'paused' }).click();
-check(await page.evaluate(() => window.__probe.J.showLog.size >= 2),
-  'das Show-Log hält beide Challenges auflösbar (5.3: rotation changes what is displayed, never what is retained)');
+check(await page.evaluate(() => window.__probe.J.challenges.size >= 2),
+  'das Challenge-Modell hält beide Werte (5.3: rotation changes what is displayed, never what is retained — der gealterte trägt den Latch)');
 
 console.log(fails ? `\n${fails} FAILED` : '\nNETZWERK-UI-DURCHLAUF (APP-FLOW + DELIVERY + SIM-UHR) BESTANDEN');
 await browser.close();

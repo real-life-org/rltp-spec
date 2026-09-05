@@ -137,6 +137,7 @@ import * as C from './rltp-crypto.mjs'
 import * as G from './groups.mjs'
 import * as T from './trust.mjs'
 import * as CN from './continuity.mjs'
+import * as E from './encounter.mjs'
 import * as DV from './delivery.mjs'
 import * as K from './clock.mjs'
 import * as PH from './rltp-phone.mjs'
@@ -182,12 +183,38 @@ async function dispatchDoc (toPerson, env) {
   let r = await G.receiveDoc(toPerson, env, now)
   if (!r.handled) r = await T.receiveTrustDoc(toPerson, env, now)
   if (!r.handled) r = await CN.receiveContinuity(toPerson, env, now)
-  if (!r.handled) r = await receiveEncounter(toPerson, env)
-  // Delivery 4.2: der deniable Ack reist zurueck ueber den Kanal
+  if (!r.handled) r = await E.receiveEncounter(toPerson, env, now)
+  // Delivery 4.2: der Ack reist zurueck ueber den Kanal (signiert fuer die
+  // Encounter-Formen, deniabel-MAC fuer die DV-Formen der Visibility)
   if (r.ack) { packet(r.ack.kind, toPerson.name, r.ack.to.name, r.ack.env); await deliver(byName(r.ack.to.name), r.ack.env) }
+  if (r.acceptance) Object.assign(r, await r.acceptance)   // 4.3: der Ack ging beim Puffern — die Encounter-Akzeptanz läuft getrennt, ihr Ausgang bleibt lokal
   if (!r.handled) { const o = await I.receiveOffer(toPerson, env); return { handled: !o.error, error: o.error } }
   logPkt(toPerson, r)
   const tid = idOf(toPerson)
+  // Encounter-Momente der App
+  if (r.recorded && r.prompt) {   // Bundle angekommen: Vollbild-Prompt „verify back?" — Ankunft ≠ Annahme
+    toPerson.contacts.get(r.prompt.peerAnchor).probeSent = true
+    toPerson.inbox.push({ kind: 'verifyback', from: r.prompt.from, peerAnchor: r.prompt.peerAnchor, decided: false })
+    if (world.ui[tid].view === 'verify') delete world.shows[tid]
+    Object.assign(world.ui[tid], { view: 'prompt', promptAnchor: r.prompt.peerAnchor, sheet: null })
+  }
+  if (r.accepted && r.mutual) {   // das Gegen-Credential: beidseitig ✓ — der Feier-Moment
+    const t = toPerson.contacts.get(r.peerAnchor)
+    if (t) t.probeSent = false   // Tupel lebt beidseitig → §6a-Probe im Tick
+    world.ui[tid].sheet = { type: 'verified', of: r.peerAnchor }
+    // nur die AKTIVE Begegnung (gleicher Gegenanker) verlässt waiting/fallback — ein spätes Credential einer anderen Begegnung nicht
+    if (['waiting', 'delivered', 'fallback'].includes(world.ui[tid].view) && world.ui[tid].enc?.peerAnchor === r.peerAnchor) { world.ui[tid].view = 'list'; delete world.shows[tid] }
+  }
+  if (r.counterOut?.env && toPerson.online) {   // der auf den Bundle-Thread wartende Gegenschritt: jetzt ausgestellt → zustellen
+    packet('encounter-credential-delivery/0.1 — Gegenschritt (versiegelt)', toPerson.name, r.counterOut.to.name, r.counterOut.env)
+    await deliver(byName(r.counterOut.to.name), r.counterOut.env)
+  }
+  if (r.acked === 'encounter-bundle') {   // Delivery 6.1: delivered = gültiger Ack; auch ein später (nach Fallback)
+    const u = world.ui[tid]
+    // Korrelation: nur der Ack DIESER Begegnung (Gegenanker + Bundle-Thread) flippt die Ansicht
+    const mine = u.enc?.peerAnchor === r.peerAnchor && (u.enc?.threadId === undefined || u.enc.threadId === r.threadId)
+    if (mine && ['waiting', 'fallback'].includes(u.view)) { u.view = 'delivered'; delete world.shows[tid]; u.ackTicks = 0 }
+  }
   if (r.disclosed) toast(tid, `${r.fromName ?? 'A contact'} trusts you now — they shared their stable identity`)
   if (r.chained && r.name && world.ui[tid].sheet?.type !== 'verified') toast(tid, `${r.name}: recognized an existing relationship — merged into one contact`)
   if (r.fulfilled) toast(tid, 'Your candidacy is fulfilled — a member vouched for you')
@@ -311,6 +338,11 @@ setInterval(async () => {
   let changed = false
   for (const id of ['J', 'A', 'E']) {
     const p = world[id]
+    // Ack-Wartezeit (Delivery §7 ack-wait) läuft NETZUNABHÄNGIG — sie ist nur
+    // der EMPFOHLENE automatische Auslöser des Path-Switch (Encounter 5.8:
+    // „presentation is never gated on a timer"); der manuelle Switch steht
+    // in der waiting-Ansicht jederzeit bereit (__switchOptical)
+    if (world.ui[id].view === 'waiting' && (world.ui[id].ackTicks = (world.ui[id].ackTicks ?? 0) + 1) > 2) { switchOptical(id, 'Ack-Wartezeit verstrichen · automatischer Wechsel'); changed = true }
     if (!p.online) continue
     const before = p.log.length + p.contacts.size
     await flushTransit(p)
@@ -319,24 +351,21 @@ setInterval(async () => {
     // rotiert, Retention bleibt: das Show-Log hält jede Challenge auflösbar)
     const sh = world.shows[id]
     if (sh && !sh.fallback && K.agedOut(clock, id, sh.card.challenge.issuedAt, 5 * K.MINUTE)) {
-      const fresh = await I.ceremonyShow(p)
-      ;(p.showLog ??= new Map()).set(fresh.ctx.anchor, fresh.ch)
-      world.shows[id] = { ctx: fresh.ctx, ch: fresh.ch, card: await displayCard(p, fresh, C.iso(now)) }
+      const fresh = await E.show(p, now)   // Encounter 5.3: frische Challenge tritt als OPEN ein, Retention in der Bibliothek
+      world.shows[id] = { ctx: fresh.ctx, ch: fresh.ch, card: fresh.card }
       p.log.push('displayed code reached max age PT5M · rotated by itself — fresh pair anchor, retention unchanged')
       changed = true
     }
-    for (const d of (p.pendingDocs ?? []).splice(0)) {
-      packet('encounter-verify@probe — nachgeholt (war offline)', p.name, d.toName, d.env)
-      await deliver(byName(d.toName), d.env)
-      changed = true
-    }
-    const ui = world.ui[id]
-    if (ui.view === 'waiting') {
-      ui.ackTicks = (ui.ackTicks ?? 0) + 1
-      if (ui.ackTicks > 2) {
-        ui.view = 'fallback'
-        world.shows[id] = { fallback: true, card: ui.enc.sentCard, name: ui.enc.peerName }
-        p.log.push('Ack-Wartezeit verstrichen · dieselbe Begegnung geht optisch weiter: die gesendete Karte wird zum QR (Adapter-Wechsel, kein Zeremonie-Wechsel)')
+    // Delivery 4.2: unquittierte Encounter-Dokumente byte-identisch erneut
+    // (Host-Policy: jeden zweiten Tick) — „delivered" entsteht nur per Ack
+    if (p.online && ((p.encTick = (p.encTick ?? 0) + 1) % 2 === 0)) {
+      // geschuldete Ausstellung nachholen (Record steht, Dokument fehlte) — dann byte-identische Redelivery
+      const resumed = await E.resumeEncounter(p, now)
+      // nachgeholte Sent-Card in die aktive Begegnung zurückspielen — der optische Fallback bleibt möglich (5.8)
+      for (const out of resumed.outbound) { const u = world.ui[id]; if (out.sentCard && u.enc && !u.enc.sentCard && u.enc.peerAnchor === out.peerAnchor) { u.enc.sentCard = out.sentCard; u.enc.threadId ??= out.threadId } }
+      for (const out of [...resumed.outbound, ...E.flushEncounter(p).outbound]) {
+        packet(out.kind, p.name, out.to.name, out.env)
+        await deliver(byName(out.to.name), out.env)
         changed = true
       }
     }
@@ -427,16 +456,12 @@ window.__joinConfirm = async (id, act) => {
 // Credential reist übers NETZ → Gegenseite bestätigt zurück; ohne Netz
 // wechselt die App automatisch auf den Two-Way-Scan (optische Fortsetzung
 // DERSELBEN Begegnung — Adapter-Wechsel, kein Zeremonie-Wechsel).
-const ET = 'https://real-life.org/trust-tasks/encounter-verify@probe'
-const displayCard = async (p, sh, whenIso) =>
-  C.signCard(sh.ctx, C.cardBody(sh.ctx, { name: p.name, challenge: { value: sh.ch, issuedAt: whenIso } }), whenIso)
 window.__openVerify = async (id) => {
   const p = world[id], ui = world.ui[id]
   ui.sheet = null
   if (world.shows[id]?.fallback) { ui.view = 'fallback'; render(); return } // laufende Begegnung geht vor
-  const sh = await I.ceremonyShow(p)
-  ;(p.showLog ??= new Map()).set(sh.ctx.anchor, sh.ch)
-  world.shows[id] = { ctx: sh.ctx, ch: sh.ch, card: await displayCard(p, sh, C.iso(now)) }
+  const sh = await E.show(p, now)
+  world.shows[id] = { ctx: sh.ctx, ch: sh.ch, card: sh.card }
   ui.view = 'verify'
   p.log.push('Code gezeigt — frisches Anker-Paar geprägt (verrät nichts)')
   render()
@@ -453,6 +478,16 @@ window.__promptLater = (id) => {
   Object.assign(world.ui[id], { view: 'list', tab: 'home', promptAnchor: null })
   render()
 }
+// Path-Switch (Encounter 5.8 offline path): die eigene SENT CARD wird zum QR —
+// dieselbe Begegnung, anderer Träger; lokal, ohne Netz, zu jedem Zeitpunkt
+function switchOptical (id, why) {
+  const ui = world.ui[id], p = world[id]
+  if (ui.view !== 'waiting' || !ui.enc?.sentCard) return
+  ui.view = 'fallback'
+  world.shows[id] = { fallback: true, card: ui.enc.sentCard, name: ui.enc.peerName }
+  p.log.push(`${why} · dieselbe Begegnung geht optisch weiter: die gesendete Karte wird zum QR (Adapter-Wechsel, kein Zeremonie-Wechsel)`)
+}
+window.__switchOptical = (id) => { switchOptical(id, 'manueller Wechsel'); render() }
 window.__closeVerify = (id) => {
   if (!world.shows[id]?.fallback) delete world.shows[id]
   Object.assign(world.ui[id], { view: 'list', scan: null })
@@ -567,97 +602,48 @@ window.__verifyConfirm = async (id) => {
   const p = world[id], ui = world.ui[id]
   const scan = ui.scan, own = world.shows[id]
   if (!scan || !own) return
+  // Reentranz-Latch SYNCHRON vor dem ersten await: eine Bestätigung = ein
+  // Enactment (Encounter 5.8: „neither path ever starts a second enactment")
+  if (ui.confirmInFlight) return
+  ui.confirmInFlight = true
   K.jump(clock, 5 * K.SECOND)
-  const peerCard = scan.card
-  const iso = C.iso(now)
-  const bind = await C.binding(C.CEREMONY, own.ch, peerCard.challenge.value)
-  const cred = await C.issueCredential(own.ctx, peerCard.anchor, C.CEREMONY, peerCard.challenge.value, bind, iso)
-  const sentCard = await C.signCard(own.ctx, C.cardBody(own.ctx, { name: p.name, challenge: { value: own.ch, issuedAt: iso }, sentTo: peerCard.anchor, boundTo: peerCard.challenge.value }), iso)
-  const priors = CN.snapshotPriors(p)
-  p.contacts.set(peerCard.anchor, { name: peerCard.name, card: peerCard, credential: cred, provenance: 'ceremony', state: '→', since: iso, channel: { own: own.ctx, counterpartKa: peerCard.keyAgreement }, priorCands: priors, probeSent: true })
-  p.log.push(`${peerCard.name} verifiziert — Credential unterwegs (Ankunft ≠ Annahme)`)
-  const doc = await C.diSign(own.ctx, { id: globalThis.crypto.randomUUID(), type: ET, issuer: own.ctx.anchor, recipient: peerCard.anchor, issuedAt: iso, payload: { card: sentCard, credential: cred } }, iso)
-  const env = await C.seal(doc, peerCard.keyAgreement)
+  // Encounter 5.8 Schritt 2–3: frisches c_A + frischer Pair-Kontext, Record,
+  // Step-Credential, Sent-Card → encounter-bundle/0.1 (Delivery 4.1)
+  let r
+  try { r = await E.scan(p, scan.card, now) } catch (err) {
+    // Record steht, Ausstellung geschuldet (bundlePending): die Begegnung
+    // läuft weiter — resumeEncounter holt das Bundle im Tick nach
+    const t = p.contacts.get(scan.card.anchor)
+    if (t?.bundlePending) { r = { partial: true, sentCard: t.sentCard, threadId: t.bundleThread }; p.log.push(`Bundle-Ausstellung unterbrochen (${err?.message ?? err}) — Record steht, wird nachgeholt`) } else { r = { error: String(err?.message ?? err) } }
+  } finally { ui.confirmInFlight = false }
+  if (r.error) { p.log.push(`Scan verweigert: ${r.error}`); Object.assign(ui, { scan: null, view: 'verify' }); render(); return }
   delete world.shows[id]
-  Object.assign(ui, { scan: null, enc: { sentCard, peer: scan.peer, peerName: peerCard.name } })
+  Object.assign(ui, { scan: null, enc: { sentCard: r.sentCard, peer: scan.peer, peerName: scan.card.name, peerAnchor: scan.card.anchor, threadId: r.threadId } })
   const q = world[scan.peer]
-  packet('encounter-verify@probe — Credential + gesendete Karte (versiegelt, Relay)', p.name, q.name, env)
-  const arrived = await deliver(q, env)
-  ui.view = arrived ? 'delivered' : 'waiting'
+  ui.view = 'waiting'   // Delivery 6.1: „delivered" NUR auf den gültigen Ack — nie auf die Ankunft
   ui.ackTicks = 0
+  if (r.env) packet('encounter-bundle/0.1 — Sent-Card + Credential (versiegelt)', p.name, q.name, r.env)
+  // Connected Path braucht Netz auf BEIDEN Seiten (Encounter 5.8): offline bleibt das Bundle in der Outbox — Fallback und Flush übernehmen
+  if (p.online && r.env) await deliver(q, r.env)   // der Ack kann synchron zurückreisen — der Dispatch flippt dann auf delivered
+  else p.log.push('offline — Bundle wartet in der Outbox (Ack-Wartezeit läuft, Two-Way-Scan steht bereit)')
+  if (p.contacts.get(scan.card.anchor)?.bundleAcked && ui.view === 'waiting') ui.view = 'delivered'
   render()
 }
 // optische Fortsetzung: das Fallback-Bundle der Gegenseite gescannt
 async function captureBundle (id, target, card) {
   const p = world[id], ui = world.ui[id]
-  const ctx = p.contexts.get(card.sentTo)
-  const myCh = p.showLog?.get(card.sentTo)
-  if (!ctx || card.boundTo !== myCh || !(await C.diVerify(card, card.anchor))) {
-    p.log.push('gesendete Karte nicht verwendbar (sentTo/boundTo/Proof) — nicht für dieses Gerät')
+  // Encounter 5.8 optischer Leg: die SENT CARD als Zeremonie-Input — boundTo
+  // wird aufgelöst (open → Record · recorded → 5.5-Taxonomie · unknown → gate-expired)
+  const r = await E.captureSentCard(p, card, now)
+  if (r.error) {
+    p.log.push(r.error === 'gate-expired' ? 'gesendete Karte: boundTo löst nicht mehr auf — gate-expired (gealtert oder nicht dieses Gerät)' : `gesendete Karte nicht verwendbar (${r.error})`)
     ui.view = 'verify'; render(); return
   }
-  const existing = p.contacts.get(card.anchor)
-  if (existing) { // Gegenrichtung des Two-Way-Scans: Karten jetzt beidseitig
-    existing.card = card
-    p.log.push(`${card.name}s Karte optisch übernommen — Karten beidseitig, Credentials folgen übers Netz`)
-    Object.assign(ui, { view: 'list' })
-    render(); return
-  }
-  const priors = CN.snapshotPriors(p)
-  p.contacts.set(card.anchor, { name: card.name, card, provenance: 'ceremony', state: '←', since: C.iso(now), channel: { own: ctx, counterpartKa: card.keyAgreement }, priorCands: priors, probeSent: true, credentialPending: true })
-  p.inbox.push({ kind: 'verifyback', from: card.name, peerAnchor: card.anchor, myCtx: ctx, myCh, peerCh: card.challenge.value, decided: false, optical: true })
-  p.log.push(`${card.name}'s sent card captured optically — same encounter, the confirmation follows over the network`)
+  if (r.idempotent) { p.log.push(`${card.name}s Karte optisch: Record stand bereits — nichts zu tun, das Credential folgt übers Netz`); Object.assign(ui, { view: 'list' }); render(); return }
+  p.contacts.get(card.anchor).probeSent = true
+  p.inbox.push({ kind: 'verifyback', from: card.name, peerAnchor: card.anchor, decided: false, optical: true })
   Object.assign(ui, { view: 'prompt', promptAnchor: card.anchor, sheet: null })
   render()
-}
-// Empfangsseite: Ankunft des Credentials — nie Annahme
-async function receiveEncounter (toPerson, env) {
-  const ctx = toPerson.contexts.get(env.rkid)
-  if (!ctx) return { handled: false }
-  const open = await C.unseal(env, ctx.x.priv)
-  if (open.error) return { handled: false }
-  const doc = open.document
-  if (doc?.type !== ET) return { handled: false, doc }
-  const { card, credential } = doc.payload
-  const id = idOf(toPerson)
-  if (!(await C.diVerify(card, card.anchor)) || !(await C.diVerify(credential, card.anchor))) return { handled: true, error: 'proof' }
-  if (card.sentTo !== ctx.anchor) return { handled: true, error: 'sentTo ≠ mein Kontext' }
-  const myCh = toPerson.showLog?.get(ctx.anchor)
-  if (!myCh || card.boundTo !== myCh) return { handled: true, error: 'boundTo löst nicht auf' }
-  if (credential.credentialSubject.id !== ctx.anchor) return { handled: true, error: 'subject' }
-  const bind = await C.binding(C.CEREMONY, card.challenge.value, myCh)
-  if (credential.credentialSubject.enactmentBinding !== bind) return { handled: true, error: 'enactmentBinding' }
-  const existing = toPerson.contacts.get(card.anchor)
-  if (existing) {
-    // DERSELBE Anker = DIESELBE Begegnung: NIE ersetzen — ein Replace
-    // verlöre Kette und priorCands und vergiftete den Neu-Schnappschuss
-    // mit dem eigenen Anker (Selbst-Match-Falle, §6a)
-    existing.credentialIn = credential; existing.card = card
-    if (existing.state === '→' || existing.state === '←') {
-      // die Gegenrichtung DERSELBEN Begegnung: beidseitig
-      existing.state = '✓'
-      delete existing.credentialPending
-      existing.probeSent = false // Tupel lebt beidseitig → §6a-Probe im Tick
-      toPerson.log.push(`${existing.name} — Credential angekommen, ihr seid beidseitig verifiziert ✓`)
-      world.ui[id].sheet = { type: 'verified', of: card.anchor }
-      if (['waiting', 'delivered', 'fallback'].includes(world.ui[id].view)) { world.ui[id].view = 'list'; delete world.shows[id] }
-    } else {
-      // Kette war schneller als das Credential: die Begegnung ist
-      // TROTZDEM jetzt beidseitig belegt — derselbe Feier-Moment
-      toPerson.log.push(`${existing.name} — Credential angekommen (Begegnung war schon beidseitig ✓)`)
-      world.ui[id].sheet = { type: 'verified', of: card.anchor }
-      if (['waiting', 'delivered', 'fallback'].includes(world.ui[id].view)) { world.ui[id].view = 'list'; delete world.shows[id] }
-    }
-    return { handled: true }
-  }
-  const priors = CN.snapshotPriors(toPerson)
-  toPerson.contacts.set(card.anchor, { name: card.name, card, credentialIn: credential, provenance: 'ceremony', state: '←', since: doc.issuedAt, channel: { own: ctx, counterpartKa: card.keyAgreement }, priorCands: priors, probeSent: true })
-  toPerson.inbox.push({ kind: 'verifyback', from: card.name, peerAnchor: card.anchor, myCtx: ctx, myCh, peerCh: card.challenge.value, decided: false })
-  toPerson.log.push(`${card.name} verified you — arrival, not acceptance: you decide`)
-  // der App-Moment: Vollbild-Prompt (wie Zeremonie-Sim), nie nur ein Toast
-  if (world.ui[id].view === 'verify') delete world.shows[id]
-  Object.assign(world.ui[id], { view: 'prompt', promptAnchor: card.anchor, sheet: null })
-  return { handled: true }
 }
 // die Rück-Bestätigung (Gegenseite): eigenes Credential ausstellen
 window.__verifyBack = async (id, peerAnchor, yes) => {
@@ -667,27 +653,23 @@ window.__verifyBack = async (id, peerAnchor, yes) => {
   if (!yes) { e.later = true; p.log.push('verify-back parked — the received confirmation stays (arrival ≠ acceptance), the act lives in the contact detail'); render(); return }
   e.decided = true
   if (world.ui[id].view === 'prompt') Object.assign(world.ui[id], { view: 'list', promptAnchor: null })
+  const reopen = () => { e.decided = false }   // ein Fehler gibt die Entscheidung zurück — nichts geht verloren
   K.jump(clock, 5 * K.SECOND)
+  // Encounter 5.8 Schritt 4: Gegenschritt als encounter-credential-delivery/0.1
+  // im Bundle-Thread (step "counter", Delivery 4.3). Kein optischer Träger
+  // für den Gegenschritt (5.3: eine Display-Challenge wird nie zur Sent
+  // Card) — kam der Record über den optischen Leg, wartet das Zustell-
+  // dokument auf den Bundle-Thread; das Credential ist sofort ausgestellt.
+  let r
+  try { r = await E.counter(p, peerAnchor, now) } catch (err) { reopen(); p.log.push(`Gegenschritt: ${err?.message ?? err} — erneut versuchen`); render(); return }
+  if (r.error) { reopen(); p.log.push(`Gegenschritt: ${r.error}`); render(); return }
   const c = p.contacts.get(peerAnchor)
-  const iso = C.iso(now)
-  const bind = await C.binding(C.CEREMONY, e.myCh, e.peerCh)
-  const cred = await C.issueCredential(e.myCtx, peerAnchor, C.CEREMONY, e.peerCh, bind, iso)
-  const sentCard = await C.signCard(e.myCtx, C.cardBody(e.myCtx, { name: p.name, challenge: { value: e.myCh, issuedAt: iso }, sentTo: peerAnchor, boundTo: e.peerCh }), iso)
-  c.credential = cred
-  c.state = c.credentialIn ? '✓' : '→' // ohne das Gegen-Credential (optischer Pfad) ehrlich einseitig
   if (c.state === '✓') { c.probeSent = false; world.ui[id].sheet = { type: 'verified', of: peerAnchor } }
-  const doc = await C.diSign(e.myCtx, { id: globalThis.crypto.randomUUID(), type: ET, issuer: e.myCtx.anchor, recipient: peerAnchor, issuedAt: iso, payload: { card: sentCard, credential: cred } }, iso)
-  const env = await C.seal(doc, c.channel.counterpartKa)
   const q = ['J', 'A', 'E'].map((k) => world[k]).find((x) => x !== p && x.contexts.get(peerAnchor))
-  packet('encounter-verify@probe — Gegen-Credential (versiegelt, Relay)', p.name, q.name, env)
-  if (!p.online) {
-    ;(p.pendingDocs ??= []).push({ toName: q.name, env })
-    // Two-Way-Scan: auch die eigene gesendete Karte wird zum QR
-    world.shows[id] = { fallback: true, card: sentCard, name: q.name }
-    p.log.push('offline — Gegen-Credential wartet auf Netz; die eigene Karte geht optisch weiter (Two-Way-Scan)')
-  } else {
-    await deliver(q, env)
-  }
+  if (r.deferred) { p.log.push(`Gegen-Credential ausgestellt — das Zustelldokument folgt, sobald ${q.name}s Bundle da ist (Bundle-Thread)`); render(); return }
+  packet('encounter-credential-delivery/0.1 — Gegenschritt (versiegelt)', p.name, q.name, r.env)
+  if (!p.online) p.log.push('offline — Gegen-Credential wartet in der Outbox auf Netz (byte-identische Redelivery, 4.2)')
+  else await deliver(q, r.env)
   render()
 }
 window.__trustGive = async (id, anchor) => {
@@ -765,7 +747,8 @@ function metaLine (p, c, ctx = 'contacts') {
   }
   // rank 2b: one-sided verification — explain the direction
   if (c.state === '→') return `verified by you — ${c.name} still decides about the way back`
-  if (c.state === '←') return `verified you — your confirmation is pending${c.credentialPending ? ' (their confirmation follows over the network)' : ''}`
+  if (c.state === '←') return `verified you — your confirmation is pending`
+  if (c.state === '◇' && c.ownChallenge) return `met — code captured; the confirmations follow over the network`
   // rank 3: fresh ceremony (the credential carries no place — only time)
   if (fresh) return `verified ${rel(c.since)}`
   // rank 4: visible shared group (suppressed inside that group's roster)
@@ -874,13 +857,14 @@ function screenFlow (id, p) {
     return `<div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:11px;padding-top:56px">
       <div style="width:40px;height:40px;border-radius:50%;border:3px solid oklch(90% 0.008 265);border-top-color:oklch(55% 0.21 264);animation:pspin .9s linear infinite"></div>
       <div style="font-size:16px;font-weight:800">Sent to ${ui.enc?.peerName ?? '…'}</div>
-      <div class="pmeta" style="max-width:230px">Your confirmation is on its way. Without a connection, the same encounter simply continues by camera in a moment.</div></div>`
+      <div class="pmeta" style="max-width:230px">Your confirmation is on its way. Without a connection, the same encounter simply continues by camera in a moment.</div>
+      <div class="profact" style="margin-top:6px"><button onclick="__switchOptical('${id}')">Show my card instead</button></div></div>`
   }
   if (ui.view === 'delivered') {
     return `<div style="text-align:center;display:flex;flex-direction:column;align-items:center;gap:11px;padding-top:48px">
       <div style="width:56px;height:56px;border-radius:50%;background:oklch(94% 0.06 142);color:oklch(48% 0.16 142);display:flex;align-items:center;justify-content:center;font-size:26px">✓</div>
-      <div style="font-size:16px;font-weight:800">Arrived on ${ui.enc?.peerName ?? '…'}'s device</div>
-      <div class="pmeta" style="max-width:240px">Arrival, not acceptance — ${ui.enc?.peerName ?? 'they'} decides for themselves whether to verify you back.</div>
+      <div style="font-size:16px;font-weight:800">Delivered — ${ui.enc?.peerName ?? '…'}'s device acknowledged</div>
+      <div class="pmeta" style="max-width:240px">Acknowledged arrival, not acceptance — ${ui.enc?.peerName ?? 'they'} decides for themselves whether to verify you back.</div>
       <div class="profact" style="width:100%"><button onclick="__closeVerify('${id}')">Back</button></div></div>`
   }
   if (ui.view === 'fallback') {
@@ -1007,7 +991,7 @@ function screenProfile (id, p, anchor) {
     ${starSect}
     <div class="sect">Actions</div>
     <div class="profact">
-      ${c.state === '←' ? `<button class="primary blue" onclick="__verifyBack('${id}','${anchor}',true)">Verify ${c.name} back</button>`
+      ${(c.state === '←' || (c.state === '◇' && c.ownChallenge && !c.credential)) ? `<button class="primary blue" onclick="__verifyBack('${id}','${anchor}',true)">Verify ${c.name} back</button>`
         : c.provenance !== 'ceremony' || c.state !== '✓' ? `<button class="primary blue" onclick="__openVerify('${id}')">Verify — when you meet…</button>` : ''}
       ${trustAct}
       <button class="primary" ${canIntroduce ? '' : 'disabled'} onclick='__sheet("${id}",{type:"pick",of:"${anchor}"})'>⇠⇢&nbsp; Introduce…</button>

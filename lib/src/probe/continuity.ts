@@ -170,7 +170,13 @@ function chainTuple (p: Person, newKey: string, oldKey: string, when: number) {
   old.deactivated = true
   old.chainedInto = newKey
   head.chain = [...(old.chain ?? []), oldKey]
+  // Zustands-Vorrang entlang der Kette (Encounter 4.2, „evidence accumulates
+  // on the relationship through its chain"): ✓ > Zeremonie-Richtung (→/←)
+  // > Vorstellung (⇄). Eine einseitige Zeremonie ist stärker als eine
+  // Vorstellung — der Kopf verliert seine Richtung nicht an ein ⇄
   if (old.state === '✓' || head.state === '✓') { head.state = '✓'; head.provenance = 'ceremony' }
+  else if (head.state === '→' || head.state === '←') { /* die Richtung des Kopfes bleibt */ }
+  else if (old.state === '→' || old.state === '←') { head.state = old.state; head.provenance = 'ceremony' }
   else if (old.state === '⇄' || head.state === '⇄') head.state = '⇄'
   head.since = [old.since, head.since].filter(Boolean).sort()[0]
   head.name = old.name // lokales Kontakt-Gedächtnis

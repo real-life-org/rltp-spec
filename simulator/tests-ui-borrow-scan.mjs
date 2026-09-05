@@ -23,8 +23,11 @@ if (!qrVisible) { console.log('FAIL: Ben did not jump back to his QR'); process.
 console.log('PASS: Ben jumped back to his displayed QR during the scan');
 await page.screenshot({ path: OUT + '/borrow-during.png' });
 
-// 3) after the capture both confirm dialogs must coexist (Ben restored)
-await page.waitForTimeout(2400);
+// 3) after the capture both confirm dialogs must coexist (Ben restored) —
+//    wait for the phones to be AT REST (flight 2150 ms · auto-capture 2500 ms ·
+//    return glide 750 ms), not for a fixed delay that races the return flight
+await page.waitForFunction(() => ['A', 'B'].every((id) => { const el = document.getElementById('sim-phone-' + id); return el && getComputedStyle(el).transform === 'none' }), null, { timeout: 15000 });
+await page.waitForTimeout(150);
 const dialogs = await page.getByText('Is this the person in front of you?').count();
 if (dialogs !== 2) { console.log('FAIL: expected 2 confirm dialogs, got', dialogs); process.exit(1); }
 console.log('PASS: Anna captured AND Ben is back in his confirm dialog');

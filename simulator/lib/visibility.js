@@ -24,7 +24,8 @@
 // free); the host decides where bytes live.
 //
 // Not in this module: transport adapters and their policies, storage,
-// the Encounter layer's ceremony flows (those remain `@probe`).
+// the Encounter layer's ceremony flows (graduated separately as
+// `ceremony` on 05.09.2026).
 export { COMMUNITY_GENESIS } from './probe/deps.js';
 export * as trust from './probe/trust.js';
 export * as continuity from './probe/continuity.js';

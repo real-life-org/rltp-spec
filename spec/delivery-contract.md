@@ -274,9 +274,15 @@ scanner's sent card and step credential.
      ceremony (`encounter-scan@0.25`)** — a credential labelled
      with any other ceremony is `failed(validation-failed)`, so the
      record's ceremony is grounded rather than copied from the
-     sender's label; and the enactment binding recomputes per
-     Encounter 5.4 from {the resolved own challenge, card's
-     sent-challenge};
+     sender's label — **placement note:** for a bundle this ceremony
+     equality is evaluated HERE, at check 5 after the card proof,
+     credential proof, and addressee, while Encounter 5.6 step 1
+     evaluates it as part of the FORMAT check for a credential
+     received on its own (4.3); the two orders are both normative,
+     each for its carrier, and a receiver MUST apply the one that
+     matches the document it holds; and the enactment binding
+     recomputes per Encounter 5.4 from {the resolved own challenge,
+     card's sent-challenge};
   6. **the issuance window (Encounter 5.6 step 6):** `validFrom` and
      `proof.created` inside the closed interval anchored at `t_ch`
      from the resolution — held with an `open` value by its owner,
@@ -338,7 +344,13 @@ scanner's sent card and step credential.
   credential **from the record's counterparty** (it passed the
   counterparty check) is `failed(validation-failed)`; a foreign
   counterparty is always `failed(consumed-challenge)` (above) —
-  never a second record.
+  never a second record. **Thread freshness under re-issue:** a bundle
+  re-issued for the same enactment (a new document, not a byte-identical
+  redelivery) opens a **fresh** `threadId` like every thread-opening
+  document (Section 3); the record keeps the thread of the bundle that
+  committed first, and every later bundle lands idempotently via the
+  record-aware effect. A new bundle document on an already used thread
+  is `failed(validation-failed)`.
 
 ### 4.2 `delivery-ack/0.1`
 
