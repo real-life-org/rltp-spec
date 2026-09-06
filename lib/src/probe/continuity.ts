@@ -429,8 +429,15 @@ async function handleProbe (p: Person, { key, t }: any, artifact: any, threadId:
       }
     }
   } else {
-    // Nicht-Record: Match-Report (löst NIE eine Kette aus)
-    if (!t.contReported) {
+    // Nicht-Record: Match-Report (löst NIE eine Kette aus). Ist die
+    // Record-Wahl auf diesem Tupel schon verifiziert, ist die Report-
+    // Pflicht GESTORBEN (6a.3) — eine späte Probe der Record-Seite erzeugt
+    // keinen Report mehr: „a match report flushed after the choice is a
+    // stale counter-claim that MUST NOT be sent". Ohne diese Schranke
+    // entstand ein nie retirebarer Eintrag, den jeder Flush byte-identisch
+    // erneut sandte (Gesamtsimulator, 06.09.2026: Endlos-Retry nach der
+    // gegenseitigen Verifikation)
+    if (!t.contReported && !t.contRecordPrior) {
       t.contReported = matches[0]
       try { outbound.push(await buildMapping(p, key, matches[0], when, ent)) }
       catch (err: any) { t.contMappingDue = { prior: matches[0], kind: 'report' }; outboundError = String(err?.message ?? err) }
@@ -583,6 +590,9 @@ export async function flushContinuity (p: Person, newKey: string, when: number, 
     // with freshly sampled padding" (Review 5, B-3): stale Einträge
     // werden RETIRED (Ack-Ref bleibt, Review 6, B-3), EINE frische
     // Probe ersetzt sie (Bau nach der Lock-Sektion)
+    // ein Report nach verifizierter Record-Wahl ist tot (6a.3) — auch wenn
+    // er der Wahl zuvorkam, aber erst danach in die Outbox gelangte
+    if (t.contRecordPrior) for (const o of (t.outbox ?? new Map()).values()) if (o.kind === 'continuity-mapping' && o.duty !== 'align') o.retired = true
     const retries: any[] = [...(t.outbox ?? new Map()).values()]
       .filter((o: any) => o.kind === 'continuity-mapping' && !o.retired)
       .map((o: any) => ({ to: t, kind: o.kind + '/0.1 (Retry, byte-identisch)', env: o.env }))
