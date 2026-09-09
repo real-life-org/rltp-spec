@@ -12,6 +12,29 @@ protocol grew out of the deployed
 [Web of Trust app](https://web-of-trust.de/), whose ceremony flows have
 been exercised at festivals and community gatherings since 2026.
 
+## What is different about it
+
+- **Groups are first-class protocol objects.** A group is not a set of
+  membership claims in individual wallets but a *place*: an encrypted
+  document replicated on every member's device, with its own log of
+  who joined, who left, and which rules apply. Membership is a fact in
+  that state and a capability (holding the key), not a certificate.
+- **Rooms and invitations, not checkpoints.** Nobody presents a
+  credential at a door. A person consults their own graph ("through
+  whom do we know each other?") and invites. The verifier is always the
+  host, nothing portable results from the check, and no third party
+  keeps a log of it.
+- **There are no admins.** Privileged operations are gated by a
+  decision rule the group states as data; a single founder is the
+  k = 1 special case. Contested authority never picks a winner: the
+  group fails closed, visibly, until a quorum of both branches
+  reconciles.
+- **Revocation is an epoch.** A removal carries its key-world
+  transition atomically. No expiry dates, no caches that keep working.
+- **Relationships never converge into a person.** Every relationship
+  has its own anchor and, toward every carrier, its own principal. A
+  relay holding six of your relationships holds six relationships.
+
 ## Try it in your browser
 
 Three views of the same protocol, no installation, everything running
@@ -39,6 +62,25 @@ every encounter mints fresh pairwise anchors, and a blinded continuity
 probe re-recognizes an existing relationship afterwards — so meeting
 the same person twice produces one contact, not two, without any
 stable identifier travelling.
+
+## The shape of it
+
+| Layer | Concern |
+|---|---|
+| 4 Data | items, relations, schema composition, portability (not published yet) |
+| 3 Access | groups as places, policy, epochs, authorization views toward services |
+| 2 Encounter | ceremony, encounter credentials, contact cards |
+| 1 Identity | root-derived anchors per context, devices, recovery |
+
+Delivery and Replication are **services behind ports**, not layers.
+The specification names no transport and no CRDT. A substrate is
+judged against five fixed doors (signed causal DAG, atomic
+enforcement, view-shaped authorization, fail-closed concurrency,
+attested convergence target) and either carries a door natively,
+needs an adapter, or is excluded; Replication Contract §10 maps
+p2panda, Keyhive, SECSYNC, NextGraph and Automerge against them. The
+first delivery adapter binds TSP through the VTI mediator and runs
+live.
 
 ## What is in this repository
 
@@ -70,7 +112,7 @@ document is fully **recast — never patched**. A layer counts as
 converged when consecutive review rounds produce no blocker-level
 findings.
 
-**Converged:** Encounter 0.29 · Identity 0.28 · Access Layer 0.53 ·
+**Converged:** Encounter 0.29 · Identity 0.51 · Access Layer 0.53 ·
 Delivery Contract 0.79 · Membership Tasks 0.16 · Replication Contract
 0.26 · Network Visibility 0.29 · Personhood Predicates 0.12.
 Succession 0.2 is parked; the Data layer is not published here yet.
@@ -115,8 +157,9 @@ Graph work where the two effort meet:
 
 Where RLTP differs, it differs deliberately and says why in the
 specifications themselves: participant recognition rather than
-third-party witness, stable anchors rather than pairwise identifiers,
-and honestly stated correlation properties.
+third-party witness, per-relationship anchors with blinded continuity
+rather than a stable identifier per person, and honestly stated
+correlation properties.
 
 ## Design principles (the short version)
 
@@ -133,6 +176,15 @@ and honestly stated correlation properties.
 ## License
 
 [Creative Commons Attribution 4.0](LICENSE) (CC BY 4.0).
+
+## Implementations
+
+Library: [`@real-life/trust-protocol`](https://www.npmjs.com/package/@real-life/trust-protocol)
+0.3.1 on npm (encounter ceremony and continuity, published with
+provenance). One implementation is in production, the
+[Web of Trust app](https://web-of-trust.de/), on the previous protocol
+generation; its migration to the converged contracts is under way. A
+second, independent implementation is the goal, not yet a fact.
 
 ## Contact
 
