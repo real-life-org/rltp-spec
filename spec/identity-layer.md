@@ -226,7 +226,7 @@ The companions above this layer: the **RLTP Encounter Layer 0.29**
 (fresh always; 0.22 was the last converged Encounter), the
 **RLTP Delivery Contract 0.79** (jointly cast),
 **RLTP Membership Tasks 0.16**, **RLTP Access Layer 0.53**, and
-**RLTP Network Visibility 0.16**; two
+**RLTP Network Visibility 0.29**; two
 cross-document debts against Delivery and Access are recorded in
 Section 7. *RLTP Succession* (0.2, parked) operates on the anchors
 this document defines. It is cast against the requirements list of
@@ -1784,7 +1784,7 @@ policy, not this protocol's. The native profile of this casting
 `eddsa-jcs-2022`) grades as follows, and implementations claiming
 `rltp-identity@0.51` claim exactly these grades — no better:
 
-| Property | Grades (best → weakest) | **Native profile 0.43** |
+| Property | Grades (best → weakest) | **Native profile 0.51** |
 |---|---|---|
 | **B1** Edge survival across key change | native (identifier stable across key events) · compensated (edge succession, C1) · re-encounter | **re-encounter.** C1 (*RLTP Succession*) is parked; until its re-cast, edges survive an anchor change only by being witnessed anew |
 | **B2** Takeover resistance under operational key possession | pre-separated successor anchor · witnessed succession quorum (C1) · none | **none.** Operational possession of an anchor key is control of the anchor. A first-mover race would also grade as *none*; this profile does not pretend otherwise |
