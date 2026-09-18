@@ -40,7 +40,7 @@
     }
    ],
    "dct:source": [
-    "https://github.com/real-life-org/rltp-spec/blob/main/spec/access-layer.md#2"
+    "https://github.com/real-life-org/rltp-spec/blob/main/spec/access-layer.md#2-conventions-and-terminology"
    ],
    "skos:editorialNote": "German text: draft, not normative"
   },
@@ -69,7 +69,7 @@
     }
    ],
    "dct:source": [
-    "https://github.com/real-life-org/rltp-spec/blob/main/spec/access-layer.md#5",
+    "https://github.com/real-life-org/rltp-spec/blob/main/spec/access-layer.md#5-members",
     "https://github.com/real-life-org/rltp-spec/blob/main/spec/membership-tasks.md"
    ],
    "skos:editorialNote": "German text: draft, not normative"
@@ -90,16 +90,17 @@
    ],
    "skos:definition": [
     {
-     "@value": "Kennung einer Person gegenüber einem Kontext (did:key). Je Beziehung ein eigener Anker; Beziehungen laufen nie zu einer Person zusammen.",
+     "@value": "Kennung einer Person gegenüber einem Kontext (did:key). Jede Durchführung einer Zeremonie läuft unter einem frisch abgeleiteten Paaranker, auch eine Wiederbegegnung; ein stehender Anker erscheint nie auf dem Zeremoniedraht, und Anker laufen nie zu einer Person zusammen.",
      "@language": "de"
     },
     {
-     "@value": "A person's identifier toward one context (did:key). One anchor per relationship; relationships never converge into a person.",
+     "@value": "A person's identifier toward one context (did:key). Every enactment of a ceremony runs under a freshly derived pair anchor, a re-encounter too; a standing anchor never appears on the ceremony wire, and anchors never converge into a person.",
      "@language": "en"
     }
    ],
    "dct:source": [
-    "https://github.com/real-life-org/rltp-spec/blob/main/spec/encounter-layer.md#2.2",
+    "https://github.com/real-life-org/rltp-spec/blob/main/spec/encounter-layer.md#22-terms",
+    "https://github.com/real-life-org/rltp-spec/blob/main/spec/encounter-layer.md#44-the-enacting-anchor-fresh-always-normative",
     "https://github.com/real-life-org/rltp-spec/blob/main/spec/identity-layer.md"
    ],
    "skos:editorialNote": "German text: draft, not normative"
@@ -129,7 +130,7 @@
     }
    ],
    "dct:source": [
-    "https://github.com/real-life-org/rltp-spec/blob/main/spec/encounter-layer.md#4.2"
+    "https://github.com/real-life-org/rltp-spec/blob/main/spec/encounter-layer.md#42-the-edge-is-the-relation-and-it-is-per-anchor-pair"
    ],
    "skos:editorialNote": "German text: draft, not normative"
   },
@@ -158,7 +159,7 @@
     }
    ],
    "dct:source": [
-    "https://github.com/real-life-org/rltp-spec/blob/main/spec/encounter-layer.md#7"
+    "https://github.com/real-life-org/rltp-spec/blob/main/spec/encounter-layer.md#7-the-encounter-credential"
    ],
    "skos:editorialNote": "German text: draft, not normative"
   },
@@ -187,7 +188,7 @@
     }
    ],
    "dct:source": [
-    "https://github.com/real-life-org/rltp-spec/blob/main/spec/access-layer.md#VisibilityMode",
+    "https://github.com/real-life-org/rltp-spec/blob/main/spec/access-layer.md#8-visibility-modes",
     "https://github.com/real-life-org/rltp-spec/blob/main/spec/network-visibility.md"
    ],
    "skos:editorialNote": "German text: draft; the spec names the term only in its fragment table, definition still to be quoted"
@@ -217,7 +218,7 @@
     }
    ],
    "dct:source": [
-    "https://github.com/real-life-org/rltp-spec/blob/main/spec/encounter-layer.md#2.2"
+    "https://github.com/real-life-org/rltp-spec/blob/main/spec/encounter-layer.md#22-terms"
    ],
    "skos:editorialNote": "German text: draft, not normative"
   },
