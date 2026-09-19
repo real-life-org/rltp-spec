@@ -173,6 +173,16 @@ correlation properties.
 - **Every mechanism names its user action.** The protocol's total user
   actions are two: exchange cards, confirm recognition.
 
+## Term register
+
+The vocabulary terms of this specification are also published as a SKOS concept
+scheme, [`terms/rltp.skos.jsonld`](terms/rltp.skos.jsonld) (JSON-LD, namespace
+`https://real-life.org/rltp/v1#`, label and one-sentence definition in English
+and German, source section per term). The specification files stay normative;
+the scheme is their machine-readable digest. Mappings to the terms of the Real
+Life Network Protocol and the Real Life Stack live in the shared register,
+[real-life-org/meta](https://github.com/real-life-org/meta), not here.
+
 ## License
 
 [Creative Commons Attribution 4.0](LICENSE) (CC BY 4.0).
